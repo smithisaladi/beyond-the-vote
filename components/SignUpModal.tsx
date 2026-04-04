@@ -1,11 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Modal } from './Modal'
 import { createClient } from '@/lib/supabase/client'
 
-export default function SignUpPage() {
+interface SignUpModalProps {
+  isOpen: boolean
+  onClose: () => void
+  onSwitchToSignIn: () => void
+}
+
+export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -33,7 +39,7 @@ export default function SignUpPage() {
       setError(error.message)
       setLoading(false)
     } else {
-      router.push('/')
+      onClose()
       router.refresh()
     }
   }
@@ -41,27 +47,24 @@ export default function SignUpPage() {
   const handleGoogleSignUp = async () => {
     await createClient().auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     })
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-[#F5F0E8] rounded-lg shadow-xl p-8">
-        <Link href="/" className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-[#9B7FA6] rounded flex items-center justify-center">
-            <span className="text-white font-bold text-sm">BB</span>
-          </div>
-          <span className="font-semibold text-lg" style={{ fontFamily: 'var(--font-serif)' }}>
-            Beyond the Ballot
-          </span>
-        </Link>
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <div className="p-8">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-[#1C1C1A]/40 hover:text-[#1C1C1A] transition-colors"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
 
-        <h1 className="text-3xl mb-2" style={{ fontFamily: 'var(--font-serif)' }}>
-          Join Beyond the Ballot
-        </h1>
+        <h2 className="text-3xl mb-2" style={{ fontFamily: 'var(--font-serif)' }}>Join Beyond the Ballot</h2>
         <p className="text-[#1C1C1A]/60 mb-8">Start tracking your representatives today</p>
 
         <button
@@ -81,15 +84,13 @@ export default function SignUpPage() {
           </div>
         </div>
 
-        {error && (
-          <p className="text-red-600 text-sm mb-4">{error}</p>
-        )}
+        {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm mb-2 text-[#1C1C1A]">Full Name</label>
+            <label htmlFor="signup-name" className="block text-sm mb-2 text-[#1C1C1A]">Full Name</label>
             <input
-              id="name"
+              id="signup-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -100,9 +101,9 @@ export default function SignUpPage() {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm mb-2 text-[#1C1C1A]">Email</label>
+            <label htmlFor="signup-email" className="block text-sm mb-2 text-[#1C1C1A]">Email</label>
             <input
-              id="email"
+              id="signup-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -113,9 +114,9 @@ export default function SignUpPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm mb-2 text-[#1C1C1A]">Password</label>
+            <label htmlFor="signup-password" className="block text-sm mb-2 text-[#1C1C1A]">Password</label>
             <input
-              id="password"
+              id="signup-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -126,9 +127,9 @@ export default function SignUpPage() {
           </div>
 
           <div>
-            <label htmlFor="confirm-password" className="block text-sm mb-2 text-[#1C1C1A]">Confirm Password</label>
+            <label htmlFor="signup-confirm" className="block text-sm mb-2 text-[#1C1C1A]">Confirm Password</label>
             <input
-              id="confirm-password"
+              id="signup-confirm"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -139,11 +140,7 @@ export default function SignUpPage() {
           </div>
 
           <label className="flex items-start gap-2 text-sm text-[#1C1C1A]/70">
-            <input
-              type="checkbox"
-              className="mt-0.5 rounded border-[rgba(28,28,26,0.2)]"
-              required
-            />
+            <input type="checkbox" className="mt-0.5 rounded border-[rgba(28,28,26,0.2)]" required />
             <span>
               I agree to the{' '}
               <button type="button" className="text-[#9B7FA6] hover:text-[#8a6e95]">Terms of Service</button>
@@ -163,12 +160,12 @@ export default function SignUpPage() {
 
         <p className="text-center text-sm text-[#1C1C1A]/60 mt-6">
           Already have an account?{' '}
-          <Link href="/sign-in" className="text-[#9B7FA6] hover:text-[#8a6e95] font-medium">
+          <button onClick={onSwitchToSignIn} className="text-[#9B7FA6] hover:text-[#8a6e95] font-medium">
             Sign in
-          </Link>
+          </button>
         </p>
       </div>
-    </div>
+    </Modal>
   )
 }
 
