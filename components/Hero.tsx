@@ -1,13 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export function Hero() {
+  const router = useRouter()
   const [address, setAddress] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('Finding representatives for:', address)
+    if (address.trim()) {
+      router.push(`/representatives?address=${encodeURIComponent(address.trim())}`)
+    }
   }
 
   return (
