@@ -1,7 +1,12 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
 import { Navigation } from '@/components/Navigation'
+import { SignInModal } from '@/components/SignInModal'
+import { SignUpModal } from '@/components/SignUpModal'
+import { createClient } from '@/lib/supabase/client'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 type Status = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
@@ -15,134 +20,11 @@ interface Bill {
   sponsor: string
   party: Party
   status: Status
-  category: Category
+  category?: Category
   lastAction: string
   lastActionTimestamp: number
   summary: string
 }
-
-const MOCK_BILLS: Bill[] = [
-  {
-    id: 'b1',
-    number: 'S. 1247',
-    title: 'Clean Energy Transition Act',
-    sponsor: 'Sen. Margaret Chen',
-    party: 'Democrat',
-    status: 'Active',
-    category: 'Environment',
-    lastAction: 'Mar 18, 2025',
-    lastActionTimestamp: new Date('2025-03-18').getTime(),
-    summary: 'Accelerates renewable energy adoption through federal investment in solar, wind, and grid modernization infrastructure.',
-  },
-  {
-    id: 'b2',
-    number: 'H.R. 3892',
-    title: 'Small Business Tax Relief Act',
-    sponsor: 'Rep. James Walsh',
-    party: 'Republican',
-    status: 'Committee',
-    category: 'Economy',
-    lastAction: 'Mar 12, 2025',
-    lastActionTimestamp: new Date('2025-03-12').getTime(),
-    summary: 'Provides targeted tax incentives for small businesses with fewer than 50 employees, reducing the federal tax burden on entrepreneurs.',
-  },
-  {
-    id: 'b3',
-    number: 'H.R. 2108',
-    title: 'Affordable Housing Investment Act',
-    sponsor: 'Rep. Diana Reyes',
-    party: 'Democrat',
-    status: 'Active',
-    category: 'Housing',
-    lastAction: 'Mar 5, 2025',
-    lastActionTimestamp: new Date('2025-03-05').getTime(),
-    summary: 'Allocates $40 billion in federal grants to municipalities for affordable housing construction and rehabilitation programs.',
-  },
-  {
-    id: 'b4',
-    number: 'S. 0891',
-    title: 'Border Security and Enforcement Act',
-    sponsor: 'Sen. Robert Harmon',
-    party: 'Republican',
-    status: 'Stalled',
-    category: 'Immigration',
-    lastAction: 'Feb 20, 2025',
-    lastActionTimestamp: new Date('2025-02-20').getTime(),
-    summary: 'Increases funding for border enforcement personnel and technology systems, and revises asylum processing timelines.',
-  },
-  {
-    id: 'b5',
-    number: 'S. 1401',
-    title: 'Universal Pre-K Education Act',
-    sponsor: 'Sen. Margaret Chen',
-    party: 'Democrat',
-    status: 'Committee',
-    category: 'Education',
-    lastAction: 'Feb 14, 2025',
-    lastActionTimestamp: new Date('2025-02-14').getTime(),
-    summary: 'Establishes federally funded pre-kindergarten education programs in all 50 states, prioritizing underserved communities.',
-  },
-  {
-    id: 'b6',
-    number: 'H.R. 4455',
-    title: 'Digital Privacy Protection Act',
-    sponsor: 'Rep. Sandra Liu',
-    party: 'Democrat',
-    status: 'Active',
-    category: 'Technology',
-    lastAction: 'Jan 28, 2025',
-    lastActionTimestamp: new Date('2025-01-28').getTime(),
-    summary: 'Establishes comprehensive federal data privacy standards for technology companies, including consent requirements and right to deletion.',
-  },
-  {
-    id: 'b7',
-    number: 'H.R. 3100',
-    title: 'Veterans Healthcare Expansion Act',
-    sponsor: 'Rep. Marcus Greene',
-    party: 'Republican',
-    status: 'Passed',
-    category: 'Healthcare',
-    lastAction: 'Jan 15, 2025',
-    lastActionTimestamp: new Date('2025-01-15').getTime(),
-    summary: 'Expands VA hospital capacity and telehealth services for veterans in rural areas, and increases mental health support funding.',
-  },
-  {
-    id: 'b8',
-    number: 'S. 0722',
-    title: 'Defense Modernization Act',
-    sponsor: 'Sen. Robert Harmon',
-    party: 'Republican',
-    status: 'Active',
-    category: 'Defense',
-    lastAction: 'Jan 8, 2025',
-    lastActionTimestamp: new Date('2025-01-08').getTime(),
-    summary: 'Allocates $18 billion for next-generation defense technology procurement, including cybersecurity, drone, and satellite systems.',
-  },
-  {
-    id: 'b9',
-    number: 'H.R. 1987',
-    title: 'Community Health Centers Funding Act',
-    sponsor: 'Rep. Diana Reyes',
-    party: 'Democrat',
-    status: 'Stalled',
-    category: 'Healthcare',
-    lastAction: 'Dec 19, 2024',
-    lastActionTimestamp: new Date('2024-12-19').getTime(),
-    summary: 'Triples federal funding for community health centers in underserved urban and rural areas to expand primary care access.',
-  },
-  {
-    id: 'b10',
-    number: 'S. 1633',
-    title: 'Agricultural Subsidy Reform Act',
-    sponsor: 'Sen. Patricia Moore',
-    party: 'Independent',
-    status: 'Failed',
-    category: 'Economy',
-    lastAction: 'Dec 5, 2024',
-    lastActionTimestamp: new Date('2024-12-05').getTime(),
-    summary: 'Restructures federal agricultural subsidies to prioritize small family farms over large agribusiness operations.',
-  },
-]
 
 const PARTY_STYLES: Record<Party, { bg: string; text: string }> = {
   Democrat:    { bg: 'bg-[#7B8FA8]/[0.12]', text: 'text-[#7B8FA8]' },
@@ -160,6 +42,7 @@ const STATUS_STYLES: Record<Status, { bg: string; text: string }> = {
 
 const ALL_STATUSES: Status[] = ['Active', 'Committee', 'Stalled', 'Passed', 'Failed']
 const ALL_CATEGORIES: Category[] = ['Environment', 'Economy', 'Healthcare', 'Defense', 'Education', 'Housing', 'Technology', 'Immigration']
+const PAGE_SIZE = 20
 
 function TopoBackground() {
   return (
@@ -210,12 +93,10 @@ function FilterCheckbox({
   label,
   checked,
   onChange,
-  accent,
 }: {
   label: string
   checked: boolean
   onChange: () => void
-  accent?: string
 }) {
   return (
     <label className="flex items-center gap-2.5 cursor-pointer group">
@@ -233,14 +114,41 @@ function FilterCheckbox({
           </svg>
         )}
       </div>
-      <span className={`text-sm ${checked ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`} style={accent ? { color: checked ? accent : undefined } : {}}>
+      <span className={`text-sm ${checked ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>
         {label}
       </span>
     </label>
   )
 }
 
-function BillCard({ bill, tracked, onToggleTrack }: { bill: Bill; tracked: boolean; onToggleTrack: () => void }) {
+function BillCardSkeleton() {
+  return (
+    <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 animate-pulse">
+      <div className="flex gap-4">
+        <div className="flex-1 space-y-3">
+          <div className="flex gap-2">
+            <div className="h-4 w-16 bg-[#E8E3DA] rounded-full" />
+            <div className="h-4 w-16 bg-[#E8E3DA] rounded-full" />
+          </div>
+          <div className="h-5 bg-[#E8E3DA] rounded w-3/4" />
+          <div className="h-4 bg-[#E8E3DA] rounded w-full" />
+          <div className="h-4 bg-[#E8E3DA] rounded w-1/2" />
+        </div>
+        <div className="w-8 h-8 bg-[#E8E3DA] rounded-lg flex-shrink-0" />
+      </div>
+    </div>
+  )
+}
+
+function BillCard({
+  bill,
+  tracked,
+  onToggleTrack,
+}: {
+  bill: Bill
+  tracked: boolean
+  onToggleTrack: () => void
+}) {
   const party = PARTY_STYLES[bill.party]
   const status = STATUS_STYLES[bill.status]
 
@@ -255,14 +163,20 @@ function BillCard({ bill, tracked, onToggleTrack }: { bill: Bill; tracked: boole
             <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${status.bg} ${status.text}`}>
               {bill.status}
             </span>
-            <span className="text-xs text-[#1C1C1A]/20">·</span>
-            <span className="text-xs text-[#1C1C1A]/40">{bill.category}</span>
+            {bill.category && (
+              <>
+                <span className="text-xs text-[#1C1C1A]/20">·</span>
+                <span className="text-xs text-[#1C1C1A]/40">{bill.category}</span>
+              </>
+            )}
           </div>
 
           {/* Title */}
-          <h2 className="text-lg text-[#1C1C1A] leading-snug mb-2" style={{ fontFamily: 'var(--font-serif)' }}>
-            {bill.title}
-          </h2>
+          <Link href={`/bills/${bill.id}`}>
+            <h2 className="text-lg text-[#1C1C1A] leading-snug mb-2 hover:text-[#9B7FA6] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
+              {bill.title}
+            </h2>
+          </Link>
 
           {/* Summary */}
           <p className="text-sm text-[#1C1C1A]/55 leading-relaxed mb-4 line-clamp-2">
@@ -275,8 +189,12 @@ function BillCard({ bill, tracked, onToggleTrack }: { bill: Bill; tracked: boole
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${party.bg} ${party.text}`}>
               {bill.party}
             </span>
-            <span className="text-xs text-[#1C1C1A]/25">·</span>
-            <span className="text-xs text-[#1C1C1A]/40">Last action {bill.lastAction}</span>
+            {bill.lastAction && (
+              <>
+                <span className="text-xs text-[#1C1C1A]/25">·</span>
+                <span className="text-xs text-[#1C1C1A]/40">Last action {bill.lastAction}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -295,10 +213,87 @@ function BillCard({ bill, tracked, onToggleTrack }: { bill: Bill; tracked: boole
 
 export default function BillsPage() {
   const [query, setQuery] = useState('')
+  const [debouncedQuery, setDebouncedQuery] = useState('')
   const [selectedStatuses, setSelectedStatuses] = useState<Set<Status>>(new Set())
   const [selectedCategories, setSelectedCategories] = useState<Set<Category>>(new Set())
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
+
+  const [bills, setBills] = useState<Bill[]>([])
+  const [billsLoading, setBillsLoading] = useState(true)
+  const [billsError, setBillsError] = useState<string | null>(null)
+  const [offset, setOffset] = useState(0)
+  const [total, setTotal] = useState(0)
+  const [loadingMore, setLoadingMore] = useState(false)
+
   const [trackedBills, setTrackedBills] = useState<Set<string>>(new Set())
+  const [user, setUser] = useState<User | null>(null)
+  const [showSignIn, setShowSignIn] = useState(false)
+  const [showSignUp, setShowSignUp] = useState(false)
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Debounce search query
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => setDebouncedQuery(query), 400)
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+  }, [query])
+
+  // Auth state
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Load tracked bills from Supabase
+  useEffect(() => {
+    if (!user) { setTrackedBills(new Set()); return }
+    const supabase = createClient()
+    supabase
+      .from('tracked_bills')
+      .select('bill_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data) setTrackedBills(new Set(data.map((r: { bill_id: string }) => r.bill_id)))
+      })
+  }, [user])
+
+  // Fetch bills (reset when query/category changes)
+  const fetchBills = useCallback(async (currentOffset: number, append: boolean) => {
+    if (currentOffset === 0) setBillsLoading(true)
+    else setLoadingMore(true)
+    setBillsError(null)
+
+    const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(currentOffset) })
+    if (debouncedQuery) params.set('q', debouncedQuery)
+
+    try {
+      const res = await fetch(`/api/bills?${params.toString()}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to load bills')
+      if (append) {
+        setBills(prev => [...prev, ...data.bills])
+      } else {
+        setBills(data.bills)
+      }
+      setTotal(data.pagination?.total ?? data.bills.length)
+    } catch (err: any) {
+      setBillsError(err.message)
+    } finally {
+      setBillsLoading(false)
+      setLoadingMore(false)
+    }
+  }, [debouncedQuery])
+
+  // Reset and re-fetch when query changes
+  useEffect(() => {
+    setOffset(0)
+    fetchBills(0, false)
+  }, [debouncedQuery, fetchBills])
 
   const toggleStatus = (s: Status) =>
     setSelectedStatuses(prev => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n })
@@ -306,28 +301,16 @@ export default function BillsPage() {
   const toggleCategory = (c: Category) =>
     setSelectedCategories(prev => { const n = new Set(prev); n.has(c) ? n.delete(c) : n.add(c); return n })
 
-  const toggleTrack = (id: string) =>
-    setTrackedBills(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n })
-
   const now = Date.now()
   const filtered = useMemo(() => {
-    return MOCK_BILLS.filter(bill => {
-      if (query) {
-        const q = query.toLowerCase()
-        if (
-          !bill.title.toLowerCase().includes(q) &&
-          !bill.number.toLowerCase().includes(q) &&
-          !bill.sponsor.toLowerCase().includes(q) &&
-          !bill.summary.toLowerCase().includes(q)
-        ) return false
-      }
+    return bills.filter(bill => {
       if (selectedStatuses.size > 0 && !selectedStatuses.has(bill.status)) return false
-      if (selectedCategories.size > 0 && !selectedCategories.has(bill.category)) return false
+      if (selectedCategories.size > 0 && (!bill.category || !selectedCategories.has(bill.category))) return false
       if (dateFilter === 'month' && now - bill.lastActionTimestamp > 30 * 24 * 60 * 60 * 1000) return false
       if (dateFilter === 'year' && now - bill.lastActionTimestamp > 365 * 24 * 60 * 60 * 1000) return false
       return true
     })
-  }, [query, selectedStatuses, selectedCategories, dateFilter, now])
+  }, [bills, selectedStatuses, selectedCategories, dateFilter, now])
 
   const hasFilters = selectedStatuses.size > 0 || selectedCategories.size > 0 || dateFilter !== 'all'
 
@@ -336,6 +319,37 @@ export default function BillsPage() {
     setSelectedCategories(new Set())
     setDateFilter('all')
   }
+
+  const toggleTrack = async (billId: string) => {
+    if (!user) {
+      setShowSignIn(true)
+      return
+    }
+
+    const supabase = createClient()
+    const isTracked = trackedBills.has(billId)
+    const next = new Set(trackedBills)
+    isTracked ? next.delete(billId) : next.add(billId)
+    setTrackedBills(next) // optimistic
+
+    const { error } = isTracked
+      ? await supabase.from('tracked_bills').delete().eq('user_id', user.id).eq('bill_id', billId)
+      : await supabase.from('tracked_bills').insert({ user_id: user.id, bill_id: billId })
+
+    if (error) {
+      // revert
+      const reverted = new Set(trackedBills)
+      setTrackedBills(reverted)
+    }
+  }
+
+  const loadMore = () => {
+    const nextOffset = offset + PAGE_SIZE
+    setOffset(nextOffset)
+    fetchBills(nextOffset, true)
+  }
+
+  const hasMore = bills.length < total
 
   return (
     <div className="relative min-h-screen flex flex-col bg-[#F5F0E8] overflow-hidden">
@@ -471,16 +485,38 @@ export default function BillsPage() {
               {/* Bill list */}
               <div className="flex-1 min-w-0">
                 {/* Result count */}
-                <p className="text-xs text-[#1C1C1A]/40 mb-4">
-                  {filtered.length === MOCK_BILLS.length
-                    ? `${filtered.length} bills`
-                    : `${filtered.length} of ${MOCK_BILLS.length} bills`}
-                  {trackedBills.size > 0 && (
-                    <span className="ml-2 text-[#9B7FA6]">· {trackedBills.size} tracked</span>
-                  )}
-                </p>
+                {!billsLoading && !billsError && (
+                  <p className="text-xs text-[#1C1C1A]/40 mb-4">
+                    {hasFilters
+                      ? `${filtered.length} of ${bills.length} bills (filtered)`
+                      : `${bills.length} bills`}
+                    {trackedBills.size > 0 && (
+                      <span className="ml-2 text-[#9B7FA6]">· {trackedBills.size} tracked</span>
+                    )}
+                  </p>
+                )}
 
-                {filtered.length === 0 ? (
+                {billsLoading ? (
+                  <div className="space-y-4">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <BillCardSkeleton key={i} />
+                    ))}
+                  </div>
+                ) : billsError ? (
+                  <div className="bg-white rounded-xl border border-[#D6CFC4] p-12 text-center">
+                    <p className="text-[#1C1C1A]/40 text-sm mb-3">
+                      {billsError.includes('CONGRESS_API_KEY')
+                        ? 'Congress.gov API key is not configured.'
+                        : 'Failed to load bills.'}
+                    </p>
+                    <button
+                      onClick={() => fetchBills(0, false)}
+                      className="text-sm text-[#9B7FA6] hover:text-[#8a6e95]"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : filtered.length === 0 ? (
                   <div className="bg-white rounded-xl border border-[#D6CFC4] p-12 text-center">
                     <p className="text-[#1C1C1A]/40 text-sm">No bills match your filters.</p>
                     <button
@@ -491,16 +527,30 @@ export default function BillsPage() {
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {filtered.map(bill => (
-                      <BillCard
-                        key={bill.id}
-                        bill={bill}
-                        tracked={trackedBills.has(bill.id)}
-                        onToggleTrack={() => toggleTrack(bill.id)}
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="space-y-4">
+                      {filtered.map(bill => (
+                        <BillCard
+                          key={bill.id}
+                          bill={bill}
+                          tracked={trackedBills.has(bill.id)}
+                          onToggleTrack={() => toggleTrack(bill.id)}
+                        />
+                      ))}
+                    </div>
+
+                    {hasMore && !hasFilters && (
+                      <div className="mt-6 text-center">
+                        <button
+                          onClick={loadMore}
+                          disabled={loadingMore}
+                          className="text-sm text-[#9B7FA6] hover:text-[#8a6e95] disabled:opacity-50 border border-[#9B7FA6]/30 rounded-lg px-5 py-2.5 hover:bg-[#9B7FA6]/5 transition-colors"
+                        >
+                          {loadingMore ? 'Loading…' : 'Load more bills'}
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -508,6 +558,17 @@ export default function BillsPage() {
           </div>
         </main>
       </div>
+
+      <SignInModal
+        isOpen={showSignIn}
+        onClose={() => setShowSignIn(false)}
+        onSwitchToSignUp={() => { setShowSignIn(false); setShowSignUp(true) }}
+      />
+      <SignUpModal
+        isOpen={showSignUp}
+        onClose={() => setShowSignUp(false)}
+        onSwitchToSignIn={() => { setShowSignUp(false); setShowSignIn(true) }}
+      />
     </div>
   )
 }

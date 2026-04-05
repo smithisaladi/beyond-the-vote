@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { SignInModal } from './SignInModal'
@@ -43,6 +43,7 @@ function getInitials(user: User): string {
 
 export function Navigation() {
   const router = useRouter()
+  const pathname = usePathname()
   const [user, setUser]         = useState<User | null>(null)
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
@@ -80,16 +81,19 @@ export function Navigation() {
 
           {/* Center nav links — desktop only */}
           <div className="hidden md:flex items-center gap-8">
-            {NAV_LINKS.map(({ href, label }) => (
-              <Link
-                key={label}
-                href={href}
-                className="text-sm text-[#1C1C1A]/70 hover:text-[#1C1C1A] relative group transition-colors"
-              >
-                {label}
-                <span className="absolute -bottom-[1px] left-0 w-0 h-[2px] bg-[#9B7FA6] group-hover:w-full transition-all duration-200" />
-              </Link>
-            ))}
+            {NAV_LINKS.map(({ href, label }) => {
+              const active = pathname === href
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  className={`text-sm relative group transition-colors ${active ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/70 hover:text-[#1C1C1A]'}`}
+                >
+                  {label}
+                  <span className={`absolute -bottom-[1px] left-0 h-[2px] bg-[#9B7FA6] transition-all duration-200 ${active ? 'w-full' : 'w-0 group-hover:w-full'}`} />
+                </Link>
+              )
+            })}
           </div>
 
           {/* Right side */}
@@ -148,16 +152,19 @@ export function Navigation() {
         {/* Mobile drawer */}
         {menuOpen && (
           <div className="md:hidden border-t border-[#D6CFC4] bg-[#F5F0E8] px-6 py-4 flex flex-col gap-1">
-            {NAV_LINKS.map(({ href, label }) => (
-              <Link
-                key={label}
-                href={href}
-                onClick={() => setMenuOpen(false)}
-                className="py-2.5 text-sm text-[#1C1C1A]/70 hover:text-[#1C1C1A] transition-colors border-b border-[#D6CFC4]/60 last:border-0"
-              >
-                {label}
-              </Link>
-            ))}
+            {NAV_LINKS.map(({ href, label }) => {
+              const active = pathname === href
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  onClick={() => setMenuOpen(false)}
+                  className={`py-2.5 text-sm transition-colors border-b border-[#D6CFC4]/60 last:border-0 ${active ? 'text-[#1C1C1A] font-medium' : 'text-[#1C1C1A]/70 hover:text-[#1C1C1A]'}`}
+                >
+                  {label}
+                </Link>
+              )
+            })}
             {user ? (
               <>
                 <Link

@@ -1,0 +1,122 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { ALL_TOPICS, topicToSlug, TOPIC_BILLS, type Topic } from '@/lib/topics'
+
+const LS_KEY = 'btb_topics'
+
+export function TopicFeed() {
+  const [topics, setTopics] = useState<Topic[]>([])
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (user) {
+        const { data } = await supabase
+          .from('topic_preferences')
+          .select('topic')
+          .eq('user_id', user.id)
+        if (data) {
+          const saved = data
+            .map((r: { topic: string }) => r.topic)
+            .filter((t: string) => ALL_TOPICS.includes(t as Topic)) as Topic[]
+          setTopics(saved)
+        }
+      } else {
+        try {
+          const raw = localStorage.getItem(LS_KEY)
+          if (raw) {
+            const saved = (JSON.parse(raw) as string[]).filter(t => ALL_TOPICS.includes(t as Topic)) as Topic[]
+            setTopics(saved)
+          }
+        } catch {}
+      }
+      setMounted(true)
+    }
+    load()
+  }, [])
+
+  if (!mounted || topics.length === 0) return null
+
+  // Collect up to 4 bills across followed topics
+  const feedItems: { topic: Topic; bill: { number: string; title: string; status: string } }[] = []
+  const seen = new Set<string>()
+  for (const topic of topics) {
+    for (const bill of TOPIC_BILLS[topic] ?? []) {
+      if (!seen.has(bill.number) && feedItems.length < 4) {
+        seen.add(bill.number)
+        feedItems.push({ topic, bill })
+      }
+    }
+  }
+
+  if (feedItems.length === 0) return null
+
+  return (
+    <section className="w-full border-t border-[rgba(28,28,26,0.08)] py-12 bg-[#F5F0E8]">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="flex items-baseline justify-between mb-6">
+          <div>
+            <h2 className="text-2xl text-[#1C1C1A] tracking-tight" style={{ fontFamily: 'var(--font-serif)' }}>
+              Your Topics
+            </h2>
+            <p className="text-sm text-[#1C1C1A]/50 mt-1">Recent activity on topics you follow.</p>
+          </div>
+          <Link href="/topics" className="text-sm text-[#9B7FA6] hover:text-[#8a6e95]">
+            Manage →
+          </Link>
+        </div>
+
+        {/* Topic chips */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          {topics.map(t => (
+            <Link
+              key={t}
+              href={`/topics/${topicToSlug(t)}`}
+              className="text-xs font-medium px-3 py-1.5 rounded-full bg-[#9B7FA6]/10 text-[#9B7FA6] border border-[#9B7FA6]/20 hover:bg-[#9B7FA6]/18 transition-colors"
+            >
+              {t}
+            </Link>
+          ))}
+        </div>
+
+        {/* Feed items */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {feedItems.map(({ topic, bill }, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-5 flex flex-col gap-3"
+            >
+              <div className="flex items-center gap-1.5">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9B7FA6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+                  <line x1="7" y1="7" x2="7.01" y2="7" />
+                </svg>
+                <span className="text-[10px] text-[#9B7FA6] font-medium truncate">Because you follow {topic}</span>
+              </div>
+              <div>
+                <p className="text-[11px] font-mono text-[#1C1C1A]/38 mb-1">{bill.number}</p>
+                <p className="text-sm text-[#1C1C1A] leading-snug" style={{ fontFamily: 'var(--font-serif)' }}>
+                  {bill.title}
+                </p>
+              </div>
+              <div className="mt-auto pt-1">
+                <Link
+                  href="/bills"
+                  className="text-xs text-[#9B7FA6]/70 hover:text-[#9B7FA6] transition-colors"
+                >
+                  View in Bills Tracker →
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}

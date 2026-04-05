@@ -1,40 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
+import type { User } from '@supabase/supabase-js'
 import { Navigation } from '@/components/Navigation'
-
-type Topic =
-  | 'Climate & Environment'
-  | 'Healthcare'
-  | 'Immigration'
-  | 'Gun Policy'
-  | 'Economy & Jobs'
-  | 'Education'
-  | 'Housing'
-  | 'Foreign Policy'
-  | 'Criminal Justice'
-  | 'Voting Rights'
-  | 'Tech & Privacy'
-  | 'Social Security'
+import { createClient } from '@/lib/supabase/client'
+import { ALL_TOPICS, topicToSlug, type Topic } from '@/lib/topics'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 type BillStatus = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
-
-const TOPICS: Topic[] = [
-  'Climate & Environment',
-  'Healthcare',
-  'Economy & Jobs',
-  'Education',
-  'Housing',
-  'Immigration',
-  'Tech & Privacy',
-  'Criminal Justice',
-  'Voting Rights',
-  'Social Security',
-  'Gun Policy',
-  'Foreign Policy',
-]
 
 const PARTY_STYLES: Record<Party, { bg: string; text: string }> = {
   Democrat:    { bg: 'bg-[#7B8FA8]/[0.12]', text: 'text-[#7B8FA8]' },
@@ -86,6 +60,8 @@ const MOCK_BILLS: {
   { id: 'b11', number: 'H.R. 4832',  title: 'Criminal Justice Reform Act',        status: 'Committee', topics: ['Criminal Justice'] },
   { id: 'b12', number: 'S. 2205',    title: 'Social Security Preservation Act',   status: 'Active',    topics: ['Social Security'] },
 ]
+
+const LS_KEY = 'btb_topics'
 
 function TopoBackground() {
   return (
@@ -139,7 +115,6 @@ function PoliticianMatchCard({ pol }: { pol: MatchedPolitician }) {
   return (
     <Link href={`/representatives/${pol.id}`} className="group block h-full">
       <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow h-full">
-        {/* Header */}
         <div className="flex items-start gap-3">
           <Initials name={pol.name} />
           <div className="flex-1 min-w-0">
@@ -154,12 +129,10 @@ function PoliticianMatchCard({ pol }: { pol: MatchedPolitician }) {
           </div>
         </div>
 
-        {/* Party badge */}
         <span className={`self-start text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
           {pol.party}
         </span>
 
-        {/* Matched topics */}
         <div className="border-t border-[rgba(28,28,26,0.06)] pt-3">
           <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-2">Matches</p>
           <div className="flex flex-wrap gap-1.5">
@@ -186,9 +159,14 @@ function BillMatchRow({ bill }: { bill: MatchedBill }) {
         </p>
         <div className="flex flex-wrap gap-1.5">
           {bill.matched.map(t => (
-            <span key={t} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#9B7FA6]/[0.10] text-[#9B7FA6]">
+            <Link
+              key={t}
+              href={`/topics/${topicToSlug(t)}`}
+              onClick={e => e.stopPropagation()}
+              className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-[#9B7FA6]/[0.10] text-[#9B7FA6] hover:bg-[#9B7FA6]/[0.18] transition-colors"
+            >
               {t}
-            </span>
+            </Link>
           ))}
         </div>
       </div>
@@ -201,9 +179,61 @@ function BillMatchRow({ bill }: { bill: MatchedBill }) {
 
 export default function TopicsPage() {
   const [selectedTopics, setSelectedTopics] = useState<Set<Topic>>(new Set())
+  const [user, setUser] = useState<User | null>(null)
+  const [loaded, setLoaded] = useState(false)
 
-  const toggle = (t: Topic) =>
-    setSelectedTopics(prev => { const n = new Set(prev); n.has(t) ? n.delete(t) : n.add(t); return n })
+  // Auth state
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Load saved topics on mount
+  useEffect(() => {
+    async function load() {
+      if (user) {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('topic_preferences')
+          .select('topic')
+          .eq('user_id', user.id)
+        if (data) {
+          setSelectedTopics(new Set(data.map((r: { topic: string }) => r.topic as Topic)))
+        }
+      } else {
+        try {
+          const raw = localStorage.getItem(LS_KEY)
+          if (raw) setSelectedTopics(new Set(JSON.parse(raw) as Topic[]))
+        } catch {}
+      }
+      setLoaded(true)
+    }
+    load()
+  }, [user])
+
+  const toggle = async (t: Topic) => {
+    const next = new Set(selectedTopics)
+    const isSelected = next.has(t)
+    isSelected ? next.delete(t) : next.add(t)
+    setSelectedTopics(next)
+
+    if (user) {
+      const supabase = createClient()
+      if (isSelected) {
+        await supabase.from('topic_preferences').delete().eq('user_id', user.id).eq('topic', t)
+      } else {
+        await supabase.from('topic_preferences').insert({ user_id: user.id, topic: t })
+      }
+    } else {
+      try {
+        localStorage.setItem(LS_KEY, JSON.stringify([...next]))
+      } catch {}
+    }
+  }
 
   const hasSelection = selectedTopics.size > 0
 
@@ -240,24 +270,45 @@ export default function TopicsPage() {
               </h1>
               <p className="text-[#1C1C1A]/60">
                 Select topics to personalize your feed and see aligned politicians.
+                {!user && loaded && (
+                  <span className="block text-xs text-[#1C1C1A]/38 mt-1">
+                    Your selections are saved locally. Sign in to sync across devices.
+                  </span>
+                )}
               </p>
             </div>
 
             {/* Topic pills */}
             <div className="flex flex-wrap gap-3 justify-center mb-6">
-              {TOPICS.map(topic => (
-                <button
-                  key={topic}
-                  onClick={() => toggle(topic)}
-                  className={`px-4 py-2 rounded-full text-sm border transition-colors ${
-                    selectedTopics.has(topic)
-                      ? 'bg-[#9B7FA6] border-[#9B7FA6] text-white'
-                      : 'bg-white border-[#D6CFC4] text-[#1C1C1A]/60 hover:border-[#9B7FA6]/60 hover:text-[#9B7FA6]'
-                  }`}
-                >
-                  {topic}
-                </button>
-              ))}
+              {ALL_TOPICS.map(topic => {
+                const selected = selectedTopics.has(topic)
+                return (
+                  <div key={topic} className="relative group">
+                    <button
+                      onClick={() => toggle(topic)}
+                      className={`px-4 py-2 rounded-full text-sm border transition-colors ${
+                        selected
+                          ? 'bg-[#9B7FA6] border-[#9B7FA6] text-white'
+                          : 'bg-white border-[#D6CFC4] text-[#1C1C1A]/60 hover:border-[#9B7FA6]/60 hover:text-[#9B7FA6]'
+                      }`}
+                    >
+                      {topic}
+                    </button>
+                    {selected && (
+                      <Link
+                        href={`/topics/${topicToSlug(topic)}`}
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-white border border-[#9B7FA6]/30 rounded-full flex items-center justify-center shadow-sm hover:bg-[#9B7FA6]/10 transition-colors"
+                        title={`Browse ${topic}`}
+                        aria-label={`Browse ${topic} topic page`}
+                      >
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#9B7FA6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M7 17L17 7M7 7h10v10" />
+                        </svg>
+                      </Link>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             {/* Selection count + clear */}
@@ -267,7 +318,14 @@ export default function TopicsPage() {
                   {selectedTopics.size} topic{selectedTopics.size !== 1 ? 's' : ''} selected
                 </span>
                 <button
-                  onClick={() => setSelectedTopics(new Set())}
+                  onClick={() => {
+                    setSelectedTopics(new Set())
+                    if (user) {
+                      createClient().from('topic_preferences').delete().eq('user_id', user.id)
+                    } else {
+                      try { localStorage.removeItem(LS_KEY) } catch {}
+                    }
+                  }}
                   className="text-[#9B7FA6] hover:underline underline-offset-2"
                 >
                   Clear all

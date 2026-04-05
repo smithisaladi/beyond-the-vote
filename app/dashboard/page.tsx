@@ -1,7 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { ALL_TOPICS, topicToSlug, TOPIC_BILLS, type Topic } from '@/lib/topics'
+import type { User } from '@supabase/supabase-js'
+
+const LS_KEY = 'btb_topics'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 type BillStatus = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
@@ -189,8 +194,66 @@ function IconBell() {
   )
 }
 
+// Builds a deduplicated list of {topic, bill} pairs from the user's followed topics
+function buildTopicFeedItems(topics: Topic[]) {
+  const items: { topic: Topic; bill: { number: string; title: string; status: string } }[] = []
+  const seen = new Set<string>()
+  for (const topic of topics) {
+    for (const bill of TOPIC_BILLS[topic] ?? []) {
+      const key = bill.number
+      if (!seen.has(key)) {
+        seen.add(key)
+        items.push({ topic, bill })
+      }
+    }
+  }
+  return items.slice(0, 6)
+}
+
 export default function DashboardPage() {
   const [notifCount, setNotifCount] = useState(3)
+  const [user, setUser] = useState<User | null>(null)
+  const [followedTopics, setFollowedTopics] = useState<Topic[]>([])
+
+  // Auth state
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // Load followed topics
+  useEffect(() => {
+    async function load() {
+      if (user) {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('topic_preferences')
+          .select('topic')
+          .eq('user_id', user.id)
+        if (data) {
+          const topics = data
+            .map((r: { topic: string }) => r.topic)
+            .filter((t: string) => ALL_TOPICS.includes(t as Topic)) as Topic[]
+          setFollowedTopics(topics)
+        }
+      } else {
+        try {
+          const raw = localStorage.getItem(LS_KEY)
+          if (raw) {
+            const saved = (JSON.parse(raw) as string[]).filter(t => ALL_TOPICS.includes(t as Topic)) as Topic[]
+            setFollowedTopics(saved)
+          }
+        } catch {}
+      }
+    }
+    load()
+  }, [user])
+
+  const topicFeedItems = buildTopicFeedItems(followedTopics)
 
   const navItems = [
     { label: 'Home',           href: '/',               icon: <IconHome />,      active: false },
@@ -198,7 +261,7 @@ export default function DashboardPage() {
     { label: 'Bills Tracker',  href: '/bills',           icon: <IconFileText />,  active: false },
     { label: 'Topics',         href: '/topics',          icon: <IconTag />,       active: false },
     { label: 'Values Match',   href: '/values-match',    icon: <IconScales />,    active: false },
-    { label: 'Settings',       href: '#',                icon: <IconSettings />,  active: false },
+    { label: 'Settings',       href: '/settings',        icon: <IconSettings />,  active: false },
   ]
 
   return (
@@ -234,7 +297,7 @@ export default function DashboardPage() {
           ))}
         </nav>
 
-        {/* Following summary */}
+        {/* Activity summary */}
         <div className="px-5 py-5 border-t border-[#C4BCB0]">
           <p className="text-[10px] text-[#1C1C1A]/40 uppercase tracking-widest mb-2">Activity</p>
           <div className="flex flex-col gap-1">
@@ -244,6 +307,11 @@ export default function DashboardPage() {
             <p className="text-xs text-[#1C1C1A]/60">
               <span className="text-[#9B7FA6] font-semibold">{MOCK_TRACKED_BILLS.length}</span> bills tracked
             </p>
+            {followedTopics.length > 0 && (
+              <p className="text-xs text-[#1C1C1A]/60">
+                <span className="text-[#9B7FA6] font-semibold">{followedTopics.length}</span> topics followed
+              </p>
+            )}
           </div>
         </div>
       </aside>
@@ -259,7 +327,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-5">
-            {/* Notification bell */}
             <button
               onClick={() => setNotifCount(0)}
               className="relative text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70 transition-colors"
@@ -273,7 +340,6 @@ export default function DashboardPage() {
               )}
             </button>
 
-            {/* User avatar */}
             <div className="flex items-center gap-2.5 cursor-pointer group">
               <div className="w-8 h-8 rounded-full bg-[#9B7FA6]/20 border border-[#9B7FA6]/30 flex items-center justify-center">
                 <span className="text-xs font-semibold text-[#9B7FA6]" style={{ fontFamily: 'var(--font-serif)' }}>JD</span>
@@ -301,7 +367,6 @@ export default function DashboardPage() {
                     <Link key={pol.id} href={`/representatives/${pol.id}`} className="group">
                       <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 flex flex-col gap-4 hover:shadow-sm transition-shadow h-full">
 
-                        {/* Header */}
                         <div className="flex items-start gap-3">
                           <Initials name={pol.name} />
                           <div className="flex-1 min-w-0">
@@ -319,12 +384,10 @@ export default function DashboardPage() {
                           )}
                         </div>
 
-                        {/* Party */}
                         <span className={`self-start text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
                           {pol.party}
                         </span>
 
-                        {/* Latest vote */}
                         <div className="border-t border-[rgba(28,28,26,0.06)] pt-3.5">
                           <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-2">Latest vote</p>
                           <div className="flex items-start gap-2">
@@ -346,6 +409,63 @@ export default function DashboardPage() {
               </div>
             </section>
 
+            {/* ── Personalized topic feed ── */}
+            {topicFeedItems.length > 0 && (
+              <section className="mb-10">
+                <div className="flex items-baseline justify-between mb-5">
+                  <div className="flex items-baseline gap-2.5">
+                    <h2 className="text-base text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Your Topics</h2>
+                    <span className="text-sm text-[#1C1C1A]/38">{followedTopics.length} followed</span>
+                  </div>
+                  <Link href="/topics" className="text-xs text-[#9B7FA6] hover:underline underline-offset-2">
+                    Manage topics →
+                  </Link>
+                </div>
+
+                {/* Followed topic chips */}
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {followedTopics.map(t => (
+                    <Link
+                      key={t}
+                      href={`/topics/${topicToSlug(t)}`}
+                      className="text-xs font-medium px-3 py-1 rounded-full bg-[#9B7FA6]/10 text-[#9B7FA6] hover:bg-[#9B7FA6]/18 transition-colors"
+                    >
+                      {t}
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Bills from followed topics */}
+                <div className="bg-white rounded-xl border border-[#D6CFC4] divide-y divide-[rgba(28,28,26,0.05)]">
+                  {topicFeedItems.map(({ topic, bill }, i) => {
+                    const s = STATUS_STYLES[bill.status as BillStatus] ?? STATUS_STYLES['Active']
+                    return (
+                      <div key={i} className="px-6 py-4">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9B7FA6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+                            <line x1="7" y1="7" x2="7.01" y2="7" />
+                          </svg>
+                          <span className="text-[10px] text-[#9B7FA6] font-medium">Because you follow {topic}</span>
+                        </div>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-mono text-[#1C1C1A]/38 mb-1">{bill.number}</p>
+                            <p className="text-sm text-[#1C1C1A] leading-snug" style={{ fontFamily: 'var(--font-serif)' }}>
+                              {bill.title}
+                            </p>
+                          </div>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>
+                            {bill.status}
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* ── Lower two-column ── */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_288px] gap-6">
 
@@ -364,7 +484,6 @@ export default function DashboardPage() {
                         idx < MOCK_ACTIVITY.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
                       }`}
                     >
-                      {/* Dot */}
                       <div className={`w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0 ${item.isAlert ? 'bg-[#B85C38]' : 'bg-[#9B7FA6]/50'}`} />
 
                       <div className="flex-1 min-w-0">
