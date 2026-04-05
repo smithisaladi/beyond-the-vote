@@ -33,6 +33,17 @@ function buildBillId(congress: number, type: string, number: number): string {
   return `${congress}-${type.toLowerCase()}-${number}`
 }
 
+function buildCongressGovUrl(congress: number, type: string, number: number): string {
+  const typeMap: Record<string, string> = {
+    hr: 'house-bill', s: 'senate-bill',
+    hjres: 'house-joint-resolution', sjres: 'senate-joint-resolution',
+    hconres: 'house-concurrent-resolution', sconres: 'senate-concurrent-resolution',
+    hres: 'house-resolution', sres: 'senate-resolution',
+  }
+  const slug = typeMap[type.toLowerCase()] ?? type.toLowerCase()
+  return `https://www.congress.gov/bill/${congress}th-congress/${slug}/${number}`
+}
+
 async function fetchPage(congress: number, offset: number): Promise<any[]> {
   const url =
     `${CONGRESS_BASE}/bill/${congress}?format=json` +
@@ -108,8 +119,16 @@ export async function syncBills(
             combined_text: combined,
             bill_number:   formatBillId(bill_id),
             status:        mapStatus(b.latestAction?.text, b.introducedDate),
-            topics:        classifyBillTopics(b.policyArea?.name, title, summary),
-            synced_at:     new Date().toISOString(),
+            topics:              classifyBillTopics(b.policyArea?.name, title, summary),
+            sponsor_name:        b.sponsors?.[0]?.fullName ?? null,
+            sponsor_bioguide_id: b.sponsors?.[0]?.bioguideId ?? null,
+            sponsor_party:       null, // not available in list endpoint
+            introduced_date:     b.introducedDate ?? null,
+            policy_area:         b.policyArea?.name ?? null,
+            congress_gov_url:    buildCongressGovUrl(b.congress, b.type, b.number),
+            last_action_text:    b.latestAction?.text ?? null,
+            last_action_date:    b.latestAction?.actionDate ?? null,
+            synced_at:           new Date().toISOString(),
           }
         })
     )
