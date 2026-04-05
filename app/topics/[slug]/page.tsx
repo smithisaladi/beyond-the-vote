@@ -1,14 +1,11 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
-import { useRouter } from 'next/navigation'
+import { use } from 'react'
 import Link from 'next/link'
-import type { User } from '@supabase/supabase-js'
 import { Navigation } from '@/components/Navigation'
-import { createClient } from '@/lib/supabase/client'
-import { slugToTopic, topicToSlug, TOPIC_BILLS, TOPIC_POLITICIANS, ALL_TOPICS, type Topic } from '@/lib/topics'
-
-const LS_KEY = 'btb_topics'
+import { slugToTopic, topicToSlug, TOPIC_BILLS, TOPIC_POLITICIANS, ALL_TOPICS } from '@/lib/topics'
+import { useAuth } from '@/hooks/useAuth'
+import { useTopicPreferences } from '@/hooks/useTopicPreferences'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 
@@ -74,73 +71,13 @@ function Initials({ name }: { name: string }) {
 
 export default function TopicDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const router = useRouter()
   const topic = slugToTopic(slug)
 
-  const [user, setUser] = useState<User | null>(null)
-  const [following, setFollowing] = useState(false)
-  const [followLoading, setFollowLoading] = useState(false)
+  const { user } = useAuth()
+  const { selectedTopics, toggle } = useTopicPreferences(user)
 
-  // Auth state
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  // Load follow state for this topic
-  useEffect(() => {
-    if (!topic) return
-    async function load() {
-      if (user) {
-        const supabase = createClient()
-        const { data } = await supabase
-          .from('topic_preferences')
-          .select('topic')
-          .eq('user_id', user.id)
-          .eq('topic', topic)
-          .maybeSingle()
-        setFollowing(!!data)
-      } else {
-        try {
-          const raw = localStorage.getItem(LS_KEY)
-          if (raw) {
-            const saved: string[] = JSON.parse(raw)
-            setFollowing(saved.includes(topic!))
-          }
-        } catch {}
-      }
-    }
-    load()
-  }, [user, topic])
-
-  const handleFollow = async () => {
-    if (!topic) return
-    const next = !following
-    setFollowing(next)
-    setFollowLoading(true)
-
-    if (user) {
-      const supabase = createClient()
-      const { error } = next
-        ? await supabase.from('topic_preferences').insert({ user_id: user.id, topic })
-        : await supabase.from('topic_preferences').delete().eq('user_id', user.id).eq('topic', topic)
-      if (error) setFollowing(!next)
-    } else {
-      try {
-        const raw = localStorage.getItem(LS_KEY)
-        const saved: string[] = raw ? JSON.parse(raw) : []
-        const updated = next ? [...new Set([...saved, topic])] : saved.filter(t => t !== topic)
-        localStorage.setItem(LS_KEY, JSON.stringify(updated))
-      } catch {
-        setFollowing(!next)
-      }
-    }
-    setFollowLoading(false)
-  }
+  const following = topic ? selectedTopics.has(topic) : false
+  const handleFollow = () => { if (topic) toggle(topic) }
 
   if (!topic) {
     return (
@@ -208,7 +145,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ slug: st
 
                 <button
                   onClick={handleFollow}
-                  disabled={followLoading}
+                  disabled={false}
                   className={`inline-flex items-center gap-2 text-sm font-medium rounded-lg px-4 py-2 transition-colors flex-shrink-0 ${
                     following
                       ? 'bg-[#9B7FA6]/10 text-[#9B7FA6] hover:bg-[#9B7FA6]/15'
