@@ -1,27 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Navigation } from '@/components/Navigation'
 import { RepresentativeCard } from '@/components/RepresentativeCard'
-
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
-
-type Party = 'Democrat' | 'Republican' | 'Independent'
-
-type Representative = {
-  id: string
-  bioguideId: string | null
-  name: string
-  title: string
-  party: Party
-  state: string
-  district?: string
-  photo: string | null
-  since: string | null
-  website: string | null
-  phone: string | null
-}
+import { useMapboxAutocomplete } from '@/hooks/useMapboxAutocomplete'
+import { useFetchRepresentatives } from '@/hooks/useFetchRepresentatives'
 
 function TopoBackground() {
   return (
@@ -61,13 +45,6 @@ function RepresentativesContent() {
   const addressParam = searchParams.get('address') ?? ''
 
   const [address, setAddress] = useState(addressParam)
-  const [suggestions, setSuggestions] = useState<string[]>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
-  const [representatives, setRepresentatives] = useState<Representative[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const suggestionsRef = useRef<HTMLDivElement>(null)
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const hasResults = addressParam.length > 0
 
@@ -76,62 +53,14 @@ function RepresentativesContent() {
     setAddress(addressParam)
   }, [addressParam])
 
-  // Fetch representatives when address param changes
-  useEffect(() => {
-    if (!addressParam) return
-    setLoading(true)
-    setError('')
-    fetch(`/api/representatives?address=${encodeURIComponent(addressParam)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setError(data.error)
-          setRepresentatives([])
-        } else {
-          setRepresentatives(data.representatives ?? [])
-        }
-      })
-      .catch(() => setError('Failed to load representatives'))
-      .finally(() => setLoading(false))
-  }, [addressParam])
-
-  // Mapbox address autocomplete
-  useEffect(() => {
-    if (!MAPBOX_TOKEN || address.length < 3) {
-      setSuggestions([])
-      return
-    }
-
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&country=US&types=address,postcode,place&autocomplete=true&limit=5`
-        )
-        if (!res.ok) return
-        const data = await res.json()
-        setSuggestions((data.features ?? []).map((f: any) => f.place_name as string))
-        setShowSuggestions(true)
-      } catch {}
-    }, 300)
-
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [address])
-
-  // Close suggestions on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
+  const { representatives, loading, error } = useFetchRepresentatives(addressParam)
+  const {
+    suggestions, showSuggestions, setShowSuggestions, clearSuggestions, containerRef,
+  } = useMapboxAutocomplete(address)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setShowSuggestions(false)
+    clearSuggestions()
     if (address.trim()) {
       router.push(`/representatives?address=${encodeURIComponent(address.trim())}`)
     }
@@ -139,7 +68,7 @@ function RepresentativesContent() {
 
   const handleSelectSuggestion = (suggestion: string) => {
     setAddress(suggestion)
-    setShowSuggestions(false)
+    clearSuggestions()
     router.push(`/representatives?address=${encodeURIComponent(suggestion)}`)
   }
 
@@ -167,7 +96,7 @@ function RepresentativesContent() {
               </div>
             )}
 
-            <div className="relative" ref={suggestionsRef}>
+            <div className="relative" ref={containerRef}>
               <form onSubmit={handleSubmit}>
                 <div className="flex gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] p-2 shadow-sm">
                   <input
