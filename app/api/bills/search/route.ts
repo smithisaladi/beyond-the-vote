@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getEmbedding } from '@/lib/embeddings'
 
 export const revalidate = 300
 
@@ -21,25 +20,17 @@ export async function GET(req: NextRequest) {
   const congress = congressParam ? parseInt(congressParam, 10) : null
 
   try {
-    const embedding = await getEmbedding(q)
     const supabase = await createClient()
 
-    const { data, error } = await supabase.rpc('search_bills', {
-      query_embedding: JSON.stringify(embedding),
-      match_count: congress ? 50 : limit,
-      match_threshold: 0.3,
+    const { data, error } = await supabase.rpc('search_bills_text', {
+      query_text:      q,
+      match_count:     limit,
+      congress_filter: congress,
     })
 
     if (error) throw new Error(error.message)
 
-    let results = data ?? []
-
-    if (congress) {
-      results = results
-        .filter((r: { congress: number }) => r.congress === congress)
-        .slice(0, limit)
-    }
-
+    const results = data ?? []
     return NextResponse.json({ query: q, results, count: results.length })
   } catch (err) {
     console.error('[api/bills/search]', err)
