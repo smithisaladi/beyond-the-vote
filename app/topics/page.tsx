@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
-import type { User } from '@supabase/supabase-js'
 import { Navigation } from '@/components/Navigation'
-import { createClient } from '@/lib/supabase/client'
 import { ALL_TOPICS, topicToSlug, type Topic } from '@/lib/topics'
+import { useAuth } from '@/hooks/useAuth'
+import { useTopicPreferences } from '@/hooks/useTopicPreferences'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 type BillStatus = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
@@ -61,7 +61,6 @@ const MOCK_BILLS: {
   { id: 'b12', number: 'S. 2205',    title: 'Social Security Preservation Act',   status: 'Active',    topics: ['Social Security'] },
 ]
 
-const LS_KEY = 'btb_topics'
 
 function TopoBackground() {
   return (
@@ -178,62 +177,8 @@ function BillMatchRow({ bill }: { bill: MatchedBill }) {
 }
 
 export default function TopicsPage() {
-  const [selectedTopics, setSelectedTopics] = useState<Set<Topic>>(new Set())
-  const [user, setUser] = useState<User | null>(null)
-  const [loaded, setLoaded] = useState(false)
-
-  // Auth state
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  // Load saved topics on mount
-  useEffect(() => {
-    async function load() {
-      if (user) {
-        const supabase = createClient()
-        const { data } = await supabase
-          .from('topic_preferences')
-          .select('topic')
-          .eq('user_id', user.id)
-        if (data) {
-          setSelectedTopics(new Set(data.map((r: { topic: string }) => r.topic as Topic)))
-        }
-      } else {
-        try {
-          const raw = localStorage.getItem(LS_KEY)
-          if (raw) setSelectedTopics(new Set(JSON.parse(raw) as Topic[]))
-        } catch {}
-      }
-      setLoaded(true)
-    }
-    load()
-  }, [user])
-
-  const toggle = async (t: Topic) => {
-    const next = new Set(selectedTopics)
-    const isSelected = next.has(t)
-    isSelected ? next.delete(t) : next.add(t)
-    setSelectedTopics(next)
-
-    if (user) {
-      const supabase = createClient()
-      if (isSelected) {
-        await supabase.from('topic_preferences').delete().eq('user_id', user.id).eq('topic', t)
-      } else {
-        await supabase.from('topic_preferences').insert({ user_id: user.id, topic: t })
-      }
-    } else {
-      try {
-        localStorage.setItem(LS_KEY, JSON.stringify([...next]))
-      } catch {}
-    }
-  }
+  const { user } = useAuth()
+  const { selectedTopics, toggle, clearAll, loaded } = useTopicPreferences(user)
 
   const hasSelection = selectedTopics.size > 0
 
@@ -318,14 +263,7 @@ export default function TopicsPage() {
                   {selectedTopics.size} topic{selectedTopics.size !== 1 ? 's' : ''} selected
                 </span>
                 <button
-                  onClick={() => {
-                    setSelectedTopics(new Set())
-                    if (user) {
-                      createClient().from('topic_preferences').delete().eq('user_id', user.id)
-                    } else {
-                      try { localStorage.removeItem(LS_KEY) } catch {}
-                    }
-                  }}
+                  onClick={clearAll}
                   className="text-[#9B7FA6] hover:underline underline-offset-2"
                 >
                   Clear all
