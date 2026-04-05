@@ -14,6 +14,9 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { mapStatus, formatBillId } from '@/lib/bills'
 import { classifyBillTopics } from '@/lib/topics'
+import { fetchBillTextXml, extractTextFromBillXml } from './lib/fetch-bill-text'
+import { extractAgencies } from './lib/federal-agencies'
+import { extractCitations } from './lib/parse-citations'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
@@ -107,10 +110,27 @@ export async function syncBills(
       batch
         .filter((b: any) => b.congress && b.type && b.number && b.title)
         .map(async (b: any) => {
-          const summary = await fetchSummary(b.congress, b.type, b.number)
+          const [summary, billXml] = await Promise.all([
+            fetchSummary(b.congress, b.type, b.number),
+            fetchBillTextXml(b.congress, b.type, b.number),
+          ])
+
           const title = (b.title as string).slice(0, 1000)
           const combined = summary ? `${title}. ${summary}` : title
           const bill_id = buildBillId(b.congress, b.type, b.number)
+
+          let referenced_agencies: string[] = []
+          let referenced_laws: string[] = []
+          let referenced_usc: string[] = []
+
+          if (billXml) {
+            const fullText = extractTextFromBillXml(billXml)
+            referenced_agencies = extractAgencies(fullText)
+            const citations = extractCitations(fullText)
+            referenced_laws = [...citations.actNames, ...citations.publicLaws]
+            referenced_usc = citations.uscSections
+          }
+
           return {
             bill_id,
             congress:      b.congress as number,
@@ -119,7 +139,7 @@ export async function syncBills(
             combined_text: combined,
             bill_number:   formatBillId(bill_id),
             status:        mapStatus(b.latestAction?.text, b.introducedDate),
-            topics:              classifyBillTopics(b.policyArea?.name, title, summary),
+            topics:              classifyBillTopics(b.policyArea?.name, title, summary, referenced_agencies),
             sponsor_name:        b.sponsors?.[0]?.fullName ?? null,
             sponsor_bioguide_id: b.sponsors?.[0]?.bioguideId ?? null,
             sponsor_party:       null, // not available in list endpoint
@@ -128,6 +148,9 @@ export async function syncBills(
             congress_gov_url:    buildCongressGovUrl(b.congress, b.type, b.number),
             last_action_text:    b.latestAction?.text ?? null,
             last_action_date:    b.latestAction?.actionDate ?? null,
+            referenced_agencies,
+            referenced_laws,
+            referenced_usc,
             synced_at:           new Date().toISOString(),
           }
         })
