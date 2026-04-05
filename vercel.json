@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/sync-legislators", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/sync-voteview",    "schedule": "0 6 * * *" },
+    { "path": "/api/cron/sync-bill-votes",  "schedule": "0 * * * 1-5" }
+  ]
+}
