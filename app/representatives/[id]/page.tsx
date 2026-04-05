@@ -393,7 +393,7 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
 
                     {/* Votes */}
                     {activeTab === 'votes' && (
-                      politician.votes.length === 0 ? (
+                      (politician.votes?.length ?? 0) === 0 ? (
                         <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">No recent votes found.</p>
                       ) : politician.votes.map(v => (
                         <div key={v.id} className="flex items-center justify-between px-6 py-4">
@@ -412,7 +412,7 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
 
                     {/* Bills */}
                     {activeTab === 'bills' && (
-                      politician.bills.length === 0 ? (
+                      (politician.bills?.length ?? 0) === 0 ? (
                         <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">No sponsored bills found.</p>
                       ) : politician.bills.map(b => (
                         <div key={b.id} className="flex items-center justify-between px-6 py-4">
@@ -429,7 +429,7 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
 
                     {/* Donors */}
                     {activeTab === 'donors' && (
-                      politician.donors.length === 0 ? (
+                      (politician.donors?.length ?? 0) === 0 ? (
                         <div className="px-6 py-8 text-center">
                           <p className="text-sm text-[#1C1C1A]/40 mb-2">Donor data unavailable.</p>
                           {politician.fecUrl && (
