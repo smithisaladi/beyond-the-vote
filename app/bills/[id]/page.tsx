@@ -3,11 +3,11 @@
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { User } from '@supabase/supabase-js'
 import { Navigation } from '@/components/Navigation'
 import { SignInModal } from '@/components/SignInModal'
 import { SignUpModal } from '@/components/SignUpModal'
-import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+import { useTrackedBills } from '@/hooks/useTrackedBills'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -191,23 +191,13 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   const [bill, setBill] = useState<BillDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-
-  const [user, setUser] = useState<User | null>(null)
-  const [tracked, setTracked] = useState(false)
-  const [trackLoading, setTrackLoading] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
   const [showAllCosponsors, setShowAllCosponsors] = useState(false)
 
-  // Auth state
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
+  const { user } = useAuth()
+  const { trackedBills, toggleTrack } = useTrackedBills(user?.id ?? null)
+  const tracked = trackedBills.has(id)
 
   // Fetch bill
   useEffect(() => {
@@ -223,35 +213,12 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
       .finally(() => setLoading(false))
   }, [id])
 
-  // Check track state
-  useEffect(() => {
-    if (!user) { setTracked(false); return }
-    const supabase = createClient()
-    supabase
-      .from('tracked_bills')
-      .select('bill_id')
-      .eq('user_id', user.id)
-      .eq('bill_id', id)
-      .maybeSingle()
-      .then(({ data }) => setTracked(!!data))
-  }, [user, id])
-
-  const handleTrack = async () => {
+  const handleTrack = () => {
     if (!user) {
       setShowSignIn(true)
       return
     }
-    const supabase = createClient()
-    const next = !tracked
-    setTracked(next) // optimistic
-    setTrackLoading(true)
-
-    const { error } = next
-      ? await supabase.from('tracked_bills').insert({ user_id: user.id, bill_id: id })
-      : await supabase.from('tracked_bills').delete().eq('user_id', user.id).eq('bill_id', id)
-
-    if (error) setTracked(!next) // revert on failure
-    setTrackLoading(false)
+    toggleTrack(id)
   }
 
   const formatDate = (dateStr: string) => {
@@ -366,7 +333,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                     </a>
                     <button
                       onClick={handleTrack}
-                      disabled={trackLoading}
+                      disabled={false}
                       aria-label={tracked ? 'Stop tracking this bill' : 'Track this bill'}
                       className={`inline-flex items-center gap-2 text-xs font-medium rounded-lg px-3 py-2 transition-colors ${
                         tracked
