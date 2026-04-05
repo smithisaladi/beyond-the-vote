@@ -71,7 +71,7 @@ export async function GET(
     supabase
       .from('bill_vote_summaries')
       .select(`
-        id, chamber, date, question, result, required,
+        id, chamber, date, title, question, result, required,
         yea_total, nay_total, present_total, not_voting_total,
         yea_democrat, nay_democrat, yea_republican, nay_republican,
         yea_independent, nay_independent, source_url,
@@ -114,7 +114,7 @@ export async function GET(
         id:       v.id,
         date:     v.date,
         chamber:  v.chamber,
-        question: v.question,
+        question: v.title ?? v.question,
         result:   v.result,
         required: v.required ?? null,
         yeas:     v.yea_total,
