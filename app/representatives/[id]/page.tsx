@@ -181,6 +181,7 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('votes')
+  const [photoError, setPhotoError] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
 
@@ -195,6 +196,7 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
   useEffect(() => {
     setLoading(true)
     setError(null)
+    setPhotoError(false)
     fetch(`/api/politicians/${id}`)
       .then(async (res) => {
         const data = await res.json()
@@ -243,8 +245,8 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
               {/* Hero card */}
               <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 sm:p-8">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-                  {politician.photo
-                    ? <img src={politician.photo} alt={politician.name} className="w-24 h-24 rounded-full object-cover flex-shrink-0" />
+                  {politician.photo && !photoError
+                    ? <img src={politician.photo} alt={politician.name} className="w-24 h-24 rounded-full object-cover flex-shrink-0" onError={() => setPhotoError(true)} />
                     : <Initials name={politician.name} />
                   }
 
@@ -377,8 +379,8 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
                         <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">No sponsored bills found.</p>
                       ) : politician.bills.map(b => (
                         <div key={b.id} className="flex items-center justify-between px-6 py-4">
-                          <div>
-                            <p className="text-sm text-[#1C1C1A]">{b.name}</p>
+                          <div className="min-w-0 flex-1 mr-4">
+                            <p className="text-sm text-[#1C1C1A] line-clamp-2" title={b.name}>{b.name}</p>
                             <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{b.number} · {b.date}</p>
                           </div>
                           <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${BILL_STATUS_STYLES[b.status].bg} ${BILL_STATUS_STYLES[b.status].text}`}>
