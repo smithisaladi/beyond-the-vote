@@ -25,93 +25,32 @@ const STATUS_STYLES: Record<BillStatus, { bg: string; text: string }> = {
   Failed:    { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
 }
 
-const MOCK_FOLLOWING = [
-  {
-    id: '1',
-    name: 'Margaret Chen',
-    title: 'U.S. Senator',
-    party: 'Democrat' as Party,
-    state: 'California',
-    latestVote: { bill: 'Infrastructure Investment Act', date: 'Mar 15, 2025', vote: 'Yea' as const },
-    alert: false,
-  },
-  {
-    id: '2',
-    name: 'Robert Harmon',
-    title: 'U.S. Senator',
-    party: 'Republican' as Party,
-    state: 'California',
-    latestVote: { bill: 'Defense Appropriations Act', date: 'Feb 10, 2025', vote: 'Yea' as const },
-    alert: false,
-  },
-  {
-    id: '3',
-    name: 'Diana Reyes',
-    title: 'U.S. Representative',
-    party: 'Democrat' as Party,
-    state: 'California',
-    latestVote: { bill: 'Digital Privacy Protection Act', date: 'Jan 22, 2025', vote: 'Nay' as const },
-    alert: true,
-  },
-]
+type FollowedPolitician = {
+  id: string
+  name: string
+  title: string
+  party: Party
+  state: string
+  latestVote: { bill: string; date: string; vote: 'Yea' | 'Nay' } | null
+}
 
-const MOCK_ACTIVITY = [
-  {
-    id: 'a1',
-    politician: 'Sen. Margaret Chen',
-    action: 'voted Yea on',
-    subject: 'Infrastructure Investment Act',
-    date: 'Mar 15, 2025',
-    isAlert: false,
-  },
-  {
-    id: 'a2',
-    politician: null,
-    action: 'Status updated to Active —',
-    subject: 'Clean Energy Transition Act (S. 1247)',
-    date: 'Mar 18, 2025',
-    isAlert: false,
-  },
-  {
-    id: 'a3',
-    politician: 'Rep. Diana Reyes',
-    action: 'voted Nay on',
-    subject: 'Digital Privacy Protection Act',
-    date: 'Jan 22, 2025',
-    isAlert: true,
-  },
-  {
-    id: 'a4',
-    politician: null,
-    action: 'Passed committee —',
-    subject: 'Universal Pre-K Funding Act (H.R. 4401)',
-    date: 'Mar 5, 2025',
-    isAlert: false,
-  },
-  {
-    id: 'a5',
-    politician: 'Sen. Robert Harmon',
-    action: 'voted Yea on',
-    subject: 'Defense Appropriations Act',
-    date: 'Feb 10, 2025',
-    isAlert: false,
-  },
-  {
-    id: 'a6',
-    politician: null,
-    action: 'Stalled in committee —',
-    subject: 'Affordable Housing Development Act (S. 892)',
-    date: 'Jan 30, 2025',
-    isAlert: true,
-  },
-]
+type TrackedBill = {
+  id: string
+  number: string
+  title: string
+  status: BillStatus
+  lastAction: string
+  category: string
+}
 
-const MOCK_TRACKED_BILLS = [
-  { id: 'tb1', number: 'S. 1247',  title: 'Clean Energy Transition Act',         status: 'Active' as BillStatus,    lastAction: 'Mar 18, 2025', category: 'Environment' },
-  { id: 'tb2', number: 'H.R. 4401', title: 'Universal Pre-K Funding Act',          status: 'Committee' as BillStatus, lastAction: 'Mar 5, 2025',  category: 'Education'   },
-  { id: 'tb3', number: 'S. 892',   title: 'Affordable Housing Development Act',   status: 'Stalled' as BillStatus,   lastAction: 'Jan 30, 2025', category: 'Housing'     },
-  { id: 'tb4', number: 'H.R. 3892', title: 'Small Business Tax Relief Act',        status: 'Committee' as BillStatus, lastAction: 'Mar 12, 2025', category: 'Economy'     },
-]
+type ActivityItem = {
+  id: string
+  politician: string | null
+  action: string
+  subject: string
+  date: string
+  isAlert: boolean
+}
 
 function Initials({ name }: { name: string }) {
   const parts = name.trim().split(' ')
@@ -194,7 +133,6 @@ function IconBell() {
   )
 }
 
-// Builds a deduplicated list of {topic, bill} pairs from the user's followed topics
 function buildTopicFeedItems(topics: Topic[]) {
   const items: { topic: Topic; bill: { number: string; title: string; status: string } }[] = []
   const seen = new Set<string>()
@@ -210,10 +148,55 @@ function buildTopicFeedItems(topics: Topic[]) {
   return items.slice(0, 6)
 }
 
+function SkeletonCard() {
+  return (
+    <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 animate-pulse">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-11 h-11 rounded-full bg-[#E8E3DA] flex-shrink-0" />
+        <div className="flex-1 space-y-2 pt-1">
+          <div className="h-3.5 bg-[#E8E3DA] rounded w-3/4" />
+          <div className="h-3 bg-[#E8E3DA] rounded w-1/2" />
+        </div>
+      </div>
+      <div className="h-3 bg-[#E8E3DA] rounded w-1/4 mb-4" />
+      <div className="border-t border-[rgba(28,28,26,0.06)] pt-3.5 space-y-2">
+        <div className="h-2.5 bg-[#E8E3DA] rounded w-1/3" />
+        <div className="h-3 bg-[#E8E3DA] rounded w-full" />
+      </div>
+    </div>
+  )
+}
+
+function EmptyState({ message, href, linkLabel }: { message: string; href: string; linkLabel: string }) {
+  return (
+    <div className="bg-white rounded-xl border border-[#D6CFC4] px-6 py-10 text-center">
+      <p className="text-sm text-[#1C1C1A]/45 mb-3">{message}</p>
+      <Link href={href} className="text-sm text-[#9B7FA6] hover:underline underline-offset-2">
+        {linkLabel}
+      </Link>
+    </div>
+  )
+}
+
+function getInitials(user: User): string {
+  const name = user.user_metadata?.full_name as string | undefined
+  if (name) {
+    const parts = name.trim().split(/\s+/)
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0][0].toUpperCase()
+  }
+  return (user.email?.[0] ?? '?').toUpperCase()
+}
+
 export default function DashboardPage() {
-  const [notifCount, setNotifCount] = useState(3)
   const [user, setUser] = useState<User | null>(null)
   const [followedTopics, setFollowedTopics] = useState<Topic[]>([])
+  const [politicians, setPoliticians] = useState<FollowedPolitician[]>([])
+  const [trackedBills, setTrackedBills] = useState<TrackedBill[]>([])
+  const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([])
+  const [loadingPoliticians, setLoadingPoliticians] = useState(true)
+  const [loadingBills, setLoadingBills] = useState(true)
 
   // Auth state
   useEffect(() => {
@@ -250,6 +233,128 @@ export default function DashboardPage() {
         } catch {}
       }
     }
+    load()
+  }, [user])
+
+  // Load followed politicians
+  useEffect(() => {
+    if (!user) { setLoadingPoliticians(false); return }
+
+    async function load() {
+      setLoadingPoliticians(true)
+      const supabase = createClient()
+      const { data: rows } = await supabase
+        .from('followed_politicians')
+        .select('politician_id')
+        .eq('user_id', user!.id)
+
+      if (!rows || rows.length === 0) {
+        setPoliticians([])
+        setLoadingPoliticians(false)
+        return
+      }
+
+      const results = await Promise.allSettled(
+        rows.map((r: { politician_id: string }) =>
+          fetch(`/api/politicians/${r.politician_id}`).then(res => res.ok ? res.json() : null)
+        )
+      )
+
+      const pols: FollowedPolitician[] = []
+      const activity: ActivityItem[] = []
+
+      results.forEach((result) => {
+        if (result.status !== 'fulfilled' || !result.value?.politician) return
+        const p = result.value.politician
+        const latestVote = p.votes?.[0] ?? null
+        pols.push({
+          id: p.id,
+          name: p.name,
+          title: p.title,
+          party: p.party,
+          state: p.state,
+          latestVote: latestVote
+            ? { bill: latestVote.bill, date: latestVote.date, vote: latestVote.vote }
+            : null,
+        })
+        if (latestVote) {
+          activity.push({
+            id: `vote-${p.id}`,
+            politician: p.name,
+            action: `voted ${latestVote.vote} on`,
+            subject: latestVote.bill,
+            date: latestVote.date,
+            isAlert: false,
+          })
+        }
+      })
+
+      setPoliticians(pols)
+      setActivityFeed(prev => mergeActivity(prev, activity))
+      setLoadingPoliticians(false)
+    }
+
+    load()
+  }, [user])
+
+  // Load tracked bills
+  useEffect(() => {
+    if (!user) { setLoadingBills(false); return }
+
+    async function load() {
+      setLoadingBills(true)
+      const supabase = createClient()
+      const { data: rows } = await supabase
+        .from('tracked_bills')
+        .select('bill_id')
+        .eq('user_id', user!.id)
+
+      if (!rows || rows.length === 0) {
+        setTrackedBills([])
+        setLoadingBills(false)
+        return
+      }
+
+      const results = await Promise.allSettled(
+        rows.map((r: { bill_id: string }) =>
+          fetch(`/api/bills/${r.bill_id}`).then(res => res.ok ? res.json() : null)
+        )
+      )
+
+      const bills: TrackedBill[] = []
+      const activity: ActivityItem[] = []
+
+      results.forEach((result) => {
+        if (result.status !== 'fulfilled' || !result.value?.bill) return
+        const b = result.value.bill
+        const lastActionDate = b.actions?.[0]?.date
+          ? new Date(b.actions[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : ''
+        bills.push({
+          id: b.id,
+          number: b.number,
+          title: b.title,
+          status: b.status,
+          lastAction: lastActionDate,
+          category: b.policyArea ?? '',
+        })
+        if (b.actions?.[0]) {
+          activity.push({
+            id: `bill-${b.id}`,
+            politician: null,
+            action: b.actions[0].text,
+            subject: b.title,
+            date: lastActionDate,
+            isAlert: b.status === 'Stalled' || b.status === 'Failed',
+          })
+        }
+      })
+
+      setTrackedBills(bills)
+      setActivityFeed(prev => mergeActivity(prev, activity))
+      setLoadingBills(false)
+    }
+
     load()
   }, [user])
 
@@ -302,10 +407,10 @@ export default function DashboardPage() {
           <p className="text-[10px] text-[#1C1C1A]/40 uppercase tracking-widest mb-2">Activity</p>
           <div className="flex flex-col gap-1">
             <p className="text-xs text-[#1C1C1A]/60">
-              <span className="text-[#9B7FA6] font-semibold">{MOCK_FOLLOWING.length}</span> politicians followed
+              <span className="text-[#9B7FA6] font-semibold">{politicians.length}</span> politicians followed
             </p>
             <p className="text-xs text-[#1C1C1A]/60">
-              <span className="text-[#9B7FA6] font-semibold">{MOCK_TRACKED_BILLS.length}</span> bills tracked
+              <span className="text-[#9B7FA6] font-semibold">{trackedBills.length}</span> bills tracked
             </p>
             {followedTopics.length > 0 && (
               <p className="text-xs text-[#1C1C1A]/60">
@@ -323,29 +428,28 @@ export default function DashboardPage() {
         <header className="sticky top-0 z-10 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] min-h-[64px] px-8 flex items-center justify-between">
           <div>
             <h1 className="text-xl text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Dashboard</h1>
-            <p className="text-[11px] text-[#1C1C1A]/38 mt-0.5">Friday, April 4, 2026</p>
           </div>
 
           <div className="flex items-center gap-5">
             <button
-              onClick={() => setNotifCount(0)}
               className="relative text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70 transition-colors"
               aria-label="Notifications"
             >
               <IconBell />
-              {notifCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-[17px] h-[17px] bg-[#B85C38] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-                  {notifCount}
-                </span>
-              )}
             </button>
 
-            <div className="flex items-center gap-2.5 cursor-pointer group">
-              <div className="w-8 h-8 rounded-full bg-[#9B7FA6]/20 border border-[#9B7FA6]/30 flex items-center justify-center">
-                <span className="text-xs font-semibold text-[#9B7FA6]" style={{ fontFamily: 'var(--font-serif)' }}>JD</span>
+            {user && (
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-[#9B7FA6]/20 border border-[#9B7FA6]/30 flex items-center justify-center">
+                  <span className="text-xs font-semibold text-[#9B7FA6]" style={{ fontFamily: 'var(--font-serif)' }}>
+                    {getInitials(user)}
+                  </span>
+                </div>
+                <span className="text-sm text-[#1C1C1A]/60">
+                  {user.user_metadata?.full_name ?? user.email}
+                </span>
               </div>
-              <span className="text-sm text-[#1C1C1A]/60 group-hover:text-[#1C1C1A] transition-colors">Jane Doe</span>
-            </div>
+            )}
           </div>
         </header>
 
@@ -357,56 +461,71 @@ export default function DashboardPage() {
             <section className="mb-10">
               <div className="flex items-baseline gap-2.5 mb-5">
                 <h2 className="text-base text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Following</h2>
-                <span className="text-sm text-[#1C1C1A]/38">{MOCK_FOLLOWING.length} politicians</span>
+                {!loadingPoliticians && (
+                  <span className="text-sm text-[#1C1C1A]/38">{politicians.length} politicians</span>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {MOCK_FOLLOWING.map((pol) => {
-                  const badge = PARTY_STYLES[pol.party]
-                  return (
-                    <Link key={pol.id} href={`/representatives/${pol.id}`} className="group">
-                      <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 flex flex-col gap-4 hover:shadow-sm transition-shadow h-full">
+              {loadingPoliticians ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <SkeletonCard />
+                  <SkeletonCard />
+                  <SkeletonCard />
+                </div>
+              ) : politicians.length === 0 ? (
+                <EmptyState
+                  message="You haven't followed any politicians yet."
+                  href="/representatives"
+                  linkLabel="Find your representatives →"
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {politicians.map((pol) => {
+                    const badge = PARTY_STYLES[pol.party]
+                    return (
+                      <Link key={pol.id} href={`/representatives/${pol.id}`} className="group">
+                        <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 flex flex-col gap-4 hover:shadow-sm transition-shadow h-full">
 
-                        <div className="flex items-start gap-3">
-                          <Initials name={pol.name} />
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className="text-sm font-medium text-[#1C1C1A] truncate group-hover:text-[#9B7FA6] transition-colors"
-                              style={{ fontFamily: 'var(--font-serif)' }}
-                            >
-                              {pol.name}
-                            </p>
-                            <p className="text-xs text-[#1C1C1A]/50 truncate mt-0.5">{pol.title}</p>
-                            <p className="text-xs text-[#1C1C1A]/38">{pol.state}</p>
+                          <div className="flex items-start gap-3">
+                            <Initials name={pol.name} />
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className="text-sm font-medium text-[#1C1C1A] truncate group-hover:text-[#9B7FA6] transition-colors"
+                                style={{ fontFamily: 'var(--font-serif)' }}
+                              >
+                                {pol.name}
+                              </p>
+                              <p className="text-xs text-[#1C1C1A]/50 truncate mt-0.5">{pol.title}</p>
+                              <p className="text-xs text-[#1C1C1A]/38">{pol.state}</p>
+                            </div>
                           </div>
-                          {pol.alert && (
-                            <div className="w-2 h-2 rounded-full bg-[#B85C38] flex-shrink-0 mt-1.5" title="New activity" />
+
+                          <span className={`self-start text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
+                            {pol.party}
+                          </span>
+
+                          {pol.latestVote && (
+                            <div className="border-t border-[rgba(28,28,26,0.06)] pt-3.5">
+                              <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-2">Latest vote</p>
+                              <div className="flex items-start gap-2">
+                                <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 leading-tight ${
+                                  pol.latestVote.vote === 'Yea'
+                                    ? 'bg-[#9B7FA6]/[0.12] text-[#9B7FA6]'
+                                    : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
+                                }`}>
+                                  {pol.latestVote.vote}
+                                </span>
+                                <p className="text-xs text-[#1C1C1A]/65 leading-snug">{pol.latestVote.bill}</p>
+                              </div>
+                              <p className="text-[11px] text-[#1C1C1A]/32 mt-2">{pol.latestVote.date}</p>
+                            </div>
                           )}
                         </div>
-
-                        <span className={`self-start text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
-                          {pol.party}
-                        </span>
-
-                        <div className="border-t border-[rgba(28,28,26,0.06)] pt-3.5">
-                          <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-2">Latest vote</p>
-                          <div className="flex items-start gap-2">
-                            <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 leading-tight ${
-                              pol.latestVote.vote === 'Yea'
-                                ? 'bg-[#9B7FA6]/[0.12] text-[#9B7FA6]'
-                                : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
-                            }`}>
-                              {pol.latestVote.vote}
-                            </span>
-                            <p className="text-xs text-[#1C1C1A]/65 leading-snug">{pol.latestVote.bill}</p>
-                          </div>
-                          <p className="text-[11px] text-[#1C1C1A]/32 mt-2">{pol.latestVote.date}</p>
-                        </div>
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              )}
             </section>
 
             {/* ── Personalized topic feed ── */}
@@ -422,7 +541,6 @@ export default function DashboardPage() {
                   </Link>
                 </div>
 
-                {/* Followed topic chips */}
                 <div className="flex flex-wrap gap-2 mb-5">
                   {followedTopics.map(t => (
                     <Link
@@ -435,7 +553,6 @@ export default function DashboardPage() {
                   ))}
                 </div>
 
-                {/* Bills from followed topics */}
                 <div className="bg-white rounded-xl border border-[#D6CFC4] divide-y divide-[rgba(28,28,26,0.05)]">
                   {topicFeedItems.map(({ topic, bill }, i) => {
                     const s = STATUS_STYLES[bill.status as BillStatus] ?? STATUS_STYLES['Active']
@@ -476,30 +593,46 @@ export default function DashboardPage() {
                   <span className="text-sm text-[#1C1C1A]/38">Recent updates</span>
                 </div>
 
-                <div className="bg-white rounded-xl border border-[#D6CFC4] overflow-hidden">
-                  {MOCK_ACTIVITY.map((item, idx) => (
-                    <div
-                      key={item.id}
-                      className={`flex items-start gap-4 px-6 py-4 ${
-                        idx < MOCK_ACTIVITY.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
-                      }`}
-                    >
-                      <div className={`w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0 ${item.isAlert ? 'bg-[#B85C38]' : 'bg-[#9B7FA6]/50'}`} />
-
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[#1C1C1A]/70 leading-snug">
-                          {item.politician && (
-                            <span className="text-[#1C1C1A] font-medium">{item.politician} </span>
-                          )}
-                          <span className="text-[#1C1C1A]/45">{item.action} </span>
-                          <span className="text-[#1C1C1A]/80">{item.subject}</span>
-                        </p>
+                {loadingPoliticians && loadingBills ? (
+                  <div className="bg-white rounded-xl border border-[#D6CFC4] p-6 animate-pulse space-y-4">
+                    {[1,2,3].map(i => (
+                      <div key={i} className="flex gap-4">
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#E8E3DA] mt-2 flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 bg-[#E8E3DA] rounded w-5/6" />
+                          <div className="h-3 bg-[#E8E3DA] rounded w-1/4" />
+                        </div>
                       </div>
-
-                      <span className="text-[11px] text-[#1C1C1A]/32 flex-shrink-0 mt-0.5 whitespace-nowrap">{item.date}</span>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : activityFeed.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-[#D6CFC4] px-6 py-10 text-center">
+                    <p className="text-sm text-[#1C1C1A]/45">No activity yet — follow politicians and track bills to see updates here.</p>
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-xl border border-[#D6CFC4] overflow-hidden">
+                    {activityFeed.map((item, idx) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-start gap-4 px-6 py-4 ${
+                          idx < activityFeed.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
+                        }`}
+                      >
+                        <div className={`w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0 ${item.isAlert ? 'bg-[#B85C38]' : 'bg-[#9B7FA6]/50'}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-[#1C1C1A]/70 leading-snug">
+                            {item.politician && (
+                              <span className="text-[#1C1C1A] font-medium">{item.politician} </span>
+                            )}
+                            <span className="text-[#1C1C1A]/45">{item.action} </span>
+                            <span className="text-[#1C1C1A]/80">{item.subject}</span>
+                          </p>
+                        </div>
+                        <span className="text-[11px] text-[#1C1C1A]/32 flex-shrink-0 mt-0.5 whitespace-nowrap">{item.date}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
 
               {/* Tracked bills */}
@@ -507,36 +640,54 @@ export default function DashboardPage() {
                 <div className="flex items-baseline justify-between mb-5">
                   <div className="flex items-baseline gap-2.5">
                     <h2 className="text-base text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Tracked Bills</h2>
-                    <span className="text-sm text-[#1C1C1A]/38">{MOCK_TRACKED_BILLS.length}</span>
+                    {!loadingBills && <span className="text-sm text-[#1C1C1A]/38">{trackedBills.length}</span>}
                   </div>
                   <Link href="/bills" className="text-xs text-[#9B7FA6] hover:underline underline-offset-2">View all</Link>
                 </div>
 
-                <div className="bg-white rounded-xl border border-[#D6CFC4] overflow-hidden">
-                  {MOCK_TRACKED_BILLS.map((bill, idx) => {
-                    const s = STATUS_STYLES[bill.status]
-                    return (
-                      <div
-                        key={bill.id}
-                        className={`px-5 py-4 ${idx < MOCK_TRACKED_BILLS.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''}`}
-                      >
-                        <div className="flex items-start justify-between gap-2 mb-1.5">
-                          <span className="text-[11px] font-mono text-[#1C1C1A]/38">{bill.number}</span>
-                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>
-                            {bill.status}
-                          </span>
-                        </div>
-                        <p className="text-sm text-[#1C1C1A] leading-snug mb-2.5" style={{ fontFamily: 'var(--font-serif)' }}>
-                          {bill.title}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] text-[#1C1C1A]/40">{bill.category}</span>
-                          <span className="text-[11px] text-[#1C1C1A]/30">{bill.lastAction}</span>
-                        </div>
+                {loadingBills ? (
+                  <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 animate-pulse space-y-4">
+                    {[1,2,3].map(i => (
+                      <div key={i} className="space-y-2 pb-4 border-b border-[rgba(28,28,26,0.05)] last:border-0 last:pb-0">
+                        <div className="h-3 bg-[#E8E3DA] rounded w-1/3" />
+                        <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
+                        <div className="h-3.5 bg-[#E8E3DA] rounded w-4/5" />
                       </div>
-                    )
-                  })}
-                </div>
+                    ))}
+                  </div>
+                ) : trackedBills.length === 0 ? (
+                  <EmptyState
+                    message="No bills tracked yet."
+                    href="/bills"
+                    linkLabel="Browse bills →"
+                  />
+                ) : (
+                  <div className="bg-white rounded-xl border border-[#D6CFC4] overflow-hidden">
+                    {trackedBills.map((bill, idx) => {
+                      const s = STATUS_STYLES[bill.status]
+                      return (
+                        <div
+                          key={bill.id}
+                          className={`px-5 py-4 ${idx < trackedBills.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''}`}
+                        >
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <span className="text-[11px] font-mono text-[#1C1C1A]/38">{bill.number}</span>
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>
+                              {bill.status}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[#1C1C1A] leading-snug mb-2.5" style={{ fontFamily: 'var(--font-serif)' }}>
+                            {bill.title}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] text-[#1C1C1A]/40">{bill.category}</span>
+                            <span className="text-[11px] text-[#1C1C1A]/30">{bill.lastAction}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </section>
             </div>
 
@@ -545,4 +696,10 @@ export default function DashboardPage() {
       </div>
     </div>
   )
+}
+
+// Merges new activity items into the existing list, deduplicating by id
+function mergeActivity(prev: ActivityItem[], next: ActivityItem[]): ActivityItem[] {
+  const ids = new Set(prev.map(a => a.id))
+  return [...prev, ...next.filter(a => !ids.has(a.id))].slice(0, 10)
 }
