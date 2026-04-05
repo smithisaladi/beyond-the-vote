@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       format: 'json',
       limit: String(limit),
       offset: String(offset),
-      sort: 'updateDate+desc',
+      sort: 'updateDate desc',
       api_key: CONGRESS_API_KEY,
     })
 
