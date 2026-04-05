@@ -39,6 +39,28 @@ interface RecordedVote {
   url: string
 }
 
+interface BillRef {
+  id: string
+  billNumber: string  // e.g. "H.R. 1234"
+  billTitle: string   // e.g. "The Example Act of 2025"
+}
+
+// Maps lowercase bill type codes to their standard abbreviated forms.
+function formatBillNumber(type: string, number: string | number): string {
+  const abbrevs: Record<string, string> = {
+    hr:       'H.R.',
+    s:        'S.',
+    hjres:    'H.J.Res.',
+    sjres:    'S.J.Res.',
+    hres:     'H.Res.',
+    sres:     'S.Res.',
+    hconres:  'H.Con.Res.',
+    sconres:  'S.Con.Res.',
+  }
+  const prefix = abbrevs[type.toLowerCase()] ?? type.toUpperCase()
+  return `${prefix} ${number}`
+}
+
 async function congressFetch(path: string): Promise<any> {
   const sep = path.includes('?') ? '&' : '?'
   const res = await fetch(
@@ -48,30 +70,34 @@ async function congressFetch(path: string): Promise<any> {
   return res.json()
 }
 
-async function getBillsWithRecentActivity(congress: number, lookbackDays: number): Promise<string[]> {
+async function getBillsWithRecentActivity(congress: number, lookbackDays: number): Promise<BillRef[]> {
   const from = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000)
     .toISOString()
     .replace(/\.\d{3}Z$/, 'Z')
 
-  const billIds: string[] = []
+  const bills: BillRef[] = []
   let offset = 0
 
   while (true) {
     const data = await congressFetch(
       `/bill/${congress}?fromDateTime=${from}&limit=${BILLS_PER_PAGE}&offset=${offset}&sort=updateDate+desc`
     )
-    const bills: any[] = data.bills ?? []
-    for (const b of bills) {
+    const raw: any[] = data.bills ?? []
+    for (const b of raw) {
       if (b.type && b.number) {
-        billIds.push(`${congress}-${b.type.toLowerCase()}-${b.number}`)
+        bills.push({
+          id:         `${congress}-${b.type.toLowerCase()}-${b.number}`,
+          billNumber: formatBillNumber(b.type, b.number),
+          billTitle:  b.title ?? '',
+        })
       }
     }
-    if (bills.length < BILLS_PER_PAGE) break
+    if (raw.length < BILLS_PER_PAGE) break
     offset += BILLS_PER_PAGE
     if (offset >= 200) break  // cap at 200 bills per sync run
   }
 
-  return billIds
+  return bills
 }
 
 async function getRecordedVotesForBill(billId: string): Promise<RecordedVote[]> {
@@ -115,10 +141,12 @@ export async function syncBillVotes(
   let senateResolutionFailures = 0
 
   // Get bills with recent activity
-  const billIds = await getBillsWithRecentActivity(congress, lookbackDays)
-  billsProcessed = billIds.length
+  const billRefs = await getBillsWithRecentActivity(congress, lookbackDays)
+  billsProcessed = billRefs.length
 
-  for (const billId of billIds) {
+  for (const bill of billRefs) {
+    const { id: billId, billNumber, billTitle } = bill
+
     let recordedVotes: RecordedVote[]
     try {
       recordedVotes = await getRecordedVotesForBill(billId)
@@ -129,13 +157,24 @@ export async function syncBillVotes(
     for (const rv of recordedVotes) {
       const voteId = `${rv.congress}-${rv.chamber.toLowerCase()}-${rv.rollNumber}`
 
-      // Skip if already synced
+      // Skip if already synced; backfill title if it was never set
       const { data: existing } = await supabase
         .from('bill_vote_summaries')
-        .select('id')
+        .select('id, title, question')
         .eq('id', voteId)
         .maybeSingle()
-      if (existing) continue
+      if (existing) {
+        if (!existing.title) {
+          const voteTitle = billTitle
+            ? `${billNumber}: ${billTitle} — ${existing.question}`
+            : `${billNumber} — ${existing.question}`
+          await supabase
+            .from('bill_vote_summaries')
+            .update({ title: voteTitle })
+            .eq('id', voteId)
+        }
+        continue
+      }
 
       try {
         if (rv.chamber.toLowerCase() === 'senate') {
@@ -149,6 +188,10 @@ export async function syncBillVotes(
           const lisIds = parsed.members.map(m => m.lis_member_id)
           const lisMap = await buildLisMap(supabase, lisIds)
 
+          const voteTitle = billTitle
+            ? `${billNumber}: ${billTitle} — ${parsed.question}`
+            : `${billNumber} — ${parsed.question}`
+
           const { error: sumErr } = await supabase
             .from('bill_vote_summaries')
             .upsert({
@@ -157,6 +200,7 @@ export async function syncBillVotes(
               congress:         rv.congress,
               chamber:          'Senate',
               date:             rv.date,
+              title:            voteTitle,
               question:         parsed.question,
               result:           parsed.result,
               yea_total:        parsed.yea_total,
@@ -196,8 +240,12 @@ export async function syncBillVotes(
 
         } else {
           // ── House: Congress.gov House Roll Call API ────────────────────────
-          const houseData = await fetchHouseVote(rv.congress, rv.rollNumber, CONGRESS_API_KEY)
+          const houseData = await fetchHouseVote(rv.congress, rv.rollNumber, CONGRESS_API_KEY, rv.sessionNumber)
           if (!houseData) continue
+
+          const voteTitle = billTitle
+            ? `${billNumber}: ${billTitle} — ${houseData.question}`
+            : `${billNumber} — ${houseData.question}`
 
           const { error: sumErr } = await supabase
             .from('bill_vote_summaries')
@@ -207,6 +255,7 @@ export async function syncBillVotes(
               congress:         rv.congress,
               chamber:          'House',
               date:             rv.date,
+              title:            voteTitle,
               question:         houseData.question,
               result:           houseData.result,
               yea_total:        houseData.yea_total,
