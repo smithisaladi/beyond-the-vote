@@ -26,7 +26,15 @@ export async function middleware(request: NextRequest) {
   )
 
   // Refresh session so it doesn't expire mid-visit
-  await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const { pathname } = request.nextUrl
+  const protectedPaths = ['/dashboard', '/settings']
+  if (!user && protectedPaths.some(p => pathname.startsWith(p))) {
+    const redirectUrl = new URL('/', request.url)
+    redirectUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(redirectUrl)
+  }
 
   return supabaseResponse
 }

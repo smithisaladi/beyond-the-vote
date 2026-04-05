@@ -160,6 +160,27 @@ function IconSettings() {
   )
 }
 
+function IconTag() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+      <line x1="7" y1="7" x2="7.01" y2="7" />
+    </svg>
+  )
+}
+
+function IconScales() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <path d="M3 6l9-3 9 3" />
+      <path d="M6 6l-3 6a3 3 0 006 0L6 6z" />
+      <path d="M18 6l-3 6a3 3 0 006 0L18 6z" />
+      <line x1="3" y1="21" x2="21" y2="21" />
+    </svg>
+  )
+}
+
 function IconBell() {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -172,50 +193,49 @@ export default function DashboardPage() {
   const [notifCount, setNotifCount] = useState(3)
 
   const navItems = [
-    { label: 'Dashboard',       href: '/dashboard',       icon: <IconHome />,     active: true  },
-    { label: 'Representatives', href: '/representatives', icon: <IconUsers />,    active: false },
-    { label: 'Bills',           href: '/bills',           icon: <IconFileText />, active: false },
-    { label: 'Settings',        href: '#',                icon: <IconSettings />, active: false },
+    { label: 'Home',           href: '/',               icon: <IconHome />,      active: false },
+    { label: 'My Politicians', href: '/representatives', icon: <IconUsers />,     active: false },
+    { label: 'Bills Tracker',  href: '/bills',           icon: <IconFileText />,  active: false },
+    { label: 'Topics',         href: '/topics',          icon: <IconTag />,       active: false },
+    { label: 'Values Match',   href: '/values-match',    icon: <IconScales />,    active: false },
+    { label: 'Settings',       href: '#',                icon: <IconSettings />,  active: false },
   ]
 
   return (
     <div className="flex min-h-screen bg-[#F5F0E8]">
 
       {/* ── Left sidebar ── */}
-      <aside className="fixed top-0 left-0 h-full w-58 flex flex-col bg-[#EAE5DB] border-r border-[#D6CFC4] z-20" style={{ width: '228px' }}>
+      <aside className="fixed top-0 left-0 h-full flex flex-col bg-[#D6CFC4] border-r border-[#C4BCB0] z-20" style={{ width: '228px' }}>
 
         {/* Brand */}
-        <div className="px-5 py-5 border-b border-[#D6CFC4]">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 bg-[#9B7FA6] rounded flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-xs">BB</span>
-            </div>
-            <span className="text-sm font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>
+        <div className="px-5 py-5 border-b border-[#C4BCB0]">
+          <Link href="/" className="flex items-center">
+            <span className="text-sm font-semibold text-[#1C1C1A] tracking-tight" style={{ fontFamily: 'var(--font-serif)' }}>
               Beyond the Ballot
             </span>
           </Link>
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 px-3 py-4 flex flex-col gap-0.5">
+        <nav className="flex-1 px-2 py-4 flex flex-col gap-0.5">
           {navItems.map((item) => (
             <Link
               key={item.label}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors ${
+              className={`flex items-center gap-3 py-2.5 rounded-r-lg text-sm transition-colors ${
                 item.active
-                  ? 'bg-[#9B7FA6]/[0.12] text-[#9B7FA6] font-medium'
-                  : 'text-[#1C1C1A]/55 hover:text-[#1C1C1A] hover:bg-[#D6CFC4]/50'
+                  ? 'border-l-2 border-[#9B7FA6] bg-[#C8BED0]/40 text-[#1C1C1A] font-medium pl-[14px] pr-3'
+                  : 'border-l-2 border-transparent text-[#1C1C1A]/60 hover:text-[#1C1C1A] hover:bg-[#BDB5A8]/40 pl-[14px] pr-3'
               }`}
             >
-              <span className={item.active ? 'text-[#9B7FA6]' : 'text-[#1C1C1A]/35'}>{item.icon}</span>
+              <span className={item.active ? 'text-[#9B7FA6]' : 'text-[#1C1C1A]/40'}>{item.icon}</span>
               {item.label}
             </Link>
           ))}
         </nav>
 
         {/* Following summary */}
-        <div className="px-5 py-5 border-t border-[#D6CFC4]">
+        <div className="px-5 py-5 border-t border-[#C4BCB0]">
           <p className="text-[10px] text-[#1C1C1A]/40 uppercase tracking-widest mb-2">Activity</p>
           <div className="flex flex-col gap-1">
             <p className="text-xs text-[#1C1C1A]/60">
@@ -232,7 +252,7 @@ export default function DashboardPage() {
       <div className="flex-1 flex flex-col min-h-screen" style={{ marginLeft: '228px' }}>
 
         {/* Top bar */}
-        <header className="sticky top-0 z-10 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] px-8 py-4 flex items-center justify-between">
+        <header className="sticky top-0 z-10 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] min-h-[64px] px-8 flex items-center justify-between">
           <div>
             <h1 className="text-xl text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Dashboard</h1>
             <p className="text-[11px] text-[#1C1C1A]/38 mt-0.5">Friday, April 4, 2026</p>

@@ -34,11 +34,8 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-[#F5F0E8] rounded-lg shadow-xl p-8">
-        <Link href="/" className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-8 bg-[#9B7FA6] rounded flex items-center justify-center">
-            <span className="text-white font-bold text-sm">BB</span>
-          </div>
-          <span className="font-semibold text-lg" style={{ fontFamily: 'var(--font-serif)' }}>
+        <Link href="/" className="inline-block mb-8">
+          <span className="text-xl font-semibold text-[#1C1C1A] tracking-tight" style={{ fontFamily: 'var(--font-serif)' }}>
             Beyond the Ballot
           </span>
         </Link>

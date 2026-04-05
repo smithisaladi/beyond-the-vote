@@ -38,7 +38,12 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
       setLoading(false)
     } else {
       handleClose()
-      router.refresh()
+      const redirect = new URLSearchParams(window.location.search).get('redirect')
+      if (redirect) {
+        router.push(redirect)
+      } else {
+        router.refresh()
+      }
     }
   }
 
