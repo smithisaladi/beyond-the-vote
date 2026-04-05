@@ -2,11 +2,11 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
-import type { User } from '@supabase/supabase-js'
 import { Navigation } from '@/components/Navigation'
 import { SignInModal } from '@/components/SignInModal'
 import { SignUpModal } from '@/components/SignUpModal'
-import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+import { useFollowPolitician } from '@/hooks/useFollowPolitician'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -181,22 +181,15 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('votes')
-
-  const [user, setUser] = useState<User | null>(null)
-  const [following, setFollowing] = useState(false)
-  const [followLoading, setFollowLoading] = useState(false)
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
 
-  // Auth state
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
+  const { user } = useAuth()
+  const { following, followLoading, toggleFollow: handleFollow } = useFollowPolitician(
+    id,
+    user?.id ?? null,
+    () => setShowSignIn(true),
+  )
 
   // Fetch politician
   useEffect(() => {
@@ -211,38 +204,6 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
   }, [id])
-
-  // Check follow state
-  useEffect(() => {
-    if (!user) { setFollowing(false); return }
-    const supabase = createClient()
-    supabase
-      .from('followed_politicians')
-      .select('politician_id')
-      .eq('user_id', user.id)
-      .eq('politician_id', id)
-      .maybeSingle()
-      .then(({ data }) => setFollowing(!!data))
-  }, [user, id])
-
-  const handleFollow = async () => {
-    if (!user) {
-      setShowSignIn(true)
-      return
-    }
-
-    const supabase = createClient()
-    const next = !following
-    setFollowing(next) // optimistic
-    setFollowLoading(true)
-
-    const { error } = next
-      ? await supabase.from('followed_politicians').insert({ user_id: user.id, politician_id: id })
-      : await supabase.from('followed_politicians').delete().eq('user_id', user.id).eq('politician_id', id)
-
-    if (error) setFollowing(!next) // revert on failure
-    setFollowLoading(false)
-  }
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'votes', label: 'Recent Votes' },
