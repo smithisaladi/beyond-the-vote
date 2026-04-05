@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
-const OPENSECRETS_API_KEY = process.env.OPENSECRETS_API_KEY ?? ''
+const OPENFEC_API_KEY = process.env.OPENFEC_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
+const FEC_BASE = 'https://api.open.fec.gov/v1'
 
 function formatBillNumber(type: string, number: number): string {
   const types: Record<string, string> = {
@@ -28,6 +29,110 @@ function mapBillStatus(action?: string): 'Passed' | 'Pending' | 'Failed' {
   return 'Pending'
 }
 
+interface PoliticianVote {
+  id: string
+  bill: string
+  date: string
+  vote: 'Yea' | 'Nay'
+}
+
+// VoteView cast codes: 1=Yea, 2=Paired Yea, 3=Announced Yea,
+//                      4=Announced Nay, 5=Paired Nay, 6=Nay, 7-9=Not voting
+// Data comes from VoteView static CSVs (API is defunct):
+//   members  → 63 KB,  cached 24h
+//   rollcalls → 321 KB, cached 1h
+//   votes    → 6.6 MB, cached 1h (only slow on cold start)
+
+function parseCSVLine(line: string): string[] {
+  const result: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (const ch of line) {
+    if (ch === '"') { inQuotes = !inQuotes }
+    else if (ch === ',' && !inQuotes) { result.push(current); current = '' }
+    else { current += ch }
+  }
+  result.push(current)
+  return result
+}
+
+async function fetchVoteViewVotes(bioguideId: string): Promise<PoliticianVote[]> {
+  try {
+    // Step 1: Resolve bioguide → ICPSR via members CSV (63 KB)
+    const membersRes = await fetch(
+      'https://voteview.com/static/data/out/members/HS119_members.csv',
+      { next: { revalidate: 86400 } }
+    )
+    if (!membersRes.ok) return []
+    const membersText = await membersRes.text()
+
+    let icpsr: string | undefined
+    for (const line of membersText.split('\n').slice(1)) {
+      const cols = parseCSVLine(line)
+      if (cols[10] === bioguideId) { icpsr = cols[2]; break }
+    }
+    if (!icpsr) return []
+
+    // Step 2: Parse rollcalls into a lookup map (321 KB)
+    // Columns: congress,chamber,rollnumber,date,...,bill_number,vote_result,vote_desc,vote_question,dtl_desc
+    const rollcallsRes = await fetch(
+      'https://voteview.com/static/data/out/rollcalls/HS119_rollcalls.csv',
+      { next: { revalidate: 3600 } }
+    )
+    if (!rollcallsRes.ok) return []
+    const rollcallsText = await rollcallsRes.text()
+
+    const rollcallMap = new Map<string, { date: string; bill: string; question: string }>()
+    for (const line of rollcallsText.split('\n').slice(1)) {
+      if (!line.trim()) continue
+      const cols = parseCSVLine(line)
+      rollcallMap.set(`${cols[0]}-${cols[2]}`, {
+        date: cols[3] ?? '',
+        bill: cols[13] ?? '',
+        question: cols[16]?.trim() || cols[15]?.trim() || '',
+      })
+    }
+
+    // Step 3: Filter votes CSV by ICPSR (6.6 MB, cached — only slow on cold start)
+    // Columns: congress,chamber,rollnumber,icpsr,cast_code,prob
+    const votesRes = await fetch(
+      'https://voteview.com/static/data/out/votes/HS119_votes.csv',
+      { next: { revalidate: 3600 } }
+    )
+    if (!votesRes.ok) return []
+    const votesText = await votesRes.text()
+
+    const memberRows = votesText.split('\n')
+      .slice(1)
+      .filter(line => line.split(',')[3] === icpsr)
+      .slice(-10)  // last 10 = most recent (file is sorted by rollnumber asc)
+      .reverse()
+
+    return memberRows
+      .map((line): PoliticianVote | null => {
+        const cols = line.split(',')
+        const castCode = parseInt(cols[4])
+        if (isNaN(castCode) || castCode < 1 || castCode > 6) return null
+        const rc = rollcallMap.get(`${cols[0]}-${cols[2]}`)
+        const bill = rc?.bill?.trim()
+        const label = bill
+          ? `${bill}${rc?.question ? ` — ${rc.question}` : ''}`
+          : rc?.question ?? `Roll Call ${cols[2]}`
+        return {
+          id: `${cols[0]}-${cols[2]}`,
+          bill: label,
+          date: rc?.date
+            ? new Date(rc.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : '',
+          vote: castCode <= 3 ? 'Yea' : 'Nay',
+        }
+      })
+      .filter((v): v is PoliticianVote => v !== null)
+  } catch {
+    return []
+  }
+}
+
 interface Donor {
   rank: number
   name: string
@@ -35,51 +140,55 @@ interface Donor {
   category: string
 }
 
-async function fetchOpenSecretsDonors(
+async function fetchFECDonors(
+  memberName: string,
   stateCode: string,
-  memberName: string
-): Promise<{ donors: Donor[]; openSecretsUrl: string | null }> {
-  if (!OPENSECRETS_API_KEY) return { donors: [], openSecretsUrl: null }
+): Promise<{ donors: Donor[]; fecUrl: string | null }> {
+  if (!OPENFEC_API_KEY) return { donors: [], fecUrl: null }
 
   try {
-    const legsRes = await fetch(
-      `https://www.opensecrets.org/api/?method=getLegislators&id=${stateCode}&output=json&apikey=${OPENSECRETS_API_KEY}`,
+    // Find the candidate on FEC by name + state
+    const searchRes = await fetch(
+      `${FEC_BASE}/candidates/search/?q=${encodeURIComponent(memberName)}&state=${stateCode}&api_key=${OPENFEC_API_KEY}&per_page=5`,
       { next: { revalidate: 86400 } }
     )
-    if (!legsRes.ok) return { donors: [], openSecretsUrl: null }
+    if (!searchRes.ok) return { donors: [], fecUrl: null }
 
-    const legsData = await legsRes.json()
-    const legislators: any[] = legsData.response?.legislator ?? []
+    const searchData = await searchRes.json()
+    const candidate = searchData.results?.[0]
+    if (!candidate) return { donors: [], fecUrl: null }
 
-    const lastName = memberName.trim().split(/\s+/).pop()?.toLowerCase() ?? ''
-    const match = legislators.find((l: any) =>
-      (l['@name'] ?? '').toLowerCase().includes(lastName)
-    )
-    if (!match) return { donors: [], openSecretsUrl: null }
+    const candidateId: string = candidate.candidate_id
+    const fecUrl = `https://www.fec.gov/data/candidate/${candidateId}/`
 
-    const cid: string = match['@cid']
-    const openSecretsUrl = `https://www.opensecrets.org/politicians/summary?cid=${cid}`
+    // Get the principal campaign committee
+    const committeeId: string | undefined = candidate.principal_committees?.[0]?.committee_id
+    if (!committeeId) return { donors: [], fecUrl }
 
+    // Fetch top employer contributions for the committee
     const contribRes = await fetch(
-      `https://www.opensecrets.org/api/?method=candContrib&cid=${cid}&cycle=2024&output=json&apikey=${OPENSECRETS_API_KEY}`,
+      `${FEC_BASE}/schedules/schedule_a/by_employer/?committee_id=${committeeId}&sort=-total&per_page=10&api_key=${OPENFEC_API_KEY}`,
       { next: { revalidate: 86400 } }
     )
-    if (!contribRes.ok) return { donors: [], openSecretsUrl }
+    if (!contribRes.ok) return { donors: [], fecUrl }
 
     const contribData = await contribRes.json()
-    const raw = contribData.response?.contributors?.contributor ?? []
-    const list: any[] = Array.isArray(raw) ? raw : [raw]
+    const results: any[] = contribData.results ?? []
 
-    const donors: Donor[] = list.slice(0, 5).map((c: any, i: number) => ({
-      rank: i + 1,
-      name: c['@org_name'] ?? 'Unknown',
-      amount: c['@total'] ? `$${parseInt(c['@total']).toLocaleString()}` : 'N/A',
-      category: c['@industry'] ?? 'Unknown',
-    }))
+    const SKIP = new Set(['INFORMATION REQUESTED', 'NONE', 'N/A', 'SELF-EMPLOYED', 'RETIRED', 'NOT EMPLOYED'])
+    const donors: Donor[] = results
+      .filter((c: any) => c.employer && !SKIP.has((c.employer as string).toUpperCase()))
+      .slice(0, 5)
+      .map((c: any, i: number) => ({
+        rank: i + 1,
+        name: c.employer,
+        amount: `$${Math.round(c.total).toLocaleString()}`,
+        category: 'Various',
+      }))
 
-    return { donors, openSecretsUrl }
+    return { donors, fecUrl }
   } catch {
-    return { donors: [], openSecretsUrl: null }
+    return { donors: [], fecUrl: null }
   }
 }
 
@@ -94,13 +203,9 @@ export async function GET(
   const { id: bioguideId } = await params
 
   try {
-    const [memberRes, votesRes, sponsoredRes, committeesRes] = await Promise.all([
+    const [memberRes, sponsoredRes, committeesRes, votes] = await Promise.all([
       fetch(
         `${CONGRESS_BASE}/member/${bioguideId}?format=json&api_key=${CONGRESS_API_KEY}`,
-        { next: { revalidate: 3600 } }
-      ),
-      fetch(
-        `${CONGRESS_BASE}/member/${bioguideId}/votes?format=json&limit=10&api_key=${CONGRESS_API_KEY}`,
         { next: { revalidate: 3600 } }
       ),
       fetch(
@@ -111,6 +216,7 @@ export async function GET(
         `${CONGRESS_BASE}/member/${bioguideId}/committees?format=json&limit=20&api_key=${CONGRESS_API_KEY}`,
         { next: { revalidate: 3600 } }
       ),
+      fetchVoteViewVotes(bioguideId),
     ])
 
     if (!memberRes.ok) {
@@ -123,7 +229,6 @@ export async function GET(
     const memberData = await memberRes.json()
     const member = memberData.member
 
-    const votesData = votesRes.ok ? await votesRes.json() : {}
     const sponsoredData = sponsoredRes.ok ? await sponsoredRes.json() : {}
     const committeesData = committeesRes.ok ? await committeesRes.json() : {}
 
@@ -154,15 +259,6 @@ export async function GET(
         })()
       : null
 
-    const votes = ((votesData.votes ?? []) as any[]).map((v: any) => ({
-      id: v.rollNumber ? `${v.congress}-${v.chamber}-${v.rollNumber}` : crypto.randomUUID(),
-      bill: v.description ?? v.question ?? 'Unknown Bill',
-      date: v.date
-        ? new Date(v.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : '',
-      vote: ['yes', 'yea'].includes((v.memberPosition ?? '').toLowerCase()) ? 'Yea' : 'Nay',
-    }))
-
     const bills = ((sponsoredData.sponsoredLegislation ?? []) as any[]).map((b: any) => ({
       id: `${b.congress}-${(b.type ?? '').toLowerCase()}-${b.number}`,
       name: b.title ?? '',
@@ -184,7 +280,7 @@ export async function GET(
     const stateCode = latestTerm.stateCode ?? member.state ?? ''
     const memberName = member.directOrderName ?? member.invertedOrderName ?? ''
 
-    const { donors, openSecretsUrl } = await fetchOpenSecretsDonors(stateCode, memberName)
+    const { donors, fecUrl } = await fetchFECDonors(memberName, stateCode)
 
     return NextResponse.json({
       politician: {
@@ -202,7 +298,7 @@ export async function GET(
         website: member.officialWebsiteUrl ?? null,
         address: member.addressInformation?.officeAddress ?? null,
         phone: member.addressInformation?.phoneNumber ?? null,
-        openSecretsUrl,
+        fecUrl,
         stats: {
           yearsInOffice,
           attendance: null, // requires VoteView or roll-call analysis
