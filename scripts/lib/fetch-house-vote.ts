@@ -24,7 +24,7 @@ export interface HouseVoteSummary {
   members: HouseVoteMember[]
 }
 
-// Maps raw Congress.gov votePosition values to normalised labels
+// Maps raw Congress.gov voteCast values to normalised labels
 function normalisePosition(raw: string): string {
   const r = raw.toLowerCase()
   if (r === 'yea' || r === 'aye') return 'Yea'
@@ -33,51 +33,53 @@ function normalisePosition(raw: string): string {
   return 'Not Voting'
 }
 
+// API structure: /house-vote/{congress}/{session}/{rollNumber}
+// Members:       /house-vote/{congress}/{session}/{rollNumber}/members
+// Response keys: houseRollCallVote (detail), houseRollCallVoteMemberVotes.results (members)
+// Member fields: bioguideID, voteCast, voteParty, voteState, firstName, lastName
+
 export async function fetchHouseVote(
   congress: number,
   rollNumber: number,
-  apiKey: string
+  apiKey: string,
+  session: number = 1
 ): Promise<HouseVoteSummary | null> {
-  const url =
-    `${CONGRESS_BASE}/house-vote/${congress}/${rollNumber}?format=json&api_key=${apiKey}`
+  const base = `${CONGRESS_BASE}/house-vote/${congress}/${session}/${rollNumber}`
 
-  const res = await fetch(url)
+  const res = await fetch(`${base}?format=json&api_key=${apiKey}`)
   if (!res.ok) return null
   const data = await res.json()
 
-  const vote = data.houseVote ?? data.vote
+  const vote = data.houseRollCallVote
   if (!vote) return null
 
-  // Fetch member-level positions (separate endpoint or nested in response)
-  const membersUrl =
-    `${CONGRESS_BASE}/house-vote/${congress}/${rollNumber}/members?format=json&limit=500&api_key=${apiKey}`
-
-  const membersRes = await fetch(membersUrl)
+  const membersRes = await fetch(`${base}/members?format=json&limit=500&api_key=${apiKey}`)
   if (!membersRes.ok) return null
   const membersData = await membersRes.json()
 
-  const rawMembers: any[] = membersData.members ?? membersData.houseVoteMembers ?? []
+  // Congress.gov returns houseRollCallVoteMemberVotes as an object with a `results` array
+  const rawMembers: any[] = membersData.houseRollCallVoteMemberVotes?.results ?? []
 
   const members: HouseVoteMember[] = rawMembers
-    .filter((m: any) => m.bioguideId)
+    .filter((m: any) => m.bioguideID)
     .map((m: any) => ({
-      bioguide_id: m.bioguideId,
-      name: m.name ?? m.fullName ?? '',
-      party: m.party ?? '',
-      state: m.state ?? '',
-      position: normalisePosition(m.votePosition ?? m.position ?? ''),
+      bioguide_id: m.bioguideID,
+      name: `${m.firstName ?? ''} ${m.lastName ?? ''}`.trim(),
+      party: m.voteParty ?? '',
+      state: m.voteState ?? '',
+      position: normalisePosition(m.voteCast ?? ''),
     }))
 
-  // Compute aggregates from member data (more reliable than header totals for party breakdown)
+  // Compute aggregates from member data
   let yea_total = 0, nay_total = 0, present_total = 0, not_voting_total = 0
   let yea_democrat = 0, nay_democrat = 0
   let yea_republican = 0, nay_republican = 0
   let yea_independent = 0, nay_independent = 0
 
   for (const m of members) {
-    const party = m.party.toLowerCase()
-    const isDem = party.includes('d') || party.includes('democrat')
-    const isRep = party.includes('r') || party.includes('republican')
+    const party = m.party.toUpperCase()
+    const isDem = party === 'D'
+    const isRep = party === 'R'
 
     switch (m.position) {
       case 'Yea':
@@ -101,8 +103,8 @@ export async function fetchHouseVote(
   }
 
   return {
-    question: vote.question ?? vote.voteQuestion ?? '',
-    result: vote.result ?? vote.voteResult ?? '',
+    question: vote.voteQuestion ?? vote.question ?? '',
+    result: vote.result ?? '',
     yea_total,
     nay_total,
     present_total,
