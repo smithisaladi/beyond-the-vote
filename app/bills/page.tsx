@@ -1,30 +1,25 @@
 'use client'
 
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Link from 'next/link'
-import type { User } from '@supabase/supabase-js'
 import { Navigation } from '@/components/Navigation'
 import { SignInModal } from '@/components/SignInModal'
 import { SignUpModal } from '@/components/SignUpModal'
-import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
+import { useBillFilters } from '@/hooks/useBillFilters'
+import { useFetchBills, type Bill } from '@/hooks/useFetchBills'
+import { useTrackedBills } from '@/hooks/useTrackedBills'
+import { useDebounce } from '@/hooks/useDebounce'
+import { SearchModeToggle, type SearchMode } from '@/components/bills/SearchModeToggle'
+import { SmartSearchInput } from '@/components/bills/SmartSearchInput'
+import { SmartSearchResults } from '@/components/bills/SmartSearchResults'
+import { SmartSearchSuggestions } from '@/components/bills/SmartSearchSuggestions'
+import { type SmartSearchResult } from '@/lib/bills'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 type Status = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
 type Category = 'Environment' | 'Economy' | 'Healthcare' | 'Defense' | 'Education' | 'Housing' | 'Technology' | 'Immigration'
 type DateFilter = 'all' | 'month' | 'year'
-
-interface Bill {
-  id: string
-  number: string
-  title: string
-  sponsor: string
-  party: Party
-  status: Status
-  category?: Category
-  lastAction: string
-  lastActionTimestamp: number
-  summary: string
-}
 
 const PARTY_STYLES: Record<Party, { bg: string; text: string }> = {
   Democrat:    { bg: 'bg-[#7B8FA8]/[0.12]', text: 'text-[#7B8FA8]' },
@@ -212,144 +207,87 @@ function BillCard({
 }
 
 export default function BillsPage() {
-  const [query, setQuery] = useState('')
-  const [debouncedQuery, setDebouncedQuery] = useState('')
-  const [selectedStatuses, setSelectedStatuses] = useState<Set<Status>>(new Set())
-  const [selectedCategories, setSelectedCategories] = useState<Set<Category>>(new Set())
-  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
-
-  const [bills, setBills] = useState<Bill[]>([])
-  const [billsLoading, setBillsLoading] = useState(true)
-  const [billsError, setBillsError] = useState<string | null>(null)
-  const [offset, setOffset] = useState(0)
-  const [total, setTotal] = useState(0)
-  const [loadingMore, setLoadingMore] = useState(false)
-
-  const [trackedBills, setTrackedBills] = useState<Set<string>>(new Set())
-  const [user, setUser] = useState<User | null>(null)
+  const { user } = useAuth()
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // ─── Search mode ────────────────────────────────────────────────────────────
+  const [searchMode, setSearchMode] = useState<SearchMode>('filter')
 
-  // Debounce search query
+  // ─── Smart search state ─────────────────────────────────────────────────────
+  const [smartQuery, setSmartQuery] = useState('')
+  const [smartResults, setSmartResults] = useState<SmartSearchResult[]>([])
+  const [smartLoading, setSmartLoading] = useState(false)
+  const [smartError, setSmartError] = useState<string | null>(null)
+  const debouncedSmartQuery = useDebounce(smartQuery, 500)
+  const abortRef = useRef<AbortController | null>(null)
+
   useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => setDebouncedQuery(query), 400)
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
-  }, [query])
-
-  // Auth state
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  // Load tracked bills from Supabase
-  useEffect(() => {
-    if (!user) { setTrackedBills(new Set()); return }
-    const supabase = createClient()
-    supabase
-      .from('tracked_bills')
-      .select('bill_id')
-      .eq('user_id', user.id)
-      .then(({ data }) => {
-        if (data) setTrackedBills(new Set(data.map((r: { bill_id: string }) => r.bill_id)))
-      })
-  }, [user])
-
-  // Fetch bills (reset when query/category changes)
-  const fetchBills = useCallback(async (currentOffset: number, append: boolean) => {
-    if (currentOffset === 0) setBillsLoading(true)
-    else setLoadingMore(true)
-    setBillsError(null)
-
-    const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(currentOffset) })
-    if (debouncedQuery) params.set('q', debouncedQuery)
-
-    try {
-      const res = await fetch(`/api/bills?${params.toString()}`)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to load bills')
-      if (append) {
-        setBills(prev => [...prev, ...data.bills])
-      } else {
-        setBills(data.bills)
-      }
-      setTotal(data.pagination?.total ?? data.bills.length)
-    } catch (err: any) {
-      setBillsError(err.message)
-    } finally {
-      setBillsLoading(false)
-      setLoadingMore(false)
+    if (debouncedSmartQuery.length < 3) {
+      setSmartResults([])
+      setSmartError(null)
+      return
     }
-  }, [debouncedQuery])
 
-  // Reset and re-fetch when query changes
-  useEffect(() => {
-    setOffset(0)
-    fetchBills(0, false)
-  }, [debouncedQuery, fetchBills])
+    abortRef.current?.abort()
+    const controller = new AbortController()
+    abortRef.current = controller
 
-  const toggleStatus = (s: Status) =>
-    setSelectedStatuses(prev => { const n = new Set(prev); n.has(s) ? n.delete(s) : n.add(s); return n })
+    setSmartLoading(true)
+    setSmartError(null)
 
-  const toggleCategory = (c: Category) =>
-    setSelectedCategories(prev => { const n = new Set(prev); n.has(c) ? n.delete(c) : n.add(c); return n })
+    fetch(`/api/bills/search?q=${encodeURIComponent(debouncedSmartQuery)}&limit=20`, {
+      signal: controller.signal,
+    })
+      .then(async res => {
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? 'Search failed')
+        setSmartResults(data.results ?? [])
+      })
+      .catch(err => {
+        if (err.name === 'AbortError') return
+        setSmartError(err.message)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSmartLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [debouncedSmartQuery])
+
+  // ─── Filter search state ────────────────────────────────────────────────────
+  const {
+    query, setQuery,
+    debouncedQuery,
+    selectedStatuses, toggleStatus,
+    selectedCategories, toggleCategory,
+    dateFilter, setDateFilter,
+    clearFilters,
+    hasFilters,
+  } = useBillFilters()
+
+  const {
+    bills, loading: billsLoading, error: billsError,
+    loadingMore, loadMore, hasMore, refetch,
+  } = useFetchBills(debouncedQuery)
+
+  const { trackedBills, toggleTrack: _toggleTrack } = useTrackedBills(user?.id ?? null)
+
+  const handleToggleTrack = (billId: string) => {
+    if (!user) { setShowSignIn(true); return }
+    _toggleTrack(billId)
+  }
 
   const now = Date.now()
   const filtered = useMemo(() => {
     return bills.filter(bill => {
-      if (selectedStatuses.size > 0 && !selectedStatuses.has(bill.status)) return false
-      if (selectedCategories.size > 0 && (!bill.category || !selectedCategories.has(bill.category))) return false
+      if (selectedStatuses.size > 0 && !selectedStatuses.has(bill.status as Status)) return false
+      if (selectedCategories.size > 0 && (!bill.category || !selectedCategories.has(bill.category as Category))) return false
       if (dateFilter === 'month' && now - bill.lastActionTimestamp > 30 * 24 * 60 * 60 * 1000) return false
       if (dateFilter === 'year' && now - bill.lastActionTimestamp > 365 * 24 * 60 * 60 * 1000) return false
       return true
     })
   }, [bills, selectedStatuses, selectedCategories, dateFilter, now])
-
-  const hasFilters = selectedStatuses.size > 0 || selectedCategories.size > 0 || dateFilter !== 'all'
-
-  const clearFilters = () => {
-    setSelectedStatuses(new Set())
-    setSelectedCategories(new Set())
-    setDateFilter('all')
-  }
-
-  const toggleTrack = async (billId: string) => {
-    if (!user) {
-      setShowSignIn(true)
-      return
-    }
-
-    const supabase = createClient()
-    const isTracked = trackedBills.has(billId)
-    const next = new Set(trackedBills)
-    isTracked ? next.delete(billId) : next.add(billId)
-    setTrackedBills(next) // optimistic
-
-    const { error } = isTracked
-      ? await supabase.from('tracked_bills').delete().eq('user_id', user.id).eq('bill_id', billId)
-      : await supabase.from('tracked_bills').insert({ user_id: user.id, bill_id: billId })
-
-    if (error) {
-      // revert
-      const reverted = new Set(trackedBills)
-      setTrackedBills(reverted)
-    }
-  }
-
-  const loadMore = () => {
-    const nextOffset = offset + PAGE_SIZE
-    setOffset(nextOffset)
-    fetchBills(nextOffset, true)
-  }
-
-  const hasMore = bills.length < total
 
   return (
     <div className="relative min-h-screen flex flex-col bg-[#F5F0E8] overflow-hidden">
@@ -373,27 +311,57 @@ export default function BillsPage() {
                 Follow legislation that matters to you.
               </p>
 
-              {/* Search */}
-              <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] px-4 py-3 shadow-sm max-w-2xl">
-                <span className="text-[#1C1C1A]/35 flex-shrink-0">
-                  <SearchIcon />
-                </span>
-                <input
-                  type="text"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Search bills by title, number, or sponsor…"
-                  className="flex-1 bg-transparent outline-none text-sm text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              {/* Search input — changes based on mode */}
+              {searchMode === 'filter' ? (
+                <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] px-4 py-3 shadow-sm max-w-2xl">
+                  <span className="text-[#1C1C1A]/35 flex-shrink-0">
+                    <SearchIcon />
+                  </span>
+                  <input
+                    type="text"
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    placeholder="Search bills by title, number, or sponsor…"
+                    className="flex-1 bg-transparent outline-none text-sm text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+                  />
+                  {query && (
+                    <button onClick={() => setQuery('')} className="text-[#1C1C1A]/35 hover:text-[#1C1C1A]/60 flex-shrink-0">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <SmartSearchInput
+                  value={smartQuery}
+                  onChange={setSmartQuery}
+                  loading={smartLoading}
                 />
-                {query && (
-                  <button onClick={() => setQuery('')} className="text-[#1C1C1A]/35 hover:text-[#1C1C1A]/60 flex-shrink-0">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
-                  </button>
-                )}
+              )}
+
+              {/* Mode toggle */}
+              <div className="mt-3">
+                <SearchModeToggle mode={searchMode} onChange={setSearchMode} />
               </div>
             </div>
+
+            {/* Smart search body */}
+            {searchMode === 'smart' ? (
+              <div className="max-w-2xl">
+                {smartQuery.length < 3 ? (
+                  <SmartSearchSuggestions onSelect={q => setSmartQuery(q)} />
+                ) : (
+                  <SmartSearchResults
+                    results={smartResults}
+                    loading={smartLoading}
+                    error={smartError}
+                    query={debouncedSmartQuery}
+                    onSwitchToFilter={() => setSearchMode('filter')}
+                  />
+                )}
+              </div>
+            ) : (
 
             <div className="flex gap-8 items-start">
 
@@ -510,7 +478,7 @@ export default function BillsPage() {
                         : 'Failed to load bills.'}
                     </p>
                     <button
-                      onClick={() => fetchBills(0, false)}
+                      onClick={() => refetch()}
                       className="text-sm text-[#9B7FA6] hover:text-[#8a6e95]"
                     >
                       Try again
@@ -534,7 +502,7 @@ export default function BillsPage() {
                           key={bill.id}
                           bill={bill}
                           tracked={trackedBills.has(bill.id)}
-                          onToggleTrack={() => toggleTrack(bill.id)}
+                          onToggleTrack={() => handleToggleTrack(bill.id)}
                         />
                       ))}
                     </div>
@@ -555,6 +523,7 @@ export default function BillsPage() {
               </div>
 
             </div>
+            )} {/* end filter mode */}
           </div>
         </main>
       </div>
