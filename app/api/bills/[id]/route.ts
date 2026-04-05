@@ -108,7 +108,9 @@ export async function GET(
     const latestSummary = summaries.at(-1)?.text?.replace(/<[^>]+>/g, '') ?? ''
 
     const sponsor = bill.sponsors?.[0]
-    const cosponsors: any[] = bill.cosponsors ?? []
+    const cosponsors: any[] = Array.isArray(bill.cosponsors)
+      ? bill.cosponsors
+      : (bill.cosponsors?.cosponsor ?? [])
 
     const voteActions = actions.filter(
       (a: any) =>
