@@ -29,7 +29,13 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const protectedPaths = ['/dashboard', '/settings']
+
+  // Redirect signed-in users from /dashboard to / (dashboard now lives at /)
+  if (user && pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  const protectedPaths = ['/settings']
   if (!user && protectedPaths.some(p => pathname.startsWith(p))) {
     const redirectUrl = new URL('/', request.url)
     redirectUrl.searchParams.set('redirect', pathname)
