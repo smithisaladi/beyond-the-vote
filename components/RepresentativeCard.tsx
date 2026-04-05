@@ -12,7 +12,7 @@ interface RepresentativeCardProps {
   party: Party
   state: string
   district?: string
-  since: string
+  since: string | null
   photo?: string | null
 }
 
