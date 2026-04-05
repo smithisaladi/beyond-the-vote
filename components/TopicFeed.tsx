@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ALL_TOPICS, topicToSlug, TOPIC_BILLS, type Topic } from '@/lib/topics'
+import { ALL_TOPICS, topicToSlug, type Topic } from '@/lib/topics'
+import { useTopicFeed } from '@/hooks/useTopicFeed'
 
 const LS_KEY = 'btb_topics'
 
@@ -41,20 +42,9 @@ export function TopicFeed() {
     load()
   }, [])
 
+  const feedItems = useTopicFeed(topics)
+
   if (!mounted || topics.length === 0) return null
-
-  // Collect up to 4 bills across followed topics
-  const feedItems: { topic: Topic; bill: { number: string; title: string; status: string } }[] = []
-  const seen = new Set<string>()
-  for (const topic of topics) {
-    for (const bill of TOPIC_BILLS[topic] ?? []) {
-      if (!seen.has(bill.number) && feedItems.length < 4) {
-        seen.add(bill.number)
-        feedItems.push({ topic, bill })
-      }
-    }
-  }
-
   if (feedItems.length === 0) return null
 
   return (
