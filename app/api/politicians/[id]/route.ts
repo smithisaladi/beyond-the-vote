@@ -265,10 +265,11 @@ export async function GET(
   const { donors, fecUrl } = extract(donorsRes) ?? { donors: [], fecUrl: null }
 
   const votes = billVotes.map((v: any) => ({
-    id:   v.voteId,
-    bill: v.question,
-    date: v.date,
-    vote: v.position as 'Yea' | 'Nay',
+    id:     v.voteId,
+    bill:   v.question,
+    billId: v.billId ?? null,
+    date:   v.date,
+    vote:   v.position as 'Yea' | 'Nay',
   }))
 
   return NextResponse.json({
