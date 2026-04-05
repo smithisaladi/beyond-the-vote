@@ -57,7 +57,7 @@ interface Politician {
   website: string | null
   address: string | null
   phone: string | null
-  openSecretsUrl: string | null
+  fecUrl: string | null
   nextElectionYear: number | null
   stats: {
     yearsInOffice: number
@@ -432,14 +432,14 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
                       politician.donors.length === 0 ? (
                         <div className="px-6 py-8 text-center">
                           <p className="text-sm text-[#1C1C1A]/40 mb-2">Donor data unavailable.</p>
-                          {politician.openSecretsUrl && (
+                          {politician.fecUrl && (
                             <a
-                              href={politician.openSecretsUrl}
+                              href={politician.fecUrl}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-xs text-[#9B7FA6] hover:text-[#8a6e95]"
                             >
-                              View on OpenSecrets →
+                              View on FEC →
                             </a>
                           )}
                         </div>
@@ -457,15 +457,15 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
                               <span className="text-sm font-medium text-[#1C1C1A] flex-shrink-0">{d.amount}</span>
                             </div>
                           ))}
-                          {politician.openSecretsUrl && (
+                          {politician.fecUrl && (
                             <div className="px-6 py-3 border-t border-[rgba(28,28,26,0.06)]">
                               <a
-                                href={politician.openSecretsUrl}
+                                href={politician.fecUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-xs text-[#1C1C1A]/40 hover:text-[#9B7FA6] transition-colors"
                               >
-                                Data via OpenSecrets →
+                                Data via FEC →
                               </a>
                             </div>
                           )}
