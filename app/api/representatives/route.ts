@@ -1,61 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY ?? ''
+const GEOCODIO_API_KEY = process.env.GEOCODIO_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
+const GEOCODIO_BASE = 'https://api.geocod.io/v1.7'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 
-interface CivicOfficial {
-  name: string
-  party?: string
-  photoUrl?: string
-  urls?: string[]
-  phones?: string[]
-}
-
-interface CivicOffice {
-  name: string
-  divisionId: string
-  levels?: string[]
-  roles?: string[]
-  officialIndices: number[]
-}
-
-interface CongressMember {
-  bioguideId: string
-  name: string
-  depiction?: { imageUrl: string }
-  terms?: { item: { startYear: number }[] }
-  url?: string
-}
-
 function normalizeParty(party?: string): Party {
-  const p = (party ?? '').toLowerCase()
-  if (p.includes('democrat')) return 'Democrat'
-  if (p.includes('republican')) return 'Republican'
+  const p = (party ?? '').toUpperCase()
+  if (p === 'D' || p.includes('DEMOCRAT')) return 'Democrat'
+  if (p === 'R' || p.includes('REPUBLICAN')) return 'Republican'
   return 'Independent'
 }
 
-async function findCongressMember(
-  lastName: string,
-  stateCode: string,
-  chamber: 'senate' | 'house'
-): Promise<Partial<CongressMember>> {
-  if (!CONGRESS_API_KEY) return {}
+function ordinal(n: number): string {
+  if (n === 0) return 'At-Large'
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0]) + ' District'
+}
 
-  const url = `${CONGRESS_BASE}/member?state=${stateCode}&chamber=${chamber}&currentMember=true&limit=100&api_key=${CONGRESS_API_KEY}&format=json`
-  const res = await fetch(url, { next: { revalidate: 3600 } })
-  if (!res.ok) return {}
+async function enrichFromCongress(
+  bioguideId: string
+): Promise<{ photo: string | null; since: string | null; website: string | null }> {
+  if (!CONGRESS_API_KEY || !bioguideId) return { photo: null, since: null, website: null }
+
+  const res = await fetch(
+    `${CONGRESS_BASE}/member/${bioguideId}?format=json&api_key=${CONGRESS_API_KEY}`,
+    { next: { revalidate: 3600 } }
+  )
+  if (!res.ok) return { photo: null, since: null, website: null }
 
   const data = await res.json()
-  const members: CongressMember[] = data.members ?? []
+  const member = data.member
+  const firstTerm = member.terms?.item?.[0]
 
-  const match = members.find((m) =>
-    m.name.toLowerCase().includes(lastName.toLowerCase())
-  )
-
-  return match ?? {}
+  return {
+    photo: member.depiction?.imageUrl ?? null,
+    since: firstTerm?.startYear?.toString() ?? null,
+    website: member.officialWebsiteUrl ?? null,
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -65,89 +50,69 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'address is required' }, { status: 400 })
   }
 
-  if (!GOOGLE_API_KEY) {
-    return NextResponse.json({ error: 'GOOGLE_API_KEY is not configured' }, { status: 500 })
+  if (!GEOCODIO_API_KEY) {
+    return NextResponse.json({ error: 'GEOCODIO_API_KEY is not configured' }, { status: 500 })
   }
 
   try {
-    const civicUrl = `https://civicinfo.googleapis.com/civicinfo/v2/representatives?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`
-    const civicRes = await fetch(civicUrl, { next: { revalidate: 3600 } })
+    const geocodioRes = await fetch(
+      `${GEOCODIO_BASE}/geocode?q=${encodeURIComponent(address)}&fields=cd&api_key=${GEOCODIO_API_KEY}`,
+      { next: { revalidate: 3600 } }
+    )
 
-    if (!civicRes.ok) {
-      const err = await civicRes.json().catch(() => ({}))
+    if (!geocodioRes.ok) {
+      const err = await geocodioRes.json().catch(() => ({}))
       return NextResponse.json(
-        { error: err.error?.message ?? 'Google Civic API error' },
-        { status: civicRes.status }
+        { error: err.error ?? 'Geocodio API error' },
+        { status: geocodioRes.status }
       )
     }
 
-    const civicData = await civicRes.json()
+    const geocodioData = await geocodioRes.json()
+    const result = geocodioData.results?.[0]
 
-    const federalOffices: CivicOffice[] = (civicData.offices ?? []).filter(
-      (o: CivicOffice) => o.levels?.includes('country')
-    )
+    if (!result) {
+      return NextResponse.json({ error: 'Address not found' }, { status: 404 })
+    }
 
-    const officials: Array<{
-      name: string
-      title: string
-      party: Party
-      photo: string | null
-      urls: string[]
-      phones: string[]
-      state: string
-      district?: string
-      chamber: 'senate' | 'house'
-      stateCode: string
-      districtNumber?: number
-    }> = []
+    const stateCode: string = result.address_components?.state ?? ''
+    const districts: any[] = result.fields?.congressional_districts ?? []
 
-    for (const office of federalOffices) {
-      const isSenate = office.roles?.includes('legislatorUpperBody')
-      const isHouse = office.roles?.includes('legislatorLowerBody')
-      if (!isSenate && !isHouse) continue
+    // Collect all legislators across returned districts (senators appear in each district entry)
+    const seen = new Set<string>()
+    const legislators: Array<{ leg: any; districtNumber: number }> = []
 
-      const stateMatch = office.divisionId.match(/state:([a-z]+)/)
-      const districtMatch = office.divisionId.match(/cd:(\d+)/)
-      const stateCode = stateMatch ? stateMatch[1].toUpperCase() : ''
-      const districtNumber = districtMatch ? parseInt(districtMatch[1]) : undefined
-
-      for (const idx of office.officialIndices) {
-        const official: CivicOfficial = civicData.officials?.[idx]
-        if (!official) continue
-
-        officials.push({
-          name: official.name,
-          title: office.name,
-          party: normalizeParty(official.party),
-          photo: official.photoUrl ?? null,
-          urls: official.urls ?? [],
-          phones: official.phones ?? [],
-          state: stateCode,
-          stateCode,
-          district: districtNumber ? `${districtNumber}th District` : undefined,
-          chamber: isSenate ? 'senate' : 'house',
-          districtNumber,
-        })
+    for (const district of districts) {
+      for (const leg of district.current_legislators ?? []) {
+        const key = leg.references?.bioguide_id ?? `${leg.bio?.last_name}-${leg.type}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        legislators.push({ leg, districtNumber: district.district_number ?? 0 })
       }
     }
 
     const representatives = await Promise.all(
-      officials.map(async (official) => {
-        const lastName = official.name.trim().split(' ').pop() ?? official.name
-        const member = await findCongressMember(lastName, official.stateCode, official.chamber)
+      legislators.map(async ({ leg, districtNumber }) => {
+        const bioguideId: string = leg.references?.bioguide_id ?? ''
+        const enrich = await enrichFromCongress(bioguideId)
+
+        const firstName: string = leg.bio?.first_name ?? ''
+        const lastName: string = leg.bio?.last_name ?? ''
+        const name = `${firstName} ${lastName}`.trim()
+        const isSenator = leg.type === 'senator'
 
         return {
-          id: member.bioguideId ?? official.name.replace(/\s+/g, '-').toLowerCase(),
-          bioguideId: member.bioguideId ?? null,
-          name: official.name,
-          title: official.title,
-          party: official.party,
-          state: official.state,
-          district: official.district,
-          photo: member.depiction?.imageUrl ?? official.photo,
-          since: member.terms?.item?.[0]?.startYear?.toString() ?? null,
-          website: member.url ?? official.urls[0] ?? null,
-          phone: official.phones[0] ?? null,
+          id: bioguideId || name.replace(/\s+/g, '-').toLowerCase(),
+          bioguideId: bioguideId || null,
+          name,
+          title: isSenator ? 'U.S. Senator' : 'U.S. Representative',
+          party: normalizeParty(leg.bio?.party),
+          state: stateCode,
+          district: !isSenator ? ordinal(districtNumber) : undefined,
+          photo: enrich.photo,
+          since: enrich.since,
+          website: enrich.website ?? leg.contact?.url ?? null,
+          phone: leg.contact?.phone ?? null,
         }
       })
     )
