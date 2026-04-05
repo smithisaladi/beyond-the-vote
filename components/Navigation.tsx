@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
+import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { SignInModal } from './SignInModal'
 import { SignUpModal } from './SignUpModal'
@@ -44,19 +45,10 @@ function getInitials(user: User): string {
 export function Navigation() {
   const router = useRouter()
   const pathname = usePathname()
-  const [user, setUser]         = useState<User | null>(null)
+  const { user } = useAuth()
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
   const [menuOpen, setMenuOpen]     = useState(false)
-
-  useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
 
   const handleSignOut = async () => {
     await createClient().auth.signOut()
