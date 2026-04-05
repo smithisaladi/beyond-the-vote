@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
-const CONGRESS_BASE = 'https://api.congress.gov/v3'
+import { createClient } from '@/lib/supabase/server'
 
 type Status = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
 type Category =
@@ -32,154 +30,127 @@ const POLICY_AREA_MAP: Record<string, Category> = {
   'Immigration': 'Immigration',
 }
 
-function mapCategory(policyArea?: string): Category | undefined {
+function mapCategory(policyArea?: string | null): Category | undefined {
   if (!policyArea) return undefined
   return POLICY_AREA_MAP[policyArea] as Category | undefined
 }
 
-function mapStatus(latestAction?: string, introducedDate?: string): Status {
-  const action = (latestAction ?? '').toLowerCase()
-
-  if (
-    action.includes('became public law') ||
-    action.includes('signed by president') ||
-    action.includes('passed the senate') ||
-    action.includes('passed the house') ||
-    action.includes('presented to president')
-  ) {
-    return 'Passed'
-  }
-
-  if (
-    action.includes('failed') ||
-    action.includes('defeated') ||
-    action.includes('vetoed') ||
-    action.includes('rejected')
-  ) {
-    return 'Failed'
-  }
-
-  if (action.includes('referred to') || action.includes('committee')) {
-    // Check if it's stalled (no action in 6+ months)
-    if (introducedDate) {
-      const introduced = new Date(introducedDate)
-      const monthsAgo = (Date.now() - introduced.getTime()) / (1000 * 60 * 60 * 24 * 30)
-      if (monthsAgo > 6) return 'Stalled'
-    }
-    return 'Committee'
-  }
-
-  return 'Active'
+// Reverse map: Category → list of Congress.gov policyArea strings
+const CATEGORY_TO_POLICY_AREAS: Record<string, string[]> = {}
+for (const [policyArea, category] of Object.entries(POLICY_AREA_MAP)) {
+  if (!CATEGORY_TO_POLICY_AREAS[category]) CATEGORY_TO_POLICY_AREAS[category] = []
+  CATEGORY_TO_POLICY_AREAS[category].push(policyArea)
 }
 
-function formatBillId(congress: number, type: string, number: number): string {
-  return `${congress}-${type.toLowerCase()}-${number}`
+interface Bill {
+  id: string
+  number: string
+  title: string
+  sponsor: string
+  party: 'Democrat' | 'Republican' | 'Independent'
+  status: Status
+  category?: Category
+  lastAction: string
+  lastActionTimestamp: number
+  summary: string
 }
 
-function formatBillNumber(type: string, number: number): string {
-  const types: Record<string, string> = {
-    hr: 'H.R.',
-    s: 'S.',
-    hjres: 'H.J.Res.',
-    sjres: 'S.J.Res.',
-    hconres: 'H.Con.Res.',
-    sconres: 'S.Con.Res.',
-    hres: 'H.Res.',
-    sres: 'S.Res.',
+function mapRowToBill(row: any): Bill {
+  return {
+    id:                 row.bill_id,
+    number:             row.bill_number ?? row.bill_id,
+    title:              row.title,
+    sponsor:            row.sponsor_name ?? 'Unknown',
+    party:              (row.sponsor_party as Bill['party']) ?? 'Independent',
+    status:             (row.status as Status) ?? 'Active',
+    category:           mapCategory(row.policy_area),
+    lastAction:         row.last_action_date
+                          ? new Date(row.last_action_date).toLocaleDateString('en-US', {
+                              month: 'short', day: 'numeric', year: 'numeric',
+                            })
+                          : '',
+    lastActionTimestamp: row.last_action_date
+                          ? new Date(row.last_action_date).getTime()
+                          : 0,
+    summary:            row.summary ?? row.last_action_text ?? '',
   }
-  const prefix = types[type.toLowerCase()] ?? type.toUpperCase()
-  return `${prefix} ${number}`
 }
 
 export async function GET(request: NextRequest) {
-  if (!CONGRESS_API_KEY) {
-    return NextResponse.json({ error: 'CONGRESS_API_KEY is not configured' }, { status: 500 })
-  }
-
   const { searchParams } = request.nextUrl
-  const q = searchParams.get('q') ?? ''
+  const q = searchParams.get('q')?.trim() ?? ''
   const status = searchParams.get('status') ?? ''
   const category = searchParams.get('category') ?? ''
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 250)
   const offset = parseInt(searchParams.get('offset') ?? '0')
 
   try {
-    const params = new URLSearchParams({
-      format: 'json',
-      limit: String(limit),
-      offset: String(offset),
-      sort: 'updateDate desc',
-      api_key: CONGRESS_API_KEY,
-    })
+    const supabase = await createClient()
 
-    if (q) params.set('query', q)
+    // Text search mode: use the search_bills_text RPC
+    if (q) {
+      const { data, error } = await supabase.rpc('search_bills_text', {
+        query_text:      q,
+        match_count:     limit + offset,
+        congress_filter: null,
+      })
 
-    // Congress.gov supports filtering by policyArea
-    if (category) {
-      const policyArea = Object.entries(POLICY_AREA_MAP).find(([, v]) => v === category)?.[0]
-      if (policyArea) params.set('policyArea', policyArea)
-    }
+      if (error) throw new Error(error.message)
 
-    const url = `${CONGRESS_BASE}/bill?${params.toString()}`
-    const res = await fetch(url, { next: { revalidate: 300 } })
+      let results = (data ?? []) as any[]
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      return NextResponse.json(
-        { error: err.error?.message ?? 'Congress.gov API error' },
-        { status: res.status }
-      )
-    }
-
-    const data = await res.json()
-
-    let bills = (data.bills ?? []).map((bill: any) => {
-      const mappedStatus = mapStatus(
-        bill.latestAction?.text,
-        bill.introducedDate
-      )
-      const mappedCategory = mapCategory(bill.policyArea?.name)
-
-      return {
-        id: formatBillId(bill.congress, bill.type, bill.number),
-        number: formatBillNumber(bill.type, bill.number),
-        title: bill.title,
-        sponsor: bill.sponsors?.[0]
-          ? `${bill.sponsors[0].title ?? ''} ${bill.sponsors[0].fullName}`.trim()
-          : 'Unknown',
-        party: 'Independent' as const, // party not in list endpoint; detail has it
-        status: mappedStatus,
-        category: mappedCategory,
-        lastAction: bill.latestAction?.actionDate
-          ? new Date(bill.latestAction.actionDate).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })
-          : '',
-        lastActionTimestamp: bill.latestAction?.actionDate
-          ? new Date(bill.latestAction.actionDate).getTime()
-          : 0,
-        summary: bill.latestAction?.text ?? '',
-        updateDate: bill.updateDate,
+      // Apply post-filters
+      if (status) results = results.filter((r: any) => r.status === status)
+      if (category) {
+        const areas = CATEGORY_TO_POLICY_AREAS[category] ?? []
+        results = results.filter((r: any) => areas.includes(r.policy_area))
       }
-    })
 
-    // Client-side status filter (Congress.gov doesn't filter by status natively)
-    if (status) {
-      bills = bills.filter((b: any) => b.status === status)
+      const total = results.length
+      const paged = results.slice(offset, offset + limit)
+
+      return NextResponse.json({
+        bills: paged.map(mapRowToBill),
+        pagination: { total, limit, offset },
+      })
     }
+
+    // Browse mode: direct table query with server-side filters
+    let query = supabase
+      .from('bill_embeddings')
+      .select('*', { count: 'exact' })
+
+    if (status) query = query.eq('status', status)
+    if (category) {
+      const areas = CATEGORY_TO_POLICY_AREAS[category] ?? []
+      if (areas.length > 0) {
+        query = query.in('policy_area', areas)
+      } else {
+        // No matching policy areas — return empty
+        return NextResponse.json({
+          bills: [],
+          pagination: { total: 0, limit, offset },
+        })
+      }
+    }
+
+    query = query
+      .order('introduced_date', { ascending: false, nullsFirst: false })
+      .range(offset, offset + limit - 1)
+
+    const { data, error, count } = await query
+
+    if (error) throw new Error(error.message)
 
     return NextResponse.json({
-      bills,
-      pagination: {
-        total: data.pagination?.count ?? bills.length,
-        limit,
-        offset,
-      },
+      bills: (data ?? []).map(mapRowToBill),
+      pagination: { total: count ?? 0, limit, offset },
     })
   } catch (err) {
     console.error('[/api/bills]', err)
-    return NextResponse.json({ error: 'Failed to fetch bills' }, { status: 500 })
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Failed to fetch bills' },
+      { status: 500 },
+    )
   }
 }
