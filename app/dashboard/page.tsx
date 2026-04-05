@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { ALL_TOPICS, topicToSlug, TOPIC_BILLS, type Topic } from '@/lib/topics'
+import { ALL_TOPICS, topicToSlug, type Topic } from '@/lib/topics'
 import type { User } from '@supabase/supabase-js'
+import { useRouter } from 'next/navigation'
 
 const LS_KEY = 'btb_topics'
 
@@ -64,67 +65,6 @@ function Initials({ name }: { name: string }) {
   )
 }
 
-function IconHome() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  )
-}
-
-function IconUsers() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
-    </svg>
-  )
-}
-
-function IconFileText() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-      <polyline points="14 2 14 8 20 8" />
-      <line x1="16" y1="13" x2="8" y2="13" />
-      <line x1="16" y1="17" x2="8" y2="17" />
-      <polyline points="10 9 9 9 8 9" />
-    </svg>
-  )
-}
-
-function IconSettings() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" />
-    </svg>
-  )
-}
-
-function IconTag() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-      <line x1="7" y1="7" x2="7.01" y2="7" />
-    </svg>
-  )
-}
-
-function IconScales() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="3" x2="12" y2="21" />
-      <path d="M3 6l9-3 9 3" />
-      <path d="M6 6l-3 6a3 3 0 006 0L6 6z" />
-      <path d="M18 6l-3 6a3 3 0 006 0L18 6z" />
-      <line x1="3" y1="21" x2="21" y2="21" />
-    </svg>
-  )
-}
-
 function IconBell() {
   return (
     <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -133,19 +73,9 @@ function IconBell() {
   )
 }
 
-function buildTopicFeedItems(topics: Topic[]) {
-  const items: { topic: Topic; bill: { number: string; title: string; status: string } }[] = []
-  const seen = new Set<string>()
-  for (const topic of topics) {
-    for (const bill of TOPIC_BILLS[topic] ?? []) {
-      const key = bill.number
-      if (!seen.has(key)) {
-        seen.add(key)
-        items.push({ topic, bill })
-      }
-    }
-  }
-  return items.slice(0, 6)
+type TopicFeedItem = {
+  topic: Topic
+  bill: { id: string; number: string; title: string; status: string }
 }
 
 function SkeletonCard() {
@@ -189,12 +119,24 @@ function getInitials(user: User): string {
   return (user.email?.[0] ?? '?').toUpperCase()
 }
 
+function SignOutIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  )
+}
+
 export default function DashboardPage() {
+  const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [followedTopics, setFollowedTopics] = useState<Topic[]>([])
   const [politicians, setPoliticians] = useState<FollowedPolitician[]>([])
   const [trackedBills, setTrackedBills] = useState<TrackedBill[]>([])
   const [activityFeed, setActivityFeed] = useState<ActivityItem[]>([])
+  const [topicFeedItems, setTopicFeedItems] = useState<TopicFeedItem[]>([])
   const [loadingPoliticians, setLoadingPoliticians] = useState(true)
   const [loadingBills, setLoadingBills] = useState(true)
 
@@ -235,6 +177,29 @@ export default function DashboardPage() {
     }
     load()
   }, [user])
+
+  // Fetch bills for followed topics
+  useEffect(() => {
+    if (followedTopics.length === 0) { setTopicFeedItems([]); return }
+    const fetches = followedTopics.map(async (topic) => {
+      const url = `/api/bills/by-topic?slug=${topicToSlug(topic)}&limit=2`
+      try {
+        const res = await fetch(url)
+        if (!res.ok) return []
+        const data = await res.json()
+        return (data.bills ?? []).map((b: TopicFeedItem['bill']) => ({ topic, bill: b }))
+      } catch { return [] }
+    })
+    Promise.all(fetches).then(results => {
+      const seen = new Set<string>()
+      const merged = (results.flat() as TopicFeedItem[]).filter(item => {
+        if (seen.has(item.bill.id)) return false
+        seen.add(item.bill.id)
+        return true
+      }).slice(0, 6)
+      setTopicFeedItems(merged)
+    })
+  }, [followedTopics])
 
   // Load followed politicians
   useEffect(() => {
@@ -358,71 +323,8 @@ export default function DashboardPage() {
     load()
   }, [user])
 
-  const topicFeedItems = buildTopicFeedItems(followedTopics)
-
-  const navItems = [
-    { label: 'Home',           href: '/',               icon: <IconHome />,      active: false },
-    { label: 'My Politicians', href: '/representatives', icon: <IconUsers />,     active: false },
-    { label: 'Bills Tracker',  href: '/bills',           icon: <IconFileText />,  active: false },
-    { label: 'Topics',         href: '/topics',          icon: <IconTag />,       active: false },
-    { label: 'Values Match',   href: '/values-match',    icon: <IconScales />,    active: false },
-    { label: 'Settings',       href: '/settings',        icon: <IconSettings />,  active: false },
-  ]
-
   return (
-    <div className="flex min-h-screen bg-[#F5F0E8]">
-
-      {/* ── Left sidebar ── */}
-      <aside className="fixed top-0 left-0 h-full flex flex-col bg-[#D6CFC4] border-r border-[#C4BCB0] z-20" style={{ width: '228px' }}>
-
-        {/* Brand */}
-        <div className="px-5 py-5 border-b border-[#C4BCB0]">
-          <Link href="/" className="flex items-center">
-            <span className="text-sm font-semibold text-[#1C1C1A] tracking-tight" style={{ fontFamily: 'var(--font-serif)' }}>
-              Beyond the Ballot
-            </span>
-          </Link>
-        </div>
-
-        {/* Nav links */}
-        <nav className="flex-1 px-2 py-4 flex flex-col gap-0.5">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-3 py-2.5 rounded-r-lg text-sm transition-colors ${
-                item.active
-                  ? 'border-l-2 border-[#9B7FA6] bg-[#C8BED0]/40 text-[#1C1C1A] font-medium pl-[14px] pr-3'
-                  : 'border-l-2 border-transparent text-[#1C1C1A]/60 hover:text-[#1C1C1A] hover:bg-[#BDB5A8]/40 pl-[14px] pr-3'
-              }`}
-            >
-              <span className={item.active ? 'text-[#9B7FA6]' : 'text-[#1C1C1A]/40'}>{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Activity summary */}
-        <div className="px-5 py-5 border-t border-[#C4BCB0]">
-          <p className="text-[10px] text-[#1C1C1A]/40 uppercase tracking-widest mb-2">Activity</p>
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-[#1C1C1A]/60">
-              <span className="text-[#9B7FA6] font-semibold">{politicians.length}</span> politicians followed
-            </p>
-            <p className="text-xs text-[#1C1C1A]/60">
-              <span className="text-[#9B7FA6] font-semibold">{trackedBills.length}</span> bills tracked
-            </p>
-            {followedTopics.length > 0 && (
-              <p className="text-xs text-[#1C1C1A]/60">
-                <span className="text-[#9B7FA6] font-semibold">{followedTopics.length}</span> topics followed
-              </p>
-            )}
-          </div>
-        </div>
-      </aside>
-
-      {/* ── Main ── */}
-      <div className="flex-1 flex flex-col min-h-screen" style={{ marginLeft: '228px' }}>
+    <div className="flex-1 flex flex-col min-h-screen">
 
         {/* Top bar */}
         <header className="sticky top-0 z-10 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] min-h-[64px] px-8 flex items-center justify-between">
@@ -445,11 +347,24 @@ export default function DashboardPage() {
                     {getInitials(user)}
                   </span>
                 </div>
-                <span className="text-sm text-[#1C1C1A]/60">
+                <span className="text-sm text-[#1C1C1A]/60 hidden sm:inline">
                   {user.user_metadata?.full_name ?? user.email}
                 </span>
               </div>
             )}
+
+            <button
+              onClick={async () => {
+                await createClient().auth.signOut()
+                router.push('/')
+                router.refresh()
+              }}
+              aria-label="Sign out"
+              className="flex items-center gap-2 text-sm text-[#1C1C1A]/45 hover:text-[#1C1C1A]/75 transition-colors"
+            >
+              <span className="hidden sm:inline">Sign out</span>
+              <SignOutIcon />
+            </button>
           </div>
         </header>
 
@@ -557,7 +472,7 @@ export default function DashboardPage() {
                   {topicFeedItems.map(({ topic, bill }, i) => {
                     const s = STATUS_STYLES[bill.status as BillStatus] ?? STATUS_STYLES['Active']
                     return (
-                      <div key={i} className="px-6 py-4">
+                      <Link key={i} href={`/bills/${bill.id}`} className="block px-6 py-4 hover:bg-[#F5F0E8]/60 transition-colors group">
                         <div className="flex items-center gap-1.5 mb-2">
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9B7FA6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
@@ -568,7 +483,7 @@ export default function DashboardPage() {
                         <div className="flex items-start justify-between gap-4">
                           <div className="min-w-0">
                             <p className="text-[11px] font-mono text-[#1C1C1A]/38 mb-1">{bill.number}</p>
-                            <p className="text-sm text-[#1C1C1A] leading-snug" style={{ fontFamily: 'var(--font-serif)' }}>
+                            <p className="text-sm text-[#1C1C1A] leading-snug group-hover:text-[#9B7FA6] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
                               {bill.title}
                             </p>
                           </div>
@@ -576,7 +491,7 @@ export default function DashboardPage() {
                             {bill.status}
                           </span>
                         </div>
-                      </div>
+                      </Link>
                     )
                   })}
                 </div>
@@ -666,9 +581,10 @@ export default function DashboardPage() {
                     {trackedBills.map((bill, idx) => {
                       const s = STATUS_STYLES[bill.status]
                       return (
-                        <div
+                        <Link
                           key={bill.id}
-                          className={`px-5 py-4 ${idx < trackedBills.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''}`}
+                          href={`/bills/${bill.id}`}
+                          className={`block px-5 py-4 hover:bg-[#F8F5F0] transition-colors ${idx < trackedBills.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''}`}
                         >
                           <div className="flex items-start justify-between gap-2 mb-1.5">
                             <span className="text-[11px] font-mono text-[#1C1C1A]/38">{bill.number}</span>
@@ -683,7 +599,7 @@ export default function DashboardPage() {
                             <span className="text-[11px] text-[#1C1C1A]/40">{bill.category}</span>
                             <span className="text-[11px] text-[#1C1C1A]/30">{bill.lastAction}</span>
                           </div>
-                        </div>
+                        </Link>
                       )
                     })}
                   </div>
@@ -693,7 +609,6 @@ export default function DashboardPage() {
 
           </div>
         </main>
-      </div>
     </div>
   )
 }
