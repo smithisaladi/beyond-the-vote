@@ -36,7 +36,7 @@ function ordinal(n: number): string {
 // ─── Single result card ───────────────────────────────────────────────────────
 
 function SmartResultCard({ result }: { result: SmartSearchResult }) {
-  const pct = Math.round(result.similarity * 100)
+  const pct = result.similarity != null ? Math.round(result.similarity * 100) : null
   const shortSummary = result.summary
     ? result.summary.length > 150
       ? result.summary.slice(0, 150) + '…'
@@ -73,15 +73,17 @@ function SmartResultCard({ result }: { result: SmartSearchResult }) {
         )}
 
         {/* Relevance bar */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex-1 max-w-[120px] h-1 bg-[#E8E3DA] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#9B7FA6]/50 rounded-full"
-              style={{ width: `${pct}%` }}
-            />
+        {pct != null && (
+          <div className="flex items-center gap-2.5">
+            <div className="flex-1 max-w-[120px] h-1 bg-[#E8E3DA] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#9B7FA6]/50 rounded-full"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="text-xs text-[#1C1C1A]/35">{pct}% match</span>
           </div>
-          <span className="text-xs text-[#1C1C1A]/35">{pct}% match</span>
-        </div>
+        )}
       </article>
     </Link>
   )
