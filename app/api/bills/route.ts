@@ -87,31 +87,27 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Text search mode: use the search_bills_text RPC
+    // Text search mode: use hybrid_bill_search RPC (FTS + trigram RRF)
     if (q) {
-      const { data, error } = await supabase.rpc('search_bills_text', {
+      const policyAreas = category ? (CATEGORY_TO_POLICY_AREAS[category] ?? []) : null
+
+      const { data, error } = await supabase.rpc('hybrid_bill_search', {
         query_text:      q,
-        match_count:     limit + offset,
+        result_limit:    limit,
+        offset_count:    offset,
+        status_filter:   status || null,
+        topic_filter:    null,
+        policy_areas:    policyAreas,
         congress_filter: null,
       })
 
       if (error) throw new Error(error.message)
 
-      let results = (data ?? []) as any[]
-
-      // Apply post-filters
-      if (status) results = results.filter((r: any) => r.status === status)
-      if (category) {
-        const areas = CATEGORY_TO_POLICY_AREAS[category] ?? []
-        results = results.filter((r: any) => areas.includes(r.policy_area))
-      }
-
-      const total = results.length
-      const paged = results.slice(offset, offset + limit)
+      const results = (data ?? []) as any[]
 
       return NextResponse.json({
-        bills: paged.map(mapRowToBill),
-        pagination: { total, limit, offset },
+        bills: results.map(mapRowToBill),
+        pagination: { total: results.length + offset, limit, offset },
       })
     }
 
