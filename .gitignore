@@ -21,3 +21,7 @@ npm-debug.log*
 # Editor
 .vscode/
 .idea/
+
+# Supabase
+.supabase/
+supabase/.temp/
