@@ -70,10 +70,43 @@ export const TOPIC_KEYWORDS: Record<string, string[]> = {
   'foreign-policy':      ['foreign policy', 'foreign aid', 'nato', 'military alliance', 'diplomatic', 'sanctions regime'],
 }
 
+// Maps canonical agency name → topic slugs it implies
+const AGENCY_TOPIC_MAP: Record<string, string[]> = {
+  'Environmental Protection Agency':         ['climate-environment'],
+  'Department of Energy':                    ['climate-environment', 'economy-jobs'],
+  'NOAA':                                    ['climate-environment'],
+  'Bureau of Land Management':               ['climate-environment'],
+  'Fish and Wildlife Service':               ['climate-environment'],
+  'Forest Service':                          ['climate-environment'],
+  'Army Corps of Engineers':                 ['climate-environment'],
+  'Department of Health and Human Services': ['healthcare'],
+  'CDC':                                     ['healthcare'],
+  'FDA':                                     ['healthcare'],
+  'NIH':                                     ['healthcare'],
+  'CMS':                                     ['healthcare'],
+  'SAMHSA':                                  ['healthcare'],
+  'HRSA':                                    ['healthcare'],
+  'Department of Education':                 ['education'],
+  'Department of Housing and Urban Development': ['housing'],
+  'Federal Housing Administration':          ['housing'],
+  'ICE':                                     ['immigration'],
+  'Customs and Border Protection':           ['immigration'],
+  'Federal Communications Commission':       ['tech-privacy'],
+  'Federal Trade Commission':                ['tech-privacy'],
+  'CISA':                                    ['tech-privacy'],
+  'Bureau of Prisons':                       ['criminal-justice'],
+  'ATF':                                     ['gun-policy', 'criminal-justice'],
+  'Drug Enforcement Administration':         ['criminal-justice'],
+  'Social Security Administration':          ['social-security'],
+  'Department of State':                     ['foreign-policy'],
+  'Department of Defense':                   ['foreign-policy'],
+}
+
 /**
  * Classifies a bill into one or more topic slugs using:
  * 1. Congress.gov policyArea → topic slug mapping
  * 2. Keyword matching on lowercased title + summary
+ * 3. (Optional) Referenced agency names → topic slug mapping
  *
  * Returns an array of matched topic slugs. Bills with no match return [].
  */
@@ -81,6 +114,7 @@ export function classifyBillTopics(
   policyArea: string | undefined,
   title: string,
   summary: string | undefined | null,
+  agencies: string[] = [],
 ): string[] {
   const matched = new Set<string>()
   const text = `${title} ${summary ?? ''}`.toLowerCase()
@@ -92,6 +126,11 @@ export function classifyBillTopics(
 
   for (const [slug, keywords] of Object.entries(TOPIC_KEYWORDS)) {
     if (keywords.some(kw => text.includes(kw))) matched.add(slug)
+  }
+
+  for (const agency of agencies) {
+    const slugs = AGENCY_TOPIC_MAP[agency]
+    if (slugs) slugs.forEach(s => matched.add(s))
   }
 
   return Array.from(matched)
