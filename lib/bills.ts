@@ -1,3 +1,35 @@
+export type BillStatus = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
+
+/**
+ * Derives a display status from Congress.gov latestAction text and introducedDate.
+ * Mirrors the logic in app/api/bills/route.ts — kept here so sync scripts can
+ * import it without touching app/api/.
+ */
+export function mapStatus(latestActionText?: string, introducedDate?: string): BillStatus {
+  const action = (latestActionText ?? '').toLowerCase()
+  if (
+    action.includes('became public law') ||
+    action.includes('signed by president') ||
+    action.includes('passed the senate') ||
+    action.includes('passed the house') ||
+    action.includes('presented to president')
+  ) return 'Passed'
+  if (
+    action.includes('failed') ||
+    action.includes('defeated') ||
+    action.includes('vetoed') ||
+    action.includes('rejected')
+  ) return 'Failed'
+  if (action.includes('referred to') || action.includes('committee')) {
+    if (introducedDate) {
+      const monthsAgo = (Date.now() - new Date(introducedDate).getTime()) / (1000 * 60 * 60 * 24 * 30)
+      if (monthsAgo > 6) return 'Stalled'
+    }
+    return 'Committee'
+  }
+  return 'Active'
+}
+
 const BILL_TYPE_LABELS: Record<string, string> = {
   s:       'S.',
   hr:      'H.R.',
@@ -30,5 +62,5 @@ export interface SmartSearchResult {
   congress: number
   title: string
   summary: string | null
-  similarity: number
+  similarity: number | null
 }
