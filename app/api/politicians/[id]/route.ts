@@ -38,8 +38,10 @@ async function fetchSponsoredBills(bioguideId: string) {
   )
   if (!res.ok) return []
   const data = await res.json()
-  return ((data.sponsoredLegislation ?? []) as any[]).map((b: any) => ({
-    id:     `${b.congress}-${(b.type ?? '').toLowerCase()}-${b.number}`,
+  return ((data.sponsoredLegislation ?? []) as any[])
+    .filter((b: any) => b.congress && b.type && b.number)
+    .map((b: any) => ({
+    id:     `${b.congress}-${b.type.toLowerCase()}-${b.number}`,
     name:   b.title ?? '',
     number: formatBillNumber(b.type ?? '', b.number),
     status: mapBillStatus(b.latestAction?.text),
@@ -72,17 +74,24 @@ async function fetchDonors(
     if (!committeeId) return { donors: [], fecUrl }
 
     const contribRes = await fetch(
-      `${FEC_BASE}/schedules/schedule_a/by_employer/?committee_id=${committeeId}&sort=-total&per_page=10&api_key=${OPENFEC_API_KEY}`,
+      `${FEC_BASE}/schedules/schedule_a/by_employer/?committee_id=${committeeId}&sort=-total&per_page=100&api_key=${OPENFEC_API_KEY}`,
       { next: { revalidate: 86400 } }
     )
     if (!contribRes.ok) return { donors: [], fecUrl }
     const contribData = await contribRes.json()
-    const SKIP = new Set(['INFORMATION REQUESTED', 'NONE', 'N/A', 'SELF-EMPLOYED', 'RETIRED', 'NOT EMPLOYED'])
-    const donors: Donor[] = ((contribData.results ?? []) as any[])
-      .filter((c: any) => c.employer && !SKIP.has((c.employer as string).toUpperCase()))
+    const SKIP = new Set(['INFORMATION REQUESTED', 'NONE', 'N/A', 'SELF-EMPLOYED', 'SELF EMPLOYED', 'RETIRED', 'NOT EMPLOYED'])
+    // Aggregate totals by employer across cycles, then rank
+    const totals = new Map<string, number>()
+    for (const c of (contribData.results ?? []) as any[]) {
+      const employer: string = c.employer ?? ''
+      if (!employer || SKIP.has(employer.toUpperCase())) continue
+      totals.set(employer, (totals.get(employer) ?? 0) + (c.total ?? 0))
+    }
+    const donors: Donor[] = Array.from(totals.entries())
+      .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map((c: any, i: number) => ({
-        rank: i + 1, name: c.employer, amount: `$${Math.round(c.total).toLocaleString()}`, category: 'Various',
+      .map(([name, total], i) => ({
+        rank: i + 1, name, amount: `$${Math.round(total).toLocaleString()}`, category: 'Various',
       }))
     return { donors, fecUrl }
   } catch {
@@ -116,7 +125,7 @@ export async function GET(
       .select(`
         position,
         bill_vote_summaries (
-          id, bill_id, chamber, date, question, result,
+          id, bill_id, chamber, date, title, question, result,
           yea_total, nay_total, yea_democrat, nay_democrat,
           yea_republican, nay_republican
         )
@@ -222,7 +231,7 @@ export async function GET(
         position,
         result:    `${summary.result} (${summary.yea_total}-${summary.nay_total})`,
         withParty: position === partyMajority,
-        question:  summary.question,
+        question:  summary.title ?? summary.question,
         chamber:   summary.chamber,
         voteId:    summary.id,
       }
@@ -255,6 +264,13 @@ export async function GET(
   const bills  = extract(sponsoredRes) ?? []
   const { donors, fecUrl } = extract(donorsRes) ?? { donors: [], fecUrl: null }
 
+  const votes = billVotes.map((v: any) => ({
+    id:   v.voteId,
+    bill: v.question,
+    date: v.date,
+    vote: v.position as 'Yea' | 'Nay',
+  }))
+
   return NextResponse.json({
     politician: {
       id: bioguideId,
@@ -265,7 +281,7 @@ export async function GET(
       state:       legislator.state_full,
       stateCode:   legislator.state,
       district:    legislator.district ? `${legislator.district}th District` : undefined,
-      since:       legislator.term_start ? new Date(legislator.term_start).getFullYear().toString() : null,
+      since:       (() => { const rawTerms: any[] = legislator.raw_json?.terms ?? []; const firstStart = rawTerms[0]?.start ?? legislator.term_start; return firstStart ? new Date(firstStart).getFullYear().toString() : null })(),
       photo:       legislator.photo_url,
       photoCredit: null,
       website:     legislator.website,
@@ -282,6 +298,7 @@ export async function GET(
         votedWithParty,
       },
       nextElectionYear,
+      votes,
       billVotes,
       bills,
       donors,
