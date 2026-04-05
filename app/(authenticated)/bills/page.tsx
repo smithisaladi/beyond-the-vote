@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { SignInModal } from '@/components/SignInModal'
 import { SignUpModal } from '@/components/SignUpModal'
@@ -9,17 +9,13 @@ import { useBillFilters } from '@/hooks/useBillFilters'
 import { useFetchBills, type Bill } from '@/hooks/useFetchBills'
 import { useTrackedBills } from '@/hooks/useTrackedBills'
 import { useDebounce } from '@/hooks/useDebounce'
-import { SearchModeToggle, type SearchMode } from '@/components/bills/SearchModeToggle'
-import { SmartSearchInput } from '@/components/bills/SmartSearchInput'
-import { SmartSearchResults } from '@/components/bills/SmartSearchResults'
-import { SmartSearchSuggestions } from '@/components/bills/SmartSearchSuggestions'
-import { type SmartSearchResult } from '@/lib/bills'
 import { PageHeader } from '@/components/PageHeader'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 type Status = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
 type Category = 'Environment' | 'Economy' | 'Healthcare' | 'Defense' | 'Education' | 'Housing' | 'Technology' | 'Immigration'
 type DateFilter = 'all' | 'month' | 'year'
+type DropdownId = 'status' | 'category' | 'date' | null
 
 const PARTY_STYLES: Record<Party, { bg: string; text: string }> = {
   Democrat:    { bg: 'bg-[#7B8FA8]/[0.12]', text: 'text-[#7B8FA8]' },
@@ -211,49 +207,22 @@ export default function BillsPage() {
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
 
-  // ─── Search mode ────────────────────────────────────────────────────────────
-  const [searchMode, setSearchMode] = useState<SearchMode>('filter')
-
-  // ─── Smart search state ─────────────────────────────────────────────────────
-  const [smartQuery, setSmartQuery] = useState('')
-  const [smartResults, setSmartResults] = useState<SmartSearchResult[]>([])
-  const [smartLoading, setSmartLoading] = useState(false)
-  const [smartError, setSmartError] = useState<string | null>(null)
-  const debouncedSmartQuery = useDebounce(smartQuery, 500)
-  const abortRef = useRef<AbortController | null>(null)
-
-  useEffect(() => {
-    if (debouncedSmartQuery.length < 3) {
-      setSmartResults([])
-      setSmartError(null)
-      return
-    }
-
-    abortRef.current?.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
-
-    setSmartLoading(true)
-    setSmartError(null)
-
-    fetch(`/api/bills/search?q=${encodeURIComponent(debouncedSmartQuery)}&limit=20`, {
-      signal: controller.signal,
-    })
-      .then(async res => {
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error ?? 'Search failed')
-        setSmartResults(data.results ?? [])
-      })
-      .catch(err => {
-        if (err.name === 'AbortError') return
-        setSmartError(err.message)
-      })
-      .finally(() => setSmartLoading(false))
-  }, [debouncedSmartQuery])
-
-  // ─── Filter mode state ───────────────────────────────────────────────────────
+  // ─── Search + filter state ───────────────────────────────────────────────────
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebounce(query, 300)
+  const [openDropdown, setOpenDropdown] = useState<DropdownId>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const {
     selectedStatuses, selectedCategories, dateFilter,
@@ -293,7 +262,7 @@ export default function BillsPage() {
         <main className="flex-1 px-6 py-10">
           <div className="max-w-6xl mx-auto">
 
-            {/* Page header + search */}
+            {/* Page header + unified search */}
             <div className="mb-8">
               <h1
                 className="text-4xl text-[#1C1C1A] mb-1 tracking-tight"
@@ -305,117 +274,95 @@ export default function BillsPage() {
                 Follow legislation that matters to you.
               </p>
 
-              {/* Search input — changes based on mode */}
-              {searchMode === 'filter' ? (
-                <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] px-4 py-3 shadow-sm max-w-2xl">
-                  <span className="text-[#1C1C1A]/35 flex-shrink-0">
-                    <SearchIcon />
-                  </span>
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    placeholder="Search bills by title, number, or sponsor…"
-                    className="flex-1 bg-transparent outline-none text-sm text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
-                  />
-                  {query && (
-                    <button onClick={() => setQuery('')} className="text-[#1C1C1A]/35 hover:text-[#1C1C1A]/60 flex-shrink-0">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <SmartSearchInput
-                  value={smartQuery}
-                  onChange={setSmartQuery}
-                  loading={smartLoading}
+              {/* Search input */}
+              <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] px-4 py-3 shadow-sm max-w-2xl">
+                <span className="text-[#1C1C1A]/35 flex-shrink-0">
+                  <SearchIcon />
+                </span>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  placeholder="Search bills by title, number, sponsor, or topic…"
+                  className="flex-1 bg-transparent outline-none text-sm text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
                 />
-              )}
-
-              {/* Mode toggle */}
-              <div className="mt-3">
-                <SearchModeToggle mode={searchMode} onChange={setSearchMode} />
-              </div>
-            </div>
-
-            {/* Smart search body */}
-            {searchMode === 'smart' ? (
-              <div className="max-w-2xl">
-                {smartQuery.length < 3 ? (
-                  <SmartSearchSuggestions onSelect={q => setSmartQuery(q)} />
-                ) : (
-                  <SmartSearchResults
-                    results={smartResults}
-                    loading={smartLoading}
-                    error={smartError}
-                    query={debouncedSmartQuery}
-                    onSwitchToFilter={() => setSearchMode('filter')}
-                  />
+                {query && (
+                  <button onClick={() => setQuery('')} className="text-[#1C1C1A]/35 hover:text-[#1C1C1A]/60 flex-shrink-0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
                 )}
               </div>
-            ) : (
 
-            <div className="flex gap-8 items-start">
+              {/* Filter chips */}
+              <div className="mt-3 flex items-center gap-2 flex-wrap" ref={dropdownRef}>
 
-              {/* Sidebar */}
-              <aside className="w-52 flex-shrink-0 sticky top-6">
-                <div className="bg-[#EAE5DB] rounded-xl border border-[#D6CFC4] p-5 space-y-6">
-
-                  {/* Header */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-[#1C1C1A]/50 uppercase tracking-wider">Filters</span>
-                    {hasFilters && (
-                      <button
-                        onClick={clearFilters}
-                        className="text-xs text-[#9B7FA6] hover:text-[#8a6e95]"
-                      >
-                        Clear
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <p className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Status</p>
-                    <div className="space-y-2.5">
+                {/* Status chip */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      selectedStatuses.size > 0
+                        ? 'border-[#9B7FA6] bg-[#9B7FA6]/8 text-[#9B7FA6]'
+                        : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#9B7FA6]/50'
+                    }`}
+                  >
+                    {selectedStatuses.size > 0 ? `Status: ${[...selectedStatuses].join(', ')}` : 'Status'}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+                  {openDropdown === 'status' && (
+                    <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[#D6CFC4] shadow-lg p-3 min-w-[140px] z-20 space-y-1.5">
                       {ALL_STATUSES.map(s => (
-                        <FilterCheckbox
-                          key={s}
-                          label={s}
-                          checked={selectedStatuses.has(s)}
-                          onChange={() => toggleStatus(s)}
-                        />
+                        <FilterCheckbox key={s} label={s} checked={selectedStatuses.has(s)} onChange={() => toggleStatus(s)} />
                       ))}
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  {/* Divider */}
-                  <div className="border-t border-[rgba(28,28,26,0.08)]" />
-
-                  {/* Category */}
-                  <div>
-                    <p className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Category</p>
-                    <div className="space-y-2.5">
+                {/* Category chip */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDropdown(openDropdown === 'category' ? null : 'category')}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      selectedCategories.size > 0
+                        ? 'border-[#9B7FA6] bg-[#9B7FA6]/8 text-[#9B7FA6]'
+                        : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#9B7FA6]/50'
+                    }`}
+                  >
+                    {selectedCategories.size > 0 ? `Category: ${[...selectedCategories].join(', ')}` : 'Category'}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+                  {openDropdown === 'category' && (
+                    <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[#D6CFC4] shadow-lg p-3 min-w-[150px] z-20 space-y-1.5">
                       {ALL_CATEGORIES.map(c => (
-                        <FilterCheckbox
-                          key={c}
-                          label={c}
-                          checked={selectedCategories.has(c)}
-                          onChange={() => toggleCategory(c)}
-                        />
+                        <FilterCheckbox key={c} label={c} checked={selectedCategories.has(c)} onChange={() => toggleCategory(c)} />
                       ))}
                     </div>
-                  </div>
+                  )}
+                </div>
 
-                  {/* Divider */}
-                  <div className="border-t border-[rgba(28,28,26,0.08)]" />
-
-                  {/* Date */}
-                  <div>
-                    <p className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Last Action</p>
-                    <div className="space-y-2.5">
+                {/* Date chip */}
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenDropdown(openDropdown === 'date' ? null : 'date')}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      dateFilter !== 'all'
+                        ? 'border-[#9B7FA6] bg-[#9B7FA6]/8 text-[#9B7FA6]'
+                        : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#9B7FA6]/50'
+                    }`}
+                  >
+                    {dateFilter === 'month' ? 'Last Action: Past month' : dateFilter === 'year' ? 'Last Action: Past year' : 'Last Action'}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+                  {openDropdown === 'date' && (
+                    <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[#D6CFC4] shadow-lg p-3 min-w-[150px] z-20 space-y-2">
                       {([
                         { key: 'all', label: 'All time' },
                         { key: 'month', label: 'Past month' },
@@ -423,28 +370,36 @@ export default function BillsPage() {
                       ] as { key: DateFilter; label: string }[]).map(opt => (
                         <label key={opt.key} className="flex items-center gap-2.5 cursor-pointer group">
                           <div
-                            onClick={() => setDateFilter(opt.key)}
+                            onClick={() => { setDateFilter(opt.key); setOpenDropdown(null) }}
                             className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
                               dateFilter === opt.key
                                 ? 'border-[#9B7FA6]'
                                 : 'bg-white border-[rgba(28,28,26,0.2)] group-hover:border-[#9B7FA6]/60'
                             }`}
                           >
-                            {dateFilter === opt.key && (
-                              <div className="w-2 h-2 rounded-full bg-[#9B7FA6]" />
-                            )}
+                            {dateFilter === opt.key && <div className="w-2 h-2 rounded-full bg-[#9B7FA6]" />}
                           </div>
-                          <span className={`text-sm ${dateFilter === opt.key ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>
-                            {opt.label}
-                          </span>
+                          <span className={`text-sm ${dateFilter === opt.key ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>{opt.label}</span>
                         </label>
                       ))}
                     </div>
-                  </div>
+                  )}
                 </div>
-              </aside>
 
-              {/* Bill list */}
+                {/* Clear all */}
+                {hasFilters && (
+                  <button
+                    onClick={() => { clearFilters(); setQuery('') }}
+                    className="text-xs text-[#9B7FA6] hover:text-[#8a6e95] px-2"
+                  >
+                    Clear all ×
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Bill list */}
+            <div className="max-w-2xl">
               <div className="flex-1 min-w-0">
                 {/* Result count */}
                 {!billsLoading && !billsError && (
@@ -515,9 +470,7 @@ export default function BillsPage() {
                   </>
                 )}
               </div>
-
             </div>
-            )} {/* end filter mode */}
           </div>
         </main>
       </div>
