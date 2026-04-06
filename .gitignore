@@ -27,3 +27,11 @@ npm-debug.log*
 .supabase/
 supabase/.temp/
 tsconfig.tsbuildinfo
+
+# Python pipeline
+pipeline/.venv/
+pipeline/**/__pycache__/
+pipeline/**/*.pyc
+pipeline/**/*.pyo
+pipeline/.python-version
+*.egg-info/
