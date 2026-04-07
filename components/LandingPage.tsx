@@ -47,7 +47,7 @@ function MockRepCard({ name, title, party, state, vote }: {
     : 'bg-[#8A8A7A]/[0.12] text-[#8A8A7A]'
   const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
   return (
-    <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 shadow-sm">
+    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
       <div className="flex items-start gap-3 mb-4">
         <div className="w-11 h-11 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0">
           <span className="text-sm text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
@@ -88,7 +88,7 @@ function MockBillCard({ number, title, status, category }: {
     : status === 'Passed' ? 'bg-[#6A9B7B]/[0.12] text-[#6A9B7B]'
     : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
   return (
-    <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 shadow-sm">
+    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
       <div className="flex items-start justify-between gap-3 mb-3">
         <span className="text-[11px] font-mono text-[#1C1C1A]/38">{number}</span>
         <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full flex-shrink-0 ${statusColor}`}>
@@ -98,7 +98,7 @@ function MockBillCard({ number, title, status, category }: {
       <p className="text-sm text-[#1C1C1A] leading-snug mb-3" style={{ fontFamily: 'var(--font-serif)' }}>
         {title}
       </p>
-      <span className="inline-block text-[11px] text-[#1C1C1A]/40 bg-[#F5F0E8] border border-[#D6CFC4] px-2.5 py-1 rounded-full">
+      <span className="inline-block text-[11px] text-[#1C1C1A]/40 bg-[#F5F0E8] border border-[rgba(28,28,26,0.08)] px-2.5 py-1 rounded-full">
         {category}
       </span>
     </div>
@@ -110,12 +110,12 @@ function MockBillCard({ number, title, status, category }: {
 function Feature({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
     <div className="flex gap-4">
-      <div className="w-10 h-10 rounded-xl bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <div className="w-10 h-10 rounded-lg bg-[#9B7FA6]/10 border border-[#9B7FA6]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
         <span className="text-[#9B7FA6]">{icon}</span>
       </div>
       <div>
-        <h3 className="text-sm font-semibold text-[#1C1C1A] mb-1">{title}</h3>
-        <p className="text-sm text-[#1C1C1A]/55 leading-relaxed">{description}</p>
+        <h3 className="text-sm font-semibold text-[#1C1C1A] mb-1.5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 500 }}>{title}</h3>
+        <p className="text-sm text-[#1C1C1A]/55 leading-[1.7]">{description}</p>
       </div>
     </div>
   )
@@ -180,34 +180,34 @@ function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden pt-20 pb-16 px-6">
+      <section className="relative overflow-hidden pt-24 pb-20 px-6">
         <TopoBackground />
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
             <div>
-              <span className="inline-block text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-5 tracking-wide uppercase">
+              <span className="inline-block text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Know Your Representative
               </span>
               <h1
-                className="text-4xl sm:text-5xl text-[#1C1C1A] mb-5 leading-[1.12] tracking-tight"
-                style={{ fontFamily: 'var(--font-serif)' }}
+                className="text-5xl sm:text-6xl text-[#1C1C1A] mb-6 leading-[1.08] tracking-[-0.02em]"
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
               >
                 Know exactly who represents you — and what they stand for
               </h1>
-              <p className="text-lg text-[#1C1C1A]/60 mb-8 leading-relaxed max-w-lg">
+              <p className="text-xl text-[#1C1C1A]/55 mb-9 leading-relaxed max-w-lg">
                 Beyond the Ballot connects you directly to your elected officials' voting records,
                 positions, and actions — so you can hold them accountable.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={onSignUp}
-                  className="px-6 py-3 bg-[#9B7FA6] text-white rounded-lg text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
                 >
                   Get started free
                 </button>
                 <a
                   href="/representatives"
-                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-lg text-sm font-medium hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors shadow-sm"
                 >
                   Find your representatives →
                 </a>
@@ -236,16 +236,16 @@ function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* Features */}
-      <section className="py-16 px-6 bg-white/50 border-y border-[rgba(28,28,26,0.07)]" aria-labelledby="rep-features-heading">
+      <section className="py-20 px-6 bg-white/50 border-y border-[rgba(28,28,26,0.07)]" aria-labelledby="rep-features-heading">
         <div className="max-w-5xl mx-auto">
           <h2
             id="rep-features-heading"
-            className="text-2xl text-[#1C1C1A] mb-2 text-center"
-            style={{ fontFamily: 'var(--font-serif)' }}
+            className="text-3xl text-[#1C1C1A] mb-2 text-center"
+            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
           >
             Everything you need to stay informed
           </h2>
-          <p className="text-sm text-[#1C1C1A]/50 text-center mb-12 max-w-md mx-auto">
+          <p className="text-sm text-[#1C1C1A]/50 text-center mb-14 max-w-md mx-auto tracking-[0.01em]">
             One platform to find, follow, and understand the people who represent you.
           </p>
 
@@ -270,7 +270,7 @@ function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* Social proof / stat strip */}
-      <section className="py-12 px-6" aria-label="Platform statistics">
+      <section className="py-16 px-6" aria-label="Platform statistics">
         <div className="max-w-3xl mx-auto grid grid-cols-3 gap-6 text-center">
           {[
             { stat: '535', label: 'Members of Congress tracked' },
@@ -278,31 +278,31 @@ function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
             { stat: '100%', label: 'Free to get started' },
           ].map(({ stat, label }) => (
             <div key={label}>
-              <p className="text-3xl font-semibold text-[#9B7FA6] mb-1" style={{ fontFamily: 'var(--font-serif)' }}>
+              <p className="text-4xl font-semibold text-[#9B7FA6] mb-1.5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}>
                 {stat}
               </p>
-              <p className="text-xs text-[#1C1C1A]/50 leading-snug">{label}</p>
+              <p className="text-[11px] text-[#1C1C1A]/50 leading-snug uppercase tracking-[0.04em]">{label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-6 bg-[#9B7FA6]/[0.07] border-t border-[#9B7FA6]/15" aria-labelledby="rep-cta-heading">
+      <section className="py-20 px-6 bg-[#9B7FA6]/[0.07] border-t border-[#9B7FA6]/15" aria-labelledby="rep-cta-heading">
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="rep-cta-heading"
-            className="text-2xl text-[#1C1C1A] mb-3"
-            style={{ fontFamily: 'var(--font-serif)' }}
+            className="text-3xl text-[#1C1C1A] mb-4"
+            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
           >
             Democracy works when voters are informed
           </h2>
-          <p className="text-sm text-[#1C1C1A]/55 mb-7 leading-relaxed">
+          <p className="text-base text-[#1C1C1A]/55 mb-8 leading-relaxed">
             Join Beyond the Ballot and start building a clearer picture of who really represents your interests.
           </p>
           <button
             onClick={onSignUp}
-            className="px-8 py-3 bg-[#9B7FA6] text-white rounded-lg text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
+            className="px-10 py-3.5 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
           >
             Create your free account
           </button>
@@ -316,34 +316,34 @@ function BillsTab({ onSignUp }: { onSignUp: () => void }) {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden pt-20 pb-16 px-6">
+      <section className="relative overflow-hidden pt-24 pb-20 px-6">
         <TopoBackground />
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
             <div>
-              <span className="inline-block text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-5 tracking-wide uppercase">
+              <span className="inline-block text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Bills Tracker
               </span>
               <h1
-                className="text-4xl sm:text-5xl text-[#1C1C1A] mb-5 leading-[1.12] tracking-tight"
-                style={{ fontFamily: 'var(--font-serif)' }}
+                className="text-5xl sm:text-6xl text-[#1C1C1A] mb-6 leading-[1.08] tracking-[-0.02em]"
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
               >
                 Follow legislation from introduction to law
               </h1>
-              <p className="text-lg text-[#1C1C1A]/60 mb-8 leading-relaxed max-w-lg">
+              <p className="text-xl text-[#1C1C1A]/55 mb-9 leading-relaxed max-w-lg">
                 Track thousands of bills in real time. Understand what's being debated in Congress
                 and how it could affect your community before it becomes law.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={onSignUp}
-                  className="px-6 py-3 bg-[#9B7FA6] text-white rounded-lg text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
                 >
                   Start tracking bills
                 </button>
                 <a
                   href="/bills"
-                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-lg text-sm font-medium hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors shadow-sm"
                 >
                   Browse legislation →
                 </a>
@@ -376,16 +376,16 @@ function BillsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* Features */}
-      <section className="py-16 px-6 bg-white/50 border-y border-[rgba(28,28,26,0.07)]" aria-labelledby="bills-features-heading">
+      <section className="py-20 px-6 bg-white/50 border-y border-[rgba(28,28,26,0.07)]" aria-labelledby="bills-features-heading">
         <div className="max-w-5xl mx-auto">
           <h2
             id="bills-features-heading"
-            className="text-2xl text-[#1C1C1A] mb-2 text-center"
-            style={{ fontFamily: 'var(--font-serif)' }}
+            className="text-3xl text-[#1C1C1A] mb-2 text-center"
+            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
           >
             Track legislation like a professional
           </h2>
-          <p className="text-sm text-[#1C1C1A]/50 text-center mb-12 max-w-md mx-auto">
+          <p className="text-sm text-[#1C1C1A]/50 text-center mb-14 max-w-md mx-auto tracking-[0.01em]">
             Powerful search and filtering tools make it easy to find what matters to you.
           </p>
 
@@ -410,12 +410,12 @@ function BillsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* Topic highlights */}
-      <section className="py-14 px-6" aria-labelledby="topics-heading">
+      <section className="py-16 px-6" aria-labelledby="topics-heading">
         <div className="max-w-5xl mx-auto">
           <h2
             id="topics-heading"
-            className="text-xl text-[#1C1C1A] mb-6 text-center"
-            style={{ fontFamily: 'var(--font-serif)' }}
+            className="text-xl text-[#1C1C1A] mb-7 text-center"
+            style={{ fontFamily: 'var(--font-serif)', fontWeight: 500 }}
           >
             Explore by topic
           </h2>
@@ -424,7 +424,7 @@ function BillsTab({ onSignUp }: { onSignUp: () => void }) {
               <a
                 key={t}
                 href="/bills"
-                className="text-sm text-[#1C1C1A]/60 bg-white border border-[#D6CFC4] px-4 py-2 rounded-full hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors"
+                className="text-sm font-medium text-[#1C1C1A]/60 bg-white border border-[rgba(28,28,26,0.1)] px-4 py-2 rounded-full hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors tracking-[0.01em]"
               >
                 {t}
               </a>
@@ -434,22 +434,22 @@ function BillsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* CTA */}
-      <section className="py-16 px-6 bg-[#9B7FA6]/[0.07] border-t border-[#9B7FA6]/15" aria-labelledby="bills-cta-heading">
+      <section className="py-20 px-6 bg-[#9B7FA6]/[0.07] border-t border-[#9B7FA6]/15" aria-labelledby="bills-cta-heading">
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="bills-cta-heading"
-            className="text-2xl text-[#1C1C1A] mb-3"
-            style={{ fontFamily: 'var(--font-serif)' }}
+            className="text-3xl text-[#1C1C1A] mb-4"
+            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
           >
             Legislation shapes everyday life
           </h2>
-          <p className="text-sm text-[#1C1C1A]/55 mb-7 leading-relaxed">
+          <p className="text-base text-[#1C1C1A]/55 mb-8 leading-relaxed">
             From healthcare costs to housing prices to climate policy — the bills moving through
             Congress today will affect you tomorrow. Stay ahead of it.
           </p>
           <button
             onClick={onSignUp}
-            className="px-8 py-3 bg-[#9B7FA6] text-white rounded-lg text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
+            className="px-10 py-3.5 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
           >
             Create your free account
           </button>
@@ -475,8 +475,8 @@ export function LandingPage() {
 
           {/* Logo */}
           <span
-            className="text-sm font-semibold text-[#1C1C1A] tracking-tight flex-shrink-0"
-            style={{ fontFamily: 'var(--font-serif)' }}
+            className="text-base text-[#1C1C1A] tracking-[0.01em] flex-shrink-0"
+            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
           >
             Beyond the Ballot
           </span>
@@ -485,7 +485,7 @@ export function LandingPage() {
           <div className="w-px h-5 bg-[rgba(28,28,26,0.15)]" />
 
           {/* Tab nav */}
-          <nav className="flex gap-1 flex-1" aria-label="Main navigation">
+          <nav className="flex gap-1 flex-1 h-full items-stretch" aria-label="Main navigation">
             {([
               { id: 'representatives', label: 'Know Your Representative' },
               { id: 'bills', label: 'Bills' },
@@ -494,10 +494,10 @@ export function LandingPage() {
                 key={id}
                 onClick={() => setTab(id)}
                 aria-current={tab === id ? 'page' : undefined}
-                className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                className={`px-4 text-sm transition-colors relative ${
                   tab === id
-                    ? 'bg-white text-[#1C1C1A] shadow-sm font-medium'
-                    : 'text-[#1C1C1A]/50 hover:text-[#1C1C1A] hover:bg-white/50'
+                    ? 'text-[#1C1C1A] font-medium after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#1C1C1A] after:rounded-t-full'
+                    : 'text-[#1C1C1A]/45 hover:text-[#1C1C1A]/75'
                 }`}
               >
                 {label}
@@ -535,8 +535,8 @@ export function LandingPage() {
       <footer className="border-t border-[rgba(28,28,26,0.1)] py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <span
-            className="text-sm font-semibold text-[#1C1C1A]/60"
-            style={{ fontFamily: 'var(--font-serif)' }}
+            className="text-sm text-[#1C1C1A]/60"
+            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
           >
             Beyond the Ballot
           </span>

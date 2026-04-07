@@ -14,12 +14,21 @@ type Party = 'Democrat' | 'Republican' | 'Independent'
 type BillStatus = 'Passed' | 'Pending' | 'Failed'
 type Tab = 'votes' | 'bills' | 'donors'
 
+interface DonorAlignment {
+  donorName: string
+  donorAmount: number | null
+  donorLikelyPosition: 'support' | 'oppose' | 'neutral'
+  voteAligns: boolean
+  explanation: string
+}
+
 interface PoliticianVote {
   id: string
   bill: string
   billId: string | null
   date: string
   vote: 'Yea' | 'Nay'
+  donorAlignments: DonorAlignment[]
 }
 
 interface PoliticianBill {
@@ -68,6 +77,7 @@ interface Politician {
   votes: PoliticianVote[]
   bills: PoliticianBill[]
   donors: Donor[]
+  pacDonors: Donor[]
   committees: Committee[]
 }
 
@@ -168,6 +178,58 @@ function ErrorState({ message, onBack }: { message: string; onBack: () => void }
           ← Back to results
         </button>
       </div>
+    </div>
+  )
+}
+
+function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment[] }) {
+  const [open, setOpen] = useState(false)
+
+  if (alignments.length === 0) return null
+
+  return (
+    <div className="mt-2 border border-[rgba(28,28,26,0.07)] rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 text-left bg-[#FAF8F5] hover:bg-[#F5F1EB] transition-colors"
+      >
+        <span className="text-xs text-[#1C1C1A]/50 font-medium flex items-center gap-1.5">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+          </svg>
+          Donor alignment · {alignments.length} connection{alignments.length !== 1 ? 's' : ''}
+        </span>
+        <svg
+          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round"
+          className={`text-[#1C1C1A]/30 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+        >
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="px-3 py-2 bg-white space-y-2.5">
+          {alignments.map((a, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <span className={`mt-0.5 flex-shrink-0 w-1.5 h-1.5 rounded-full ${a.voteAligns ? 'bg-[#6BAE7A]' : 'bg-[#D4924A]'}`} />
+              <div className="min-w-0">
+                <p className="text-xs text-[#1C1C1A]/70 leading-relaxed">
+                  <span className="font-medium text-[#1C1C1A]">{a.donorName}</span>
+                  {a.donorAmount != null && (
+                    <span className="text-[#1C1C1A]/40 ml-1">(${a.donorAmount.toLocaleString()})</span>
+                  )}
+                  {' — '}{a.explanation}
+                </p>
+              </div>
+            </div>
+          ))}
+          <p className="text-[10px] text-[#1C1C1A]/30 pt-1 border-t border-[rgba(28,28,26,0.06)]">
+            AI-generated analysis. Identifies potential connections, not proven influence.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -359,25 +421,30 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
                       (politician.votes?.length ?? 0) === 0 ? (
                         <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">No recent votes found.</p>
                       ) : politician.votes.map(v => (
-                        <div key={v.id} className="flex items-center justify-between px-6 py-4">
-                          <div>
-                            {v.billId ? (
-                              <Link
-                                href={`/bills/${v.billId}`}
-                                className="text-sm text-[#1C1C1A] hover:text-[#9B7FA6] hover:underline transition-colors"
-                              >
-                                {v.bill}
-                              </Link>
-                            ) : (
-                              <p className="text-sm text-[#1C1C1A]">{v.bill}</p>
-                            )}
-                            <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
+                        <div key={v.id} className="px-6 py-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              {v.billId ? (
+                                <Link
+                                  href={`/bills/${v.billId}`}
+                                  className="text-sm text-[#1C1C1A] hover:text-[#9B7FA6] hover:underline transition-colors"
+                                >
+                                  {v.bill}
+                                </Link>
+                              ) : (
+                                <p className="text-sm text-[#1C1C1A]">{v.bill}</p>
+                              )}
+                              <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
+                            </div>
+                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${
+                              v.vote === 'Yea' ? 'bg-[#9B7FA6]/10 text-[#9B7FA6]' : 'bg-[#B85C38]/10 text-[#B85C38]'
+                            }`}>
+                              {v.vote}
+                            </span>
                           </div>
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${
-                            v.vote === 'Yea' ? 'bg-[#9B7FA6]/10 text-[#9B7FA6]' : 'bg-[#B85C38]/10 text-[#B85C38]'
-                          }`}>
-                            {v.vote}
-                          </span>
+                          {(v.donorAlignments?.length ?? 0) > 0 && (
+                            <DonorAlignmentPanel alignments={v.donorAlignments} />
+                          )}
                         </div>
                       ))
                     )}
@@ -401,7 +468,7 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
 
                     {/* Donors */}
                     {activeTab === 'donors' && (
-                      (politician.donors?.length ?? 0) === 0 ? (
+                      (politician.pacDonors?.length ?? 0) === 0 && (politician.donors?.length ?? 0) === 0 ? (
                         <div className="px-6 py-8 text-center">
                           <p className="text-sm text-[#1C1C1A]/40 mb-2">Donor data unavailable.</p>
                           {politician.fecUrl && (
@@ -417,18 +484,43 @@ export default function PoliticianProfilePage({ params }: { params: Promise<{ id
                         </div>
                       ) : (
                         <>
-                          {politician.donors.map(d => (
-                            <div key={d.rank} className="flex items-center gap-4 px-6 py-4">
-                              <span className="text-sm text-[#1C1C1A]/30 font-medium w-5 text-center flex-shrink-0">
-                                {d.rank}
-                              </span>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm text-[#1C1C1A] truncate">{d.name}</p>
-                                <span className="text-xs text-[#1C1C1A]/40">{d.category}</span>
+                          {(politician.pacDonors?.length ?? 0) > 0 && (
+                            <>
+                              <div className="px-6 pt-4 pb-2">
+                                <p className="text-xs font-medium text-[#1C1C1A]/50 uppercase tracking-wide">Top Contributors</p>
+                                <p className="text-xs text-[#1C1C1A]/30 mt-0.5">Top contributors by total amount</p>
                               </div>
-                              <span className="text-sm font-medium text-[#1C1C1A] flex-shrink-0">{d.amount}</span>
-                            </div>
-                          ))}
+                              {politician.pacDonors.map(d => (
+                                <div key={d.rank} className="flex items-center gap-4 px-6 py-3">
+                                  <span className="text-sm text-[#1C1C1A]/30 font-medium w-5 text-center flex-shrink-0">
+                                    {d.rank}
+                                  </span>
+                                  <p className="flex-1 min-w-0 text-sm text-[#1C1C1A] truncate">{d.name}</p>
+                                  <span className="text-sm font-medium text-[#1C1C1A] flex-shrink-0">{d.amount}</span>
+                                </div>
+                              ))}
+                            </>
+                          )}
+                          {(politician.donors?.length ?? 0) > 0 && (
+                            <>
+                              <div className={`px-6 pt-4 pb-2 ${(politician.pacDonors?.length ?? 0) > 0 ? 'border-t border-[rgba(28,28,26,0.06)]' : ''}`}>
+                                <p className="text-xs font-medium text-[#1C1C1A]/50 uppercase tracking-wide">Top Industries</p>
+                                <p className="text-xs text-[#1C1C1A]/30 mt-0.5">Top individual donors by employer industry</p>
+                              </div>
+                              {politician.donors.map(d => (
+                                <div key={d.rank} className="flex items-center gap-4 px-6 py-3">
+                                  <span className="text-sm text-[#1C1C1A]/30 font-medium w-5 text-center flex-shrink-0">
+                                    {d.rank}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-[#1C1C1A] truncate">{d.name}</p>
+                                    <span className="text-xs text-[#1C1C1A]/40">{d.category}</span>
+                                  </div>
+                                  <span className="text-sm font-medium text-[#1C1C1A] flex-shrink-0">{d.amount}</span>
+                                </div>
+                              ))}
+                            </>
+                          )}
                           {politician.fecUrl && (
                             <div className="px-6 py-3 border-t border-[rgba(28,28,26,0.06)]">
                               <a

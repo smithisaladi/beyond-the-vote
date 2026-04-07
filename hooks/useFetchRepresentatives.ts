@@ -16,6 +16,13 @@ export interface Representative {
   since: string | null
   website: string | null
   phone: string | null
+  ideologyScore?: number | null
+}
+
+const ERROR_MESSAGES: Record<string, string> = {
+  address_not_found: "We couldn't find that address. Try including your city and zip code.",
+  no_legislators: "This address doesn't appear to have voting federal representatives. Some US territories have non-voting delegates.",
+  geocode_failed: 'Something went wrong. Please try again.',
 }
 
 export function useFetchRepresentatives(address: string) {
@@ -34,13 +41,13 @@ export function useFetchRepresentatives(address: string) {
       .then(res => res.json())
       .then(data => {
         if (data.error) {
-          setError(data.error)
+          setError(ERROR_MESSAGES[data.error] ?? ERROR_MESSAGES.geocode_failed)
           setRepresentatives([])
         } else {
           setRepresentatives(data.representatives ?? [])
         }
       })
-      .catch(() => setError('Failed to load representatives'))
+      .catch(() => setError(ERROR_MESSAGES.geocode_failed))
       .finally(() => setLoading(false))
   }, [address])
 

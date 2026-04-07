@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
+import { Check } from 'lucide-react'
+import { useFollowPolitician } from '@/hooks/useFollowPolitician'
 
 type Party = 'Democrat' | 'Republican' | 'Independent'
 
@@ -14,6 +15,9 @@ interface RepresentativeCardProps {
   district?: string
   since: string | null
   photo?: string | null
+  ideologyScore?: number | null
+  userId: string | null
+  onSignInRequired: () => void
 }
 
 const PARTY_STYLES: Record<Party, { bg: string; text: string; label: string }> = {
@@ -36,15 +40,17 @@ function Initials({ name }: { name: string }) {
   )
 }
 
-export function RepresentativeCard({ id, name, title, party, state, district, since, photo }: RepresentativeCardProps) {
-  const [following, setFollowing] = useState(false)
+export function RepresentativeCard({
+  id, name, title, party, state, district, since, photo, ideologyScore, userId, onSignInRequired,
+}: RepresentativeCardProps) {
   const badge = PARTY_STYLES[party]
+  const { following, followLoading, toggleFollow } = useFollowPolitician(id, userId, onSignInRequired)
 
   return (
     <Link href={`/representatives/${id}`} className="block">
-      <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col items-center text-center gap-4 h-full">
+      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col items-center text-center gap-4 h-full">
         {photo
-          ? <img src={photo} alt={name} className="w-20 h-20 rounded-full object-cover" />
+          ? <img src={photo} alt={name} className="w-20 h-20 rounded-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
           : <Initials name={name} />
         }
 
@@ -64,19 +70,47 @@ export function RepresentativeCard({ id, name, title, party, state, district, si
           </span>
           <span className="text-xs text-[#1C1C1A]/40">·</span>
           <span className="text-xs text-[#1C1C1A]/50">{state}</span>
-          <span className="text-xs text-[#1C1C1A]/40">·</span>
-          <span className="text-xs text-[#1C1C1A]/40">Since {since}</span>
+          {since && (
+            <>
+              <span className="text-xs text-[#1C1C1A]/40">·</span>
+              <span className="text-xs text-[#1C1C1A]/40">Since {since}</span>
+            </>
+          )}
         </div>
 
+        {ideologyScore !== null && ideologyScore !== undefined && (
+          <div className="w-full px-1">
+            <div className="flex justify-between text-[10px] text-[#1C1C1A]/30 mb-1.5">
+              <span>Liberal</span>
+              <span>Conservative</span>
+            </div>
+            <div className="relative w-full h-1 bg-[#E8E3DA] rounded-full">
+              <div
+                className="absolute top-1/2 w-2.5 h-2.5 rounded-full bg-[#9B7FA6] border-2 border-white shadow-sm"
+                style={{
+                  left: `${Math.round(((ideologyScore + 1) / 2) * 100)}%`,
+                  transform: 'translateX(-50%) translateY(-50%)',
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         <button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setFollowing(f => !f) }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFollow() }}
+          disabled={followLoading}
           className={`mt-1 w-full py-2 px-4 rounded-lg text-sm border transition-colors ${
+            followLoading ? 'opacity-50 cursor-not-allowed' : ''
+          } ${
             following
               ? 'bg-[#9B7FA6] border-[#9B7FA6] text-white'
               : 'bg-transparent border-[#9B7FA6] text-[#9B7FA6] hover:bg-[#9B7FA6] hover:text-white'
           }`}
         >
-          {following ? 'Following ✓' : 'Follow'}
+          {following
+            ? <span className="flex items-center justify-center gap-1.5"><Check size={14} />Following</span>
+            : 'Follow'
+          }
         </button>
       </div>
     </Link>

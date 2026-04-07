@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { Bell, LogOut, Tag } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { ALL_TOPICS, topicToSlug, type Topic } from '@/lib/topics'
 import type { User } from '@supabase/supabase-js'
@@ -32,6 +33,8 @@ type FollowedPolitician = {
   title: string
   party: Party
   state: string
+  photo?: string | null
+  district?: string | null
   latestVote: { bill: string; date: string; vote: 'Yea' | 'Nay' } | null
 }
 
@@ -65,22 +68,38 @@ function Initials({ name }: { name: string }) {
   )
 }
 
-function IconBell() {
-  return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
-    </svg>
-  )
-}
-
 type TopicFeedItem = {
   topic: Topic
   bill: { id: string; number: string; title: string; status: string }
 }
 
+// Bill progression indicator
+function BillProgress({ status }: { status: BillStatus }) {
+  const stages = ['Introduced', 'Committee', 'Floor Vote', 'Passed']
+  const stageIndex: Record<string, number> = { Introduced: 0, Committee: 1, Active: 2, Passed: 3, Failed: 3, Stalled: 2 }
+  const current = stageIndex[status] ?? 0
+  const isFailed = status === 'Failed' || status === 'Stalled'
+  return (
+    <div className="flex items-center gap-1 mt-2.5">
+      {stages.map((s, i) => (
+        <div
+          key={s}
+          className={`h-1 flex-1 rounded-full ${
+            i <= current
+              ? isFailed && i === current
+                ? 'bg-[#B85C38]/60'
+                : 'bg-[#9B7FA6]/60'
+              : 'bg-[#E8E3DA]'
+          }`}
+        />
+      ))}
+    </div>
+  )
+}
+
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 animate-pulse">
+    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 animate-pulse">
       <div className="flex items-start gap-3 mb-4">
         <div className="w-11 h-11 rounded-full bg-[#E8E3DA] flex-shrink-0" />
         <div className="flex-1 space-y-2 pt-1">
@@ -99,7 +118,7 @@ function SkeletonCard() {
 
 function EmptyState({ message, href, linkLabel }: { message: string; href: string; linkLabel: string }) {
   return (
-    <div className="bg-white rounded-xl border border-[#D6CFC4] px-6 py-10 text-center">
+    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-6 py-10 text-center">
       <p className="text-sm text-[#1C1C1A]/45 mb-3">{message}</p>
       <Link href={href} className="text-sm text-[#9B7FA6] hover:underline underline-offset-2">
         {linkLabel}
@@ -119,16 +138,6 @@ function getInitials(user: User): string {
   return (user.email?.[0] ?? '?').toUpperCase()
 }
 
-function SignOutIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-      <polyline points="16 17 21 12 16 7" />
-      <line x1="21" y1="12" x2="9" y2="12" />
-    </svg>
-  )
-}
-
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
@@ -139,6 +148,7 @@ export default function DashboardPage() {
   const [topicFeedItems, setTopicFeedItems] = useState<TopicFeedItem[]>([])
   const [loadingPoliticians, setLoadingPoliticians] = useState(true)
   const [loadingBills, setLoadingBills] = useState(true)
+  const [activityTab, setActivityTab] = useState<'all' | 'bills' | 'votes'>('all')
 
   // Auth state
   useEffect(() => {
@@ -238,6 +248,8 @@ export default function DashboardPage() {
           title: p.title,
           party: p.party,
           state: p.state,
+          photo: p.photo ?? null,
+          district: p.district ?? null,
           latestVote: latestVote
             ? { bill: latestVote.bill, date: latestVote.date, vote: latestVote.vote }
             : null,
@@ -323,6 +335,12 @@ export default function DashboardPage() {
     load()
   }, [user])
 
+  const filteredActivity = activityFeed.filter(item => {
+    if (activityTab === 'votes') return item.politician !== null
+    if (activityTab === 'bills') return item.politician === null
+    return true
+  })
+
   return (
     <div className="flex-1 flex flex-col min-h-screen">
 
@@ -337,7 +355,7 @@ export default function DashboardPage() {
               className="relative text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70 transition-colors"
               aria-label="Notifications"
             >
-              <IconBell />
+              <Bell size={19} />
             </button>
 
             {user && (
@@ -363,7 +381,7 @@ export default function DashboardPage() {
               className="flex items-center gap-2 text-sm text-[#1C1C1A]/45 hover:text-[#1C1C1A]/75 transition-colors"
             >
               <span className="hidden sm:inline">Sign out</span>
-              <SignOutIcon />
+              <LogOut size={16} />
             </button>
           </div>
         </header>
@@ -373,16 +391,16 @@ export default function DashboardPage() {
           <div className="max-w-5xl">
 
             {/* ── Following politicians ── */}
-            <section className="mb-10">
+            <section className="mb-14">
               <div className="flex items-baseline gap-2.5 mb-5">
-                <h2 className="text-base text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Following</h2>
+                <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Following</h2>
                 {!loadingPoliticians && (
                   <span className="text-sm text-[#1C1C1A]/38">{politicians.length} politicians</span>
                 )}
               </div>
 
               {loadingPoliticians ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   <SkeletonCard />
                   <SkeletonCard />
                   <SkeletonCard />
@@ -394,15 +412,26 @@ export default function DashboardPage() {
                   linkLabel="Find your representatives →"
                 />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {politicians.map((pol) => {
                     const badge = PARTY_STYLES[pol.party]
                     return (
                       <Link key={pol.id} href={`/representatives/${pol.id}`} className="group">
-                        <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 flex flex-col gap-4 hover:shadow-sm transition-shadow h-full">
+                        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-4 hover:shadow-md transition-shadow h-full cursor-pointer">
 
                           <div className="flex items-start gap-3">
-                            <Initials name={pol.name} />
+                            {/* Photo with initials fallback */}
+                            <div className="relative w-11 h-11 flex-shrink-0">
+                              <Initials name={pol.name} />
+                              {pol.photo && (
+                                <img
+                                  src={pol.photo}
+                                  alt={pol.name}
+                                  className="absolute inset-0 w-11 h-11 rounded-full object-cover"
+                                  onError={(e) => { e.currentTarget.style.display = 'none' }}
+                                />
+                              )}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <p
                                 className="text-sm font-medium text-[#1C1C1A] truncate group-hover:text-[#9B7FA6] transition-colors"
@@ -411,7 +440,9 @@ export default function DashboardPage() {
                                 {pol.name}
                               </p>
                               <p className="text-xs text-[#1C1C1A]/50 truncate mt-0.5">{pol.title}</p>
-                              <p className="text-xs text-[#1C1C1A]/38">{pol.state}</p>
+                              <p className="text-xs text-[#1C1C1A]/38">
+                                {pol.state}{pol.district ? ` · ${pol.district}` : ''}
+                              </p>
                             </div>
                           </div>
 
@@ -445,10 +476,10 @@ export default function DashboardPage() {
 
             {/* ── Personalized topic feed ── */}
             {topicFeedItems.length > 0 && (
-              <section className="mb-10">
+              <section className="mb-14">
                 <div className="flex items-baseline justify-between mb-5">
                   <div className="flex items-baseline gap-2.5">
-                    <h2 className="text-base text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Your Topics</h2>
+                    <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Your Topics</h2>
                     <span className="text-sm text-[#1C1C1A]/38">{followedTopics.length} followed</span>
                   </div>
                   <Link href="/topics" className="text-xs text-[#9B7FA6] hover:underline underline-offset-2">
@@ -468,26 +499,24 @@ export default function DashboardPage() {
                   ))}
                 </div>
 
-                <div className="bg-white rounded-xl border border-[#D6CFC4] divide-y divide-[rgba(28,28,26,0.05)]">
+                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] divide-y divide-[rgba(28,28,26,0.05)]">
                   {topicFeedItems.map(({ topic, bill }, i) => {
                     const s = STATUS_STYLES[bill.status as BillStatus] ?? STATUS_STYLES['Active']
                     return (
-                      <Link key={i} href={`/bills/${bill.id}`} className="block px-6 py-4 hover:bg-[#F5F0E8]/60 transition-colors group">
+                      <Link key={i} href={`/bills/${bill.id}`} className="block px-6 py-5 hover:bg-[#F5F0E8]/60 transition-colors group">
                         <div className="flex items-center gap-1.5 mb-2">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9B7FA6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-                            <line x1="7" y1="7" x2="7.01" y2="7" />
-                          </svg>
+                          <Tag size={10} color="#9B7FA6" />
                           <span className="text-[10px] text-[#9B7FA6] font-medium">Because you follow {topic}</span>
                         </div>
                         <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0">
+                          <div className="min-w-0 flex-1">
                             <p className="text-[11px] font-mono text-[#1C1C1A]/38 mb-1">{bill.number}</p>
-                            <p className="text-sm text-[#1C1C1A] leading-snug group-hover:text-[#9B7FA6] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
+                            <p className="text-base font-medium text-[#1C1C1A] leading-snug group-hover:text-[#9B7FA6] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
                               {bill.title}
                             </p>
+                            <BillProgress status={bill.status as BillStatus} />
                           </div>
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 ${s.bg} ${s.text}`}>
+                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 mt-1 ${s.bg} ${s.text}`}>
                             {bill.status}
                           </span>
                         </div>
@@ -503,13 +532,30 @@ export default function DashboardPage() {
 
               {/* Activity feed */}
               <section>
-                <div className="flex items-baseline gap-2.5 mb-5">
-                  <h2 className="text-base text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Activity</h2>
-                  <span className="text-sm text-[#1C1C1A]/38">Recent updates</span>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-baseline gap-2.5">
+                    <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Activity</h2>
+                    <span className="text-sm text-[#1C1C1A]/38">Recent updates</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {(['all', 'bills', 'votes'] as const).map(tab => (
+                      <button
+                        key={tab}
+                        onClick={() => setActivityTab(tab)}
+                        className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
+                          activityTab === tab
+                            ? 'bg-[#9B7FA6]/10 text-[#9B7FA6]'
+                            : 'text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70'
+                        }`}
+                      >
+                        {tab === 'all' ? 'All' : tab === 'bills' ? 'Bill Updates' : 'Politician Votes'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {loadingPoliticians && loadingBills ? (
-                  <div className="bg-white rounded-xl border border-[#D6CFC4] p-6 animate-pulse space-y-4">
+                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 animate-pulse space-y-4">
                     {[1,2,3].map(i => (
                       <div key={i} className="flex gap-4">
                         <div className="w-1.5 h-1.5 rounded-full bg-[#E8E3DA] mt-2 flex-shrink-0" />
@@ -520,17 +566,21 @@ export default function DashboardPage() {
                       </div>
                     ))}
                   </div>
-                ) : activityFeed.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-[#D6CFC4] px-6 py-10 text-center">
-                    <p className="text-sm text-[#1C1C1A]/45">No activity yet — follow politicians and track bills to see updates here.</p>
+                ) : filteredActivity.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-6 py-10 text-center">
+                    <p className="text-sm text-[#1C1C1A]/45">
+                      {activityFeed.length === 0
+                        ? 'No activity yet — follow politicians and track bills to see updates here.'
+                        : 'No items in this category yet.'}
+                    </p>
                   </div>
                 ) : (
-                  <div className="bg-white rounded-xl border border-[#D6CFC4] overflow-hidden">
-                    {activityFeed.map((item, idx) => (
+                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+                    {filteredActivity.map((item, idx) => (
                       <div
                         key={item.id}
-                        className={`flex items-start gap-4 px-6 py-4 ${
-                          idx < activityFeed.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
+                        className={`flex items-start gap-4 px-6 py-5 ${
+                          idx < filteredActivity.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
                         }`}
                       >
                         <div className={`w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0 ${item.isAlert ? 'bg-[#B85C38]' : 'bg-[#9B7FA6]/50'}`} />
@@ -554,14 +604,14 @@ export default function DashboardPage() {
               <section>
                 <div className="flex items-baseline justify-between mb-5">
                   <div className="flex items-baseline gap-2.5">
-                    <h2 className="text-base text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Tracked Bills</h2>
+                    <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Tracked Bills</h2>
                     {!loadingBills && <span className="text-sm text-[#1C1C1A]/38">{trackedBills.length}</span>}
                   </div>
                   <Link href="/bills" className="text-xs text-[#9B7FA6] hover:underline underline-offset-2">View all</Link>
                 </div>
 
                 {loadingBills ? (
-                  <div className="bg-white rounded-xl border border-[#D6CFC4] p-5 animate-pulse space-y-4">
+                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 animate-pulse space-y-4">
                     {[1,2,3].map(i => (
                       <div key={i} className="space-y-2 pb-4 border-b border-[rgba(28,28,26,0.05)] last:border-0 last:pb-0">
                         <div className="h-3 bg-[#E8E3DA] rounded w-1/3" />
@@ -577,14 +627,14 @@ export default function DashboardPage() {
                     linkLabel="Browse bills →"
                   />
                 ) : (
-                  <div className="bg-white rounded-xl border border-[#D6CFC4] overflow-hidden">
+                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
                     {trackedBills.map((bill, idx) => {
                       const s = STATUS_STYLES[bill.status]
                       return (
                         <Link
                           key={bill.id}
                           href={`/bills/${bill.id}`}
-                          className={`block px-5 py-4 hover:bg-[#F8F5F0] transition-colors ${idx < trackedBills.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''}`}
+                          className={`block px-5 py-5 hover:bg-[#F8F5F0] transition-colors cursor-pointer ${idx < trackedBills.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''}`}
                         >
                           <div className="flex items-start justify-between gap-2 mb-1.5">
                             <span className="text-[11px] font-mono text-[#1C1C1A]/38">{bill.number}</span>
@@ -592,10 +642,11 @@ export default function DashboardPage() {
                               {bill.status}
                             </span>
                           </div>
-                          <p className="text-sm text-[#1C1C1A] leading-snug mb-2.5" style={{ fontFamily: 'var(--font-serif)' }}>
+                          <p className="text-sm text-[#1C1C1A] leading-snug mb-1" style={{ fontFamily: 'var(--font-serif)' }}>
                             {bill.title}
                           </p>
-                          <div className="flex items-center justify-between">
+                          <BillProgress status={bill.status} />
+                          <div className="flex items-center justify-between mt-2.5">
                             <span className="text-[11px] text-[#1C1C1A]/40">{bill.category}</span>
                             <span className="text-[11px] text-[#1C1C1A]/30">{bill.lastAction}</span>
                           </div>
