@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getIdeologyLabel } from '@/lib/ideology'
+import { getEmployerIndustry } from '@/lib/fec-industries'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const OPENFEC_API_KEY  = process.env.OPENFEC_API_KEY ?? ''
@@ -30,6 +31,11 @@ function sourceStatus(r: SettledResult<unknown>): 'ok' | 'error' {
   return r.status === 'fulfilled' ? 'ok' : 'error'
 }
 
+function isDonorDataStale(finishedAt: string | null | undefined): boolean {
+  if (!finishedAt) return true
+  return Date.now() - new Date(finishedAt).getTime() > 30 * 24 * 60 * 60 * 1000
+}
+
 async function fetchSponsoredBills(bioguideId: string) {
   if (!CONGRESS_API_KEY) return []
   const res = await fetch(
@@ -53,49 +59,169 @@ async function fetchSponsoredBills(bioguideId: string) {
 
 interface Donor { rank: number; name: string; amount: string; category: string }
 
-async function fetchDonors(
-  memberName: string,
+const EMPLOYER_SKIP = new Set([
+  'NULL', 'NONE', 'N/A', 'NA', 'NOT APPLICABLE',
+  'SELF', 'SELF-EMPLOYED', 'SELF EMPLOYED',
+  'RETIRED', 'RETIRED/RETIRED',
+  'NOT EMPLOYED', 'UNEMPLOYED', 'HOMEMAKER', 'STUDENT',
+  'INFORMATION REQUESTED', 'INFORMATION REQUESTED PER BEST EFFORTS',
+  'REFUSED', 'REQUESTED', 'BEST EFFORTS',
+])
+
+const EMPLOYER_MERGE: Record<string, string> = {
+  'US GOVERNMENT':           'U.S. Government',
+  'U.S. GOVERNMENT':         'U.S. Government',
+  'UNITED STATES GOVERNMENT':'U.S. Government',
+  'US ARMY':                 'U.S. Army',
+  'UNITED STATES ARMY':      'U.S. Army',
+  'US NAVY':                 'U.S. Navy',
+  'UNITED STATES NAVY':      'U.S. Navy',
+  'US AIR FORCE':            'U.S. Air Force',
+  'UNITED STATES AIR FORCE': 'U.S. Air Force',
+}
+
+const PAC_SKIP = new Set([
+  'ACTBLUE', 'WINRED',
+  'DEMOCRATIC SENATORIAL CAMPAIGN COMMITTEE', 'DSCC',
+  'DEMOCRATIC CONGRESSIONAL CAMPAIGN COMMITTEE', 'DCCC',
+  'NRSC', 'NRCC',
+  'NATIONAL REPUBLICAN SENATORIAL COMMITTEE',
+  'NATIONAL REPUBLICAN CONGRESSIONAL COMMITTEE',
+  'DEMOCRATIC NATIONAL COMMITTEE', 'DNC',
+  'REPUBLICAN NATIONAL COMMITTEE', 'RNC',
+  'SENATE MAJORITY PAC', 'HOUSE MAJORITY PAC',
+  'SENATE LEADERSHIP FUND', 'CONGRESSIONAL LEADERSHIP FUND',
+  "EMILY'S LIST", 'END CITIZENS UNITED',
+])
+
+const KEEP_UPPER = new Set(['LLC', 'LLP', 'LP', 'PA', 'PC', 'PLLC', 'NA', 'FSB', 'II', 'III', 'IV'])
+
+function normalizeEmployer(raw: string): string {
+  const upper = raw.toUpperCase().trim()
+  if (EMPLOYER_MERGE[upper]) return EMPLOYER_MERGE[upper]
+  return raw
+    .trim()
+    .replace(/\s+/g, ' ')
+    .split(' ')
+    .map(word => {
+      const u = word.toUpperCase()
+      if (KEEP_UPPER.has(u)) return u
+      if (/^Mc[A-Z]/.test(word)) return word                                  // already correct
+      if (/^mc[a-z]/i.test(word))
+        return 'Mc' + word[2].toUpperCase() + word.slice(3).toLowerCase()     // mcdowell → McDowell
+      if (/^mac[a-z]/i.test(word) && word.length > 4)
+        return 'Mac' + word[3].toUpperCase() + word.slice(4).toLowerCase()    // macdonald → MacDonald
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+    })
+    .join(' ')
+}
+
+async function fetchDonors(opts: {
+  fecIds: string[] | null
+  fecCommitteeId: string | null
+  memberName: string
   stateCode: string
-): Promise<{ donors: Donor[]; fecUrl: string | null }> {
-  if (!OPENFEC_API_KEY) return { donors: [], fecUrl: null }
+}): Promise<{ donors: Donor[]; pacDonors: Donor[]; fecUrl: string | null }> {
+  if (!OPENFEC_API_KEY) return { donors: [], pacDonors: [], fecUrl: null }
   try {
-    const searchRes = await fetch(
-      `${FEC_BASE}/candidates/search/?q=${encodeURIComponent(memberName)}&state=${stateCode}&api_key=${OPENFEC_API_KEY}&per_page=5`,
-      { next: { revalidate: 86400 } }
-    )
-    if (!searchRes.ok) return { donors: [], fecUrl: null }
-    const searchData = await searchRes.json()
-    const candidate = searchData.results?.[0]
-    if (!candidate) return { donors: [], fecUrl: null }
+    let committeeId: string | null = opts.fecCommitteeId ?? null
+    let candidateId: string | null = opts.fecIds?.[0] ?? null
+    let fecUrl: string | null = candidateId ? `https://www.fec.gov/data/candidate/${candidateId}/` : null
 
-    const candidateId: string = candidate.candidate_id
-    const fecUrl = `https://www.fec.gov/data/candidate/${candidateId}/`
-    const committeeId: string | undefined = candidate.principal_committees?.[0]?.committee_id
-    if (!committeeId) return { donors: [], fecUrl }
+    // If we don't have a stored committee ID, look it up via candidate ID or name search
+    if (!committeeId) {
+      if (candidateId) {
+        const commRes = await fetch(
+          `${FEC_BASE}/candidate/${candidateId}/committees/?designation=P&api_key=${OPENFEC_API_KEY}`,
+          { next: { revalidate: 86400 } }
+        )
+        if (commRes.ok) {
+          const commData = await commRes.json()
+          committeeId = commData.results?.[0]?.committee_id ?? null
+        }
+      }
 
-    const contribRes = await fetch(
-      `${FEC_BASE}/schedules/schedule_a/by_employer/?committee_id=${committeeId}&sort=-total&per_page=100&api_key=${OPENFEC_API_KEY}`,
-      { next: { revalidate: 86400 } }
-    )
-    if (!contribRes.ok) return { donors: [], fecUrl }
-    const contribData = await contribRes.json()
-    const SKIP = new Set(['INFORMATION REQUESTED', 'NONE', 'N/A', 'SELF-EMPLOYED', 'SELF EMPLOYED', 'RETIRED', 'NOT EMPLOYED'])
-    // Aggregate totals by employer across cycles, then rank
-    const totals = new Map<string, number>()
-    for (const c of (contribData.results ?? []) as any[]) {
-      const employer: string = c.employer ?? ''
-      if (!employer || SKIP.has(employer.toUpperCase())) continue
-      totals.set(employer, (totals.get(employer) ?? 0) + (c.total ?? 0))
+      // Fall back to name search if still no committee ID
+      if (!committeeId) {
+        const searchRes = await fetch(
+          `${FEC_BASE}/candidates/search/?q=${encodeURIComponent(opts.memberName)}&state=${opts.stateCode}&api_key=${OPENFEC_API_KEY}&per_page=5`,
+          { next: { revalidate: 86400 } }
+        )
+        if (!searchRes.ok) return { donors: [], pacDonors: [], fecUrl }
+        const searchData = await searchRes.json()
+        const candidate = searchData.results?.[0]
+        if (!candidate) return { donors: [], pacDonors: [], fecUrl }
+        candidateId = candidate.candidate_id
+        fecUrl = `https://www.fec.gov/data/candidate/${candidateId}/`
+        committeeId = candidate.principal_committees?.[0]?.committee_id ?? null
+      }
     }
-    const donors: Donor[] = Array.from(totals.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([name, total], i) => ({
-        rank: i + 1, name, amount: `$${Math.round(total).toLocaleString()}`, category: 'Various',
-      }))
-    return { donors, fecUrl }
+
+    if (!committeeId) return { donors: [], pacDonors: [], fecUrl }
+
+    // Fetch all three data sources in parallel
+    const [employerRes, pacRes] = await Promise.allSettled([
+      fetch(
+        `${FEC_BASE}/schedules/schedule_a/by_employer/?committee_id=${committeeId}&sort=-total&per_page=100&api_key=${OPENFEC_API_KEY}`,
+        { next: { revalidate: 86400 } }
+      ),
+      fetch(
+        `${FEC_BASE}/schedules/schedule_a/?committee_id=${committeeId}&contributor_type=committee&sort=-contribution_receipt_amount&per_page=100&api_key=${OPENFEC_API_KEY}`,
+        { next: { revalidate: 86400 } }
+      ),
+    ])
+
+    // Individual employer donors (cleaned, with industry labels)
+    let donors: Donor[] = []
+    if (employerRes.status === 'fulfilled' && employerRes.value.ok) {
+      const data = await employerRes.value.json()
+      const totals = new Map<string, { normalized: string; total: number }>()
+      for (const c of (data.results ?? []) as any[]) {
+        const raw: string = c.employer ?? ''
+        if (!raw || EMPLOYER_SKIP.has(raw.toUpperCase().trim())) continue
+        const key = raw.toUpperCase().trim()
+        const name = normalizeEmployer(raw)
+        const existing = totals.get(key)
+        totals.set(key, { normalized: existing?.normalized ?? name, total: (existing?.total ?? 0) + (c.total ?? 0) })
+      }
+      donors = Array.from(totals.entries())
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 5)
+        .map(([rawKey, { normalized, total }], i) => ({
+          rank: i + 1, name: normalized,
+          amount: `$${Math.round(total).toLocaleString()}`,
+          category: getEmployerIndustry(rawKey),
+        }))
+    }
+
+    // PAC / committee contributors (aggregated from raw schedule_a)
+    let pacDonors: Donor[] = []
+    if (pacRes.status === 'fulfilled' && pacRes.value.ok) {
+      const data = await pacRes.value.json()
+      const totals = new Map<string, { display: string; total: number }>()
+      for (const t of (data.results ?? []) as any[]) {
+        const raw: string = t.contributor_name ?? ''
+        if (!raw) continue
+        const key = raw.toUpperCase().trim()
+        if (PAC_SKIP.has(key)) continue
+        const amount: number = t.contribution_receipt_amount ?? 0
+        if (amount <= 0) continue
+        const existing = totals.get(key)
+        totals.set(key, { display: existing?.display ?? raw, total: (existing?.total ?? 0) + amount })
+      }
+      pacDonors = Array.from(totals.entries())
+        .sort((a, b) => b[1].total - a[1].total)
+        .slice(0, 10)
+        .map(([, { display, total }], i) => ({
+          rank: i + 1, name: display,
+          amount: `$${Math.round(total).toLocaleString()}`,
+          category: 'PAC',
+        }))
+    }
+
+    return { donors, pacDonors, fecUrl }
   } catch {
-    return { donors: [], fecUrl: null }
+    return { donors: [], pacDonors: [], fecUrl: null }
   }
 }
 
@@ -107,7 +233,7 @@ export async function GET(
   const supabase = await createClient()
 
   // ── Tier 1: Local DB (fast, reliable) ─────────────────────────────────────
-  const [legislatorRes, scoresRes, billVotesRes, committeesRes] = await Promise.allSettled([
+  const [legislatorRes, scoresRes, billVotesRes, committeesRes, donorAlignmentsRes, lastDonorRunRes] = await Promise.allSettled([
     supabase
       .from('legislators')
       .select('*')
@@ -138,12 +264,42 @@ export async function GET(
       .from('committee_memberships')
       .select('title, committees(name, url, chamber)')
       .eq('bioguide_id', bioguideId),
+
+    supabase
+      .from('vote_donor_alignments')
+      .select('vote_id, donor_name, donor_amount, donor_likely_position, vote_aligns, explanation')
+      .eq('bioguide_id', bioguideId),
+
+    supabase
+      .from('pipeline_runs')
+      .select('finished_at')
+      .eq('script', 'sync_donor_alignments')
+      .eq('status', 'success')
+      .or(`bioguide_id.eq.${bioguideId},bioguide_id.is.null`)
+      .order('finished_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ])
 
-  const legislator = extract(legislatorRes)?.data
-  const scores     = extract(scoresRes)?.data
-  const voteRows   = extract(billVotesRes)?.data ?? []
-  const commRows   = extract(committeesRes)?.data ?? []
+  const legislator      = extract(legislatorRes)?.data
+  const scores          = extract(scoresRes)?.data
+  const voteRows        = extract(billVotesRes)?.data ?? []
+  const commRows        = extract(committeesRes)?.data ?? []
+  const alignmentRows   = extract(donorAlignmentsRes)?.data ?? []
+  const lastDonorRun    = extract(lastDonorRunRes)?.data
+
+  // Group alignments by vote_id for O(1) lookup when building vote objects
+  const alignmentsByVoteId = (alignmentRows as any[]).reduce((acc: Record<string, any[]>, row: any) => {
+    if (!acc[row.vote_id]) acc[row.vote_id] = []
+    acc[row.vote_id].push({
+      donorName:           row.donor_name,
+      donorAmount:         row.donor_amount,
+      donorLikelyPosition: row.donor_likely_position,
+      voteAligns:          row.vote_aligns,
+      explanation:         row.explanation,
+    })
+    return acc
+  }, {})
 
   // ── Tier 2: External APIs ──────────────────────────────────────────────────
   const memberName = legislator?.full_name ?? ''
@@ -151,7 +307,12 @@ export async function GET(
 
   const [sponsoredRes, donorsRes] = await Promise.allSettled([
     fetchSponsoredBills(bioguideId),
-    fetchDonors(memberName, stateCode),
+    fetchDonors({
+      fecIds:        (legislator as any)?.fec_ids ?? null,
+      fecCommitteeId:(legislator as any)?.fec_committee_id ?? null,
+      memberName,
+      stateCode,
+    }),
   ])
 
   // If not in DB yet, fall back to Congress.gov
@@ -181,7 +342,7 @@ export async function GET(
       : null
 
     const bills = extract(sponsoredRes) ?? []
-    const { donors, fecUrl } = extract(donorsRes) ?? { donors: [], fecUrl: null }
+    const { donors, pacDonors, fecUrl } = extract(donorsRes) ?? { donors: [], pacDonors: [], fecUrl: null }
 
     return NextResponse.json({
       politician: {
@@ -199,7 +360,9 @@ export async function GET(
         phone: member.addressInformation?.phoneNumber ?? null,
         fecUrl,
         stats: { yearsInOffice, attendance: null, ideologyScore: null, ideologyLabel: null, billVotesCast: 0, votedWithParty: null },
-        nextElectionYear, votes: [], billVotes: [], bills, donors, committees: [],
+        nextElectionYear, votes: [], billVotes: [], bills, donors, pacDonors, committees: [],
+        donorAlignmentSyncedAt:  (lastDonorRun as any)?.finished_at ?? null,
+        donorAlignmentIsStale:   isDonorDataStale((lastDonorRun as any)?.finished_at),
         _sources: {
           profile: 'congress.gov-fallback', ideology: 'unavailable',
           votes: 'unavailable', committees: 'unavailable',
@@ -251,8 +414,10 @@ export async function GET(
   }))
 
   const isSenate = legislator.chamber === 'senate'
-  const yearsInOffice = legislator.term_start
-    ? new Date().getFullYear() - new Date(legislator.term_start).getFullYear()
+  const rawTerms: any[] = legislator.raw_json?.terms ?? []
+  const firstTermStart = rawTerms[0]?.start ?? legislator.term_start
+  const yearsInOffice = firstTermStart
+    ? new Date().getFullYear() - new Date(firstTermStart).getFullYear()
     : 0
   const termLength = isSenate ? 6 : 2
   const nextElectionYear = legislator.next_election
@@ -262,14 +427,15 @@ export async function GET(
         : null)
 
   const bills  = extract(sponsoredRes) ?? []
-  const { donors, fecUrl } = extract(donorsRes) ?? { donors: [], fecUrl: null }
+  const { donors, pacDonors, fecUrl } = extract(donorsRes) ?? { donors: [], pacDonors: [], fecUrl: null }
 
   const votes = billVotes.map((v: any) => ({
-    id:     v.voteId,
-    bill:   v.question,
-    billId: v.billId ?? null,
-    date:   v.date,
-    vote:   v.position as 'Yea' | 'Nay',
+    id:             v.voteId,
+    bill:           v.question,
+    billId:         v.billId ?? null,
+    date:           v.date,
+    vote:           v.position as 'Yea' | 'Nay',
+    donorAlignments: alignmentsByVoteId[v.voteId] ?? [],
   }))
 
   return NextResponse.json({
@@ -303,7 +469,10 @@ export async function GET(
       billVotes,
       bills,
       donors,
+      pacDonors,
       committees,
+      donorAlignmentSyncedAt:  (lastDonorRun as any)?.finished_at ?? null,
+      donorAlignmentIsStale:   isDonorDataStale((lastDonorRun as any)?.finished_at),
       _sources: {
         profile:     sourceStatus(legislatorRes),
         ideology:    sourceStatus(scoresRes),

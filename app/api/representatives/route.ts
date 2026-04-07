@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const GEOCODIO_API_KEY = process.env.GEOCODIO_API_KEY ?? ''
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!GEOCODIO_API_KEY) {
-    return NextResponse.json({ error: 'GEOCODIO_API_KEY is not configured' }, { status: 500 })
+    return NextResponse.json({ error: 'geocode_failed' }, { status: 500 })
   }
 
   try {
@@ -61,18 +62,14 @@ export async function GET(request: NextRequest) {
     )
 
     if (!geocodioRes.ok) {
-      const err = await geocodioRes.json().catch(() => ({}))
-      return NextResponse.json(
-        { error: err.error ?? 'Geocodio API error' },
-        { status: geocodioRes.status }
-      )
+      return NextResponse.json({ error: 'address_not_found' }, { status: 404 })
     }
 
     const geocodioData = await geocodioRes.json()
     const result = geocodioData.results?.[0]
 
     if (!result) {
-      return NextResponse.json({ error: 'Address not found' }, { status: 404 })
+      return NextResponse.json({ error: 'address_not_found' }, { status: 404 })
     }
 
     const stateCode: string = result.address_components?.state ?? ''
@@ -89,6 +86,10 @@ export async function GET(request: NextRequest) {
         seen.add(key)
         legislators.push({ leg, districtNumber: district.district_number ?? 0 })
       }
+    }
+
+    if (legislators.length === 0) {
+      return NextResponse.json({ error: 'no_legislators' }, { status: 200 })
     }
 
     const representatives = await Promise.all(
@@ -117,9 +118,30 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    return NextResponse.json({ representatives })
+    // Enrich with ideology scores from the local database
+    const bioguideIds = representatives.map(r => r.bioguideId).filter(Boolean) as string[]
+    let ideologyMap: Record<string, number | null> = {}
+    if (bioguideIds.length > 0) {
+      const supabase = await createClient()
+      const { data: rows } = await supabase
+        .from('legislators')
+        .select('bioguide_id, ideology_score')
+        .in('bioguide_id', bioguideIds)
+      if (rows) {
+        for (const row of rows) {
+          ideologyMap[row.bioguide_id] = row.ideology_score ?? null
+        }
+      }
+    }
+
+    const enriched = representatives.map(r => ({
+      ...r,
+      ideologyScore: r.bioguideId ? (ideologyMap[r.bioguideId] ?? null) : null,
+    }))
+
+    return NextResponse.json({ representatives: enriched })
   } catch (err) {
     console.error('[/api/representatives]', err)
-    return NextResponse.json({ error: 'Failed to fetch representatives' }, { status: 500 })
+    return NextResponse.json({ error: 'geocode_failed' }, { status: 500 })
   }
 }

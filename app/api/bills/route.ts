@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     // Browse mode: direct table query with server-side filters
     let query = supabase
-      .from('bill_embeddings')
+      .from('bills')
       .select('*', { count: 'exact' })
 
     if (status) query = query.eq('status', status)
