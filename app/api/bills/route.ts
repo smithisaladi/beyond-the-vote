@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { BillStatus as Status } from '@/lib/bills'
 
-type Status = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
 type Category =
   | 'Environment'
   | 'Economy'
@@ -55,13 +55,21 @@ interface Bill {
   summary: string
 }
 
+function normalizeParty(party?: string | null): 'Democrat' | 'Republican' | 'Independent' {
+  if (!party) return 'Independent'
+  const p = party.trim().toUpperCase()
+  if (p === 'D' || p === 'DEMOCRAT' || p === 'DEMOCRATIC') return 'Democrat'
+  if (p === 'R' || p === 'REPUBLICAN') return 'Republican'
+  return 'Independent'
+}
+
 function mapRowToBill(row: any): Bill {
   return {
     id:                 row.bill_id,
     number:             row.bill_number ?? row.bill_id,
     title:              row.title,
     sponsor:            row.sponsor_name ?? 'Unknown',
-    party:              (row.sponsor_party as Bill['party']) ?? 'Independent',
+    party:              normalizeParty(row.sponsor_party),
     status:             (row.status as Status) ?? 'Active',
     category:           mapCategory(row.policy_area),
     lastAction:         row.last_action_date
@@ -81,6 +89,7 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get('q')?.trim() ?? ''
   const status = searchParams.get('status') ?? ''
   const category = searchParams.get('category') ?? ''
+  const dateFilter = searchParams.get('date') ?? ''
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 250)
   const offset = parseInt(searchParams.get('offset') ?? '0')
 
@@ -105,6 +114,28 @@ export async function GET(request: NextRequest) {
 
       const results = (data ?? []) as any[]
 
+      // Enrich missing sponsor fields from legislators table
+      const missingIds1 = [...new Set(
+        results.filter((r: any) => r.sponsor_bioguide_id && (!r.sponsor_party || !r.sponsor_name))
+          .map((r: any) => r.sponsor_bioguide_id as string)
+      )]
+      if (missingIds1.length > 0) {
+        const { data: legRows } = await supabase
+          .from('legislators')
+          .select('bioguide_id, full_name, party')
+          .in('bioguide_id', missingIds1)
+        const legMap = new Map((legRows ?? []).map((l: any) => [l.bioguide_id, l]))
+        for (const row of results) {
+          if (row.sponsor_bioguide_id) {
+            const leg = legMap.get(row.sponsor_bioguide_id)
+            if (leg) {
+              if (!row.sponsor_party) row.sponsor_party = leg.party ?? null
+              if (!row.sponsor_name) row.sponsor_name = leg.full_name ?? null
+            }
+          }
+        }
+      }
+
       return NextResponse.json({
         bills: results.map(mapRowToBill),
         pagination: { total: results.length + offset, limit, offset },
@@ -116,18 +147,24 @@ export async function GET(request: NextRequest) {
       .from('bills')
       .select('*', { count: 'exact' })
 
-    if (status) query = query.eq('status', status)
+    if (status) {
+      const statuses = status.split(',').filter(Boolean)
+      if (statuses.length === 1) query = query.eq('status', statuses[0])
+      else if (statuses.length > 1) query = query.in('status', statuses)
+    }
     if (category) {
-      const areas = CATEGORY_TO_POLICY_AREAS[category] ?? []
-      if (areas.length > 0) {
-        query = query.in('policy_area', areas)
+      const cats = category.split(',').filter(Boolean)
+      const allAreas = cats.flatMap(c => CATEGORY_TO_POLICY_AREAS[c] ?? [])
+      if (allAreas.length > 0) {
+        query = query.in('policy_area', allAreas)
       } else {
-        // No matching policy areas — return empty
-        return NextResponse.json({
-          bills: [],
-          pagination: { total: 0, limit, offset },
-        })
+        return NextResponse.json({ bills: [], pagination: { total: 0, limit, offset } })
       }
+    }
+    if (dateFilter === 'month') {
+      query = query.gte('last_action_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+    } else if (dateFilter === 'year') {
+      query = query.gte('last_action_date', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString())
     }
 
     query = query
@@ -138,8 +175,31 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new Error(error.message)
 
+    // Enrich missing sponsor fields from legislators table
+    const rows = (data ?? []) as any[]
+    const missingIds2 = [...new Set(
+      rows.filter((r: any) => r.sponsor_bioguide_id && (!r.sponsor_party || !r.sponsor_name))
+        .map((r: any) => r.sponsor_bioguide_id as string)
+    )]
+    if (missingIds2.length > 0) {
+      const { data: legRows } = await supabase
+        .from('legislators')
+        .select('bioguide_id, full_name, party')
+        .in('bioguide_id', missingIds2)
+      const legMap = new Map((legRows ?? []).map((l: any) => [l.bioguide_id, l]))
+      for (const row of rows) {
+        if (row.sponsor_bioguide_id) {
+          const leg = legMap.get(row.sponsor_bioguide_id)
+          if (leg) {
+            if (!row.sponsor_party) row.sponsor_party = leg.party ?? null
+            if (!row.sponsor_name) row.sponsor_name = leg.full_name ?? null
+          }
+        }
+      }
+    }
+
     return NextResponse.json({
-      bills: (data ?? []).map(mapRowToBill),
+      bills: rows.map(mapRowToBill),
       pagination: { total: count ?? 0, limit, offset },
     })
   } catch (err) {

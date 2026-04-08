@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import type { Party } from '@/lib/types'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const GEOCODIO_API_KEY = process.env.GEOCODIO_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
 const GEOCODIO_BASE = 'https://api.geocod.io/v1.7'
-
-type Party = 'Democrat' | 'Republican' | 'Independent'
 
 function normalizeParty(party?: string): Party {
   const p = (party ?? '').toUpperCase()
@@ -124,12 +123,12 @@ export async function GET(request: NextRequest) {
     if (bioguideIds.length > 0) {
       const supabase = await createClient()
       const { data: rows } = await supabase
-        .from('legislators')
-        .select('bioguide_id, ideology_score')
+        .from('member_scores')
+        .select('bioguide_id, nominate_dim1')
         .in('bioguide_id', bioguideIds)
       if (rows) {
         for (const row of rows) {
-          ideologyMap[row.bioguide_id] = row.ideology_score ?? null
+          ideologyMap[row.bioguide_id] = row.nominate_dim1 ?? null
         }
       }
     }
