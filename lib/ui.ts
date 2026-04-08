@@ -1,0 +1,27 @@
+import type { User } from '@supabase/supabase-js'
+import type { Party, BillStatus } from './types'
+
+export const PARTY_STYLES: Record<Party, { bg: string; text: string; label: string }> = {
+  Democrat:    { bg: 'bg-[#7B8FA8]/[0.12]', text: 'text-[#7B8FA8]',  label: 'Democrat' },
+  Republican:  { bg: 'bg-[#A87B7B]/[0.12]', text: 'text-[#A87B7B]',  label: 'Republican' },
+  Independent: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]',  label: 'Independent' },
+}
+
+export const STATUS_STYLES: Record<BillStatus, { bg: string; text: string }> = {
+  Active:    { bg: 'bg-[#9B7FA6]/[0.12]', text: 'text-[#9B7FA6]' },
+  Committee: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' },
+  Stalled:   { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
+  Passed:    { bg: 'bg-[#6A9B7B]/[0.12]', text: 'text-[#6A9B7B]' },
+  Failed:    { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
+}
+
+export function getUserInitials(user: User): string {
+  const name = user.user_metadata?.full_name as string | undefined
+  if (name) {
+    const parts = name.trim().split(/\s+/)
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : parts[0][0].toUpperCase()
+  }
+  return (user.email?.[0] ?? '?').toUpperCase()
+}
