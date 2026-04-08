@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { SidebarLayout } from '@/components/SidebarLayout'
+import { SidebarLayout } from '@/components/layout/SidebarLayout'
 
 export default async function AuthenticatedLayout({
   children,

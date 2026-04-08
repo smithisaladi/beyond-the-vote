@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
-import { LandingPage } from '@/components/LandingPage'
-import DashboardPage from '@/app/dashboard/page'
+import { LandingPage } from '@/components/landing/LandingPage'
+import DashboardPage from '@/components/dashboard/DashboardPage'
 
 export const metadata: Metadata = {
   title: 'Beyond the Ballot — Political Transparency for Every Voter',
