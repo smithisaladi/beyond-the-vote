@@ -35,3 +35,7 @@ pipeline/**/*.pyc
 pipeline/**/*.pyo
 pipeline/.python-version
 *.egg-info/
+
+# FEC bulk data files (large, downloaded from fec.gov)
+pipeline/data/raw/
+pipeline/data/processed/
