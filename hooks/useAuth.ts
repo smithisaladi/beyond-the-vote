@@ -1,16 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 
 export function useAuth() {
+  const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(({ data, error: err }) => {
+      if (err) setError(err.message)
       setUser(data.user)
       setLoading(false)
     })
@@ -20,5 +24,11 @@ export function useAuth() {
     return () => subscription.unsubscribe()
   }, [])
 
-  return { user, loading }
+  const signOut = async () => {
+    await createClient().auth.signOut()
+    router.push('/')
+    router.refresh()
+  }
+
+  return { user, loading, error, signOut }
 }

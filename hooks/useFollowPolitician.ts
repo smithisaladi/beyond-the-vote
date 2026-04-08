@@ -9,7 +9,8 @@ export function useFollowPolitician(
   onSignInRequired: () => void,
 ) {
   const [following, setFollowing] = useState(false)
-  const [followLoading, setFollowLoading] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!userId) { setFollowing(false); return }
@@ -20,7 +21,10 @@ export function useFollowPolitician(
       .eq('user_id', userId)
       .eq('politician_id', politicianId)
       .maybeSingle()
-      .then(({ data }) => setFollowing(!!data))
+      .then(({ data, error: err }) => {
+        if (err) setError(err.message)
+        else setFollowing(!!data)
+      })
   }, [userId, politicianId])
 
   const toggleFollow = async () => {
@@ -32,15 +36,19 @@ export function useFollowPolitician(
     const supabase = createClient()
     const next = !following
     setFollowing(next) // optimistic
-    setFollowLoading(true)
+    setLoading(true)
+    setError(null)
 
-    const { error } = next
+    const { error: err } = next
       ? await supabase.from('followed_politicians').insert({ user_id: userId, politician_id: politicianId })
       : await supabase.from('followed_politicians').delete().eq('user_id', userId).eq('politician_id', politicianId)
 
-    if (error) setFollowing(!next) // revert on failure
-    setFollowLoading(false)
+    if (err) {
+      setFollowing(!next) // revert on failure
+      setError(err.message)
+    }
+    setLoading(false)
   }
 
-  return { following, followLoading, toggleFollow }
+  return { following, loading, error, toggleFollow }
 }

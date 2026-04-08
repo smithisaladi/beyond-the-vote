@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-type Party = 'Democrat' | 'Republican' | 'Independent'
+import type { Party } from '@/lib/types'
 
 export interface Representative {
   id: string

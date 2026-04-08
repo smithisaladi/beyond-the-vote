@@ -8,6 +8,7 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
 export function useMapboxAutocomplete(address: string) {
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const debouncedAddress = useDebounce(address, 300)
 
@@ -18,16 +19,19 @@ export function useMapboxAutocomplete(address: string) {
     }
 
     let cancelled = false
+    setError(null)
     fetch(
       `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(debouncedAddress)}.json?access_token=${MAPBOX_TOKEN}&country=US&types=address,postcode,place&autocomplete=true&limit=5`
     )
-      .then(res => (res.ok ? res.json() : null))
+      .then(res => (res.ok ? res.json() : Promise.reject(new Error('Autocomplete request failed'))))
       .then(data => {
-        if (cancelled || !data) return
+        if (cancelled) return
         setSuggestions((data.features ?? []).map((f: { place_name: string }) => f.place_name))
         setShowSuggestions(true)
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Autocomplete failed')
+      })
 
     return () => { cancelled = true }
   }, [debouncedAddress])
@@ -47,5 +51,5 @@ export function useMapboxAutocomplete(address: string) {
     setShowSuggestions(false)
   }
 
-  return { suggestions, showSuggestions, setShowSuggestions, clearSuggestions, containerRef }
+  return { suggestions, showSuggestions, setShowSuggestions, clearSuggestions, containerRef, error }
 }
