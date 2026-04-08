@@ -1,10 +1,12 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Check } from 'lucide-react'
 import { useFollowPolitician } from '@/hooks/useFollowPolitician'
-
-type Party = 'Democrat' | 'Republican' | 'Independent'
+import type { Party } from '@/lib/types'
+import { PARTY_STYLES } from '@/lib/ui'
 
 interface RepresentativeCardProps {
   id: string
@@ -20,11 +22,6 @@ interface RepresentativeCardProps {
   onSignInRequired: () => void
 }
 
-const PARTY_STYLES: Record<Party, { bg: string; text: string; label: string }> = {
-  Democrat:    { bg: 'bg-[#7B8FA8]/[0.12]', text: 'text-[#7B8FA8]',  label: 'Democrat' },
-  Republican:  { bg: 'bg-[#A87B7B]/[0.12]', text: 'text-[#A87B7B]',  label: 'Republican' },
-  Independent: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]',  label: 'Independent' },
-}
 
 function Initials({ name }: { name: string }) {
   const parts = name.trim().split(' ')
@@ -44,13 +41,14 @@ export function RepresentativeCard({
   id, name, title, party, state, district, since, photo, ideologyScore, userId, onSignInRequired,
 }: RepresentativeCardProps) {
   const badge = PARTY_STYLES[party]
-  const { following, followLoading, toggleFollow } = useFollowPolitician(id, userId, onSignInRequired)
+  const { following, loading: followLoading, toggleFollow } = useFollowPolitician(id, userId, onSignInRequired)
+  const [photoError, setPhotoError] = useState(false)
 
   return (
     <Link href={`/representatives/${id}`} className="block">
       <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col items-center text-center gap-4 h-full">
-        {photo
-          ? <img src={photo} alt={name} className="w-20 h-20 rounded-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+        {photo && !photoError
+          ? <Image src={photo} alt={name} width={80} height={80} className="rounded-full object-cover" onError={() => setPhotoError(true)} />
           : <Initials name={name} />
         }
 

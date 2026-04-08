@@ -1,50 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import { ALL_TOPICS, topicToSlug, type Topic } from '@/lib/topics'
+import { topicToSlug, type Topic } from '@/lib/topics'
+import { useAuth } from '@/hooks/useAuth'
+import { useTopicPreferences } from '@/hooks/useTopicPreferences'
 import { useTopicFeed } from '@/hooks/useTopicFeed'
 
-const LS_KEY = 'btb_topics'
-
 export function TopicFeed() {
-  const [topics, setTopics] = useState<Topic[]>([])
-  const [mounted, setMounted] = useState(false)
+  const { user } = useAuth()
+  const { selectedTopics, loaded } = useTopicPreferences(user)
+  const topics = Array.from(selectedTopics) as Topic[]
 
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+  const { feedItems } = useTopicFeed(topics)
 
-      if (user) {
-        const { data } = await supabase
-          .from('topic_preferences')
-          .select('topic')
-          .eq('user_id', user.id)
-        if (data) {
-          const saved = data
-            .map((r: { topic: string }) => r.topic)
-            .filter((t: string) => ALL_TOPICS.includes(t as Topic)) as Topic[]
-          setTopics(saved)
-        }
-      } else {
-        try {
-          const raw = localStorage.getItem(LS_KEY)
-          if (raw) {
-            const saved = (JSON.parse(raw) as string[]).filter(t => ALL_TOPICS.includes(t as Topic)) as Topic[]
-            setTopics(saved)
-          }
-        } catch {}
-      }
-      setMounted(true)
-    }
-    load()
-  }, [])
-
-  const feedItems = useTopicFeed(topics)
-
-  if (!mounted || topics.length === 0) return null
+  if (!loaded || topics.length === 0) return null
   if (feedItems.length === 0) return null
 
   return (

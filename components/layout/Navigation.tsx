@@ -2,12 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
-import type { User } from '@supabase/supabase-js'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
-import { createClient } from '@/lib/supabase/client'
-import { SignInModal } from './SignInModal'
-import { SignUpModal } from './SignUpModal'
+import { getUserInitials } from '@/lib/ui'
+import { SignInModal } from '../auth/SignInModal'
+import { SignUpModal } from '../auth/SignUpModal'
 
 const NAV_LINKS = [
   { href: '/',                label: 'Home'          },
@@ -31,30 +30,12 @@ function IconMenu({ open }: { open: boolean }) {
   )
 }
 
-function getInitials(user: User): string {
-  const name = user.user_metadata?.full_name as string | undefined
-  if (name) {
-    const parts = name.trim().split(/\s+/)
-    return parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : parts[0][0].toUpperCase()
-  }
-  return (user.email?.[0] ?? '?').toUpperCase()
-}
-
 export function Navigation() {
-  const router = useRouter()
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
   const [menuOpen, setMenuOpen]     = useState(false)
-
-  const handleSignOut = async () => {
-    await createClient().auth.signOut()
-    router.push('/')
-    router.refresh()
-  }
 
   return (
     <>
@@ -100,10 +81,10 @@ export function Navigation() {
                 </Link>
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-[#9B7FA6] flex items-center justify-center text-white text-xs font-semibold select-none">
-                    {getInitials(user)}
+                    {getUserInitials(user)}
                   </div>
                   <button
-                    onClick={handleSignOut}
+                    onClick={signOut}
                     className="hidden md:block text-sm text-[#1C1C1A]/60 hover:text-[#1C1C1A] transition-colors"
                   >
                     Sign Out
@@ -167,7 +148,7 @@ export function Navigation() {
                   Dashboard
                 </Link>
                 <button
-                  onClick={() => { setMenuOpen(false); handleSignOut() }}
+                  onClick={() => { setMenuOpen(false); signOut() }}
                   className="mt-2 py-2.5 text-sm text-[#1C1C1A]/70 hover:text-[#1C1C1A] transition-colors text-left"
                 >
                   Sign Out
