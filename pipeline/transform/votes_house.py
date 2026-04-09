@@ -67,6 +67,7 @@ def transform_vote_summary(detail: dict, congress: int) -> dict | None:
 
     result = vote.get("result") or vote.get("voteResult") or ""
     question = vote.get("voteQuestion") or vote.get("question") or ""
+    title = vote.get("legislationTitle") or vote.get("title") or question or ""
 
     # Bill reference — API uses legislationType/legislationNumber at top level
     bill_type = (vote.get("legislationType") or "").lower()
@@ -87,6 +88,7 @@ def transform_vote_summary(detail: dict, congress: int) -> dict | None:
         "congress":        congress,
         "chamber":         "House",
         "date":            date,
+        "title":           title,
         "question":        question,
         "result":          result,
         "required":        vote.get("requiredForPassage") or vote.get("required"),

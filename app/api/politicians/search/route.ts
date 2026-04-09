@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     id: row.bioguide_id,
     bioguideId: row.bioguide_id,
     name: row.full_name ?? '',
-    title: row.chamber === 'senate' ? 'U.S. Senator' : 'U.S. Representative',
+    title: (row.chamber ?? '').toLowerCase() === 'senate' ? 'U.S. Senator' : 'U.S. Representative',
     party: normalizeParty(row.party),
     state: row.state ?? '',
     district: row.district ? `${row.district}th District` : undefined,

@@ -16,18 +16,18 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
                 className="text-5xl sm:text-6xl text-[#1C1C1A] mb-6 leading-[1.08] tracking-[-0.02em]"
                 style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
               >
-                Know exactly who represents you — and what they stand for
+                Know exactly who represents you, and what they stand for
               </h1>
               <p className="text-xl text-[#1C1C1A]/55 mb-9 leading-relaxed max-w-lg">
                 Beyond the Vote connects you directly to your elected officials' voting records,
-                positions, and actions — so you can hold them accountable.
+                positions, and actions so you can hold them accountable.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={onSignUp}
                   className="px-6 py-3 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
                 >
-                  Get started free
+                  Get started
                 </button>
                 <a
                   href="/representatives"
@@ -82,7 +82,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
             <Feature
               icon={<IconVote />}
               title="Track their votes"
-              description="See how your representatives vote on every bill — healthcare, climate, defense, education, and more — in clear, plain language."
+              description="See how your representatives vote on every bill, from healthcare and climate to defense and education, in clear, plain language."
             />
             <Feature
               icon={<IconBell />}
@@ -99,7 +99,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
           {[
             { stat: '535', label: 'Members of Congress tracked' },
             { stat: '10,000+', label: 'Bills indexed' },
-            { stat: '100%', label: 'Free to get started' },
+            { stat: '100%', label: 'Open and accessible' },
           ].map(({ stat, label }) => (
             <div key={label}>
               <p className="text-4xl font-semibold text-[#9B7FA6] mb-1.5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}>
@@ -128,7 +128,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
             onClick={onSignUp}
             className="px-10 py-3.5 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
           >
-            Create your free account
+            Create your account
           </button>
         </div>
       </section>

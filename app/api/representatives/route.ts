@@ -91,10 +91,42 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'no_legislators' }, { status: 200 })
     }
 
+    // Enrich with local DB data (photos, ideology scores) in one query
+    const bioguideIds = legislators
+      .map(({ leg }) => leg.references?.bioguide_id)
+      .filter(Boolean) as string[]
+
+    const supabase = await createClient()
+    let localDataMap: Record<string, { photo_url: string | null }> = {}
+    let ideologyMap: Record<string, number | null> = {}
+
+    if (bioguideIds.length > 0) {
+      const [legRes, scoresRes] = await Promise.all([
+        supabase
+          .from('legislators')
+          .select('bioguide_id, photo_url')
+          .in('bioguide_id', bioguideIds),
+        supabase
+          .from('member_scores')
+          .select('bioguide_id, nominate_dim1, congress')
+          .in('bioguide_id', bioguideIds)
+          .order('congress', { ascending: false }),
+      ])
+      for (const row of legRes.data ?? []) {
+        localDataMap[row.bioguide_id] = { photo_url: row.photo_url }
+      }
+      for (const row of scoresRes.data ?? []) {
+        if (!(row.bioguide_id in ideologyMap)) {
+          ideologyMap[row.bioguide_id] = row.nominate_dim1 ?? null
+        }
+      }
+    }
+
     const representatives = await Promise.all(
       legislators.map(async ({ leg, districtNumber }) => {
         const bioguideId: string = leg.references?.bioguide_id ?? ''
         const enrich = await enrichFromCongress(bioguideId)
+        const localData = bioguideId ? localDataMap[bioguideId] : null
 
         const firstName: string = leg.bio?.first_name ?? ''
         const lastName: string = leg.bio?.last_name ?? ''
@@ -109,32 +141,13 @@ export async function GET(request: NextRequest) {
           party: normalizeParty(leg.bio?.party),
           state: stateCode,
           district: !isSenator ? ordinal(districtNumber) : undefined,
-          photo: enrich.photo,
+          photo: enrich.photo ?? localData?.photo_url ?? null,
           since: enrich.since,
           website: enrich.website ?? leg.contact?.url ?? null,
           phone: leg.contact?.phone ?? null,
         }
       })
     )
-
-    // Enrich with ideology scores from the local database
-    const bioguideIds = representatives.map(r => r.bioguideId).filter(Boolean) as string[]
-    let ideologyMap: Record<string, number | null> = {}
-    if (bioguideIds.length > 0) {
-      const supabase = await createClient()
-      const { data: rows } = await supabase
-        .from('member_scores')
-        .select('bioguide_id, nominate_dim1, congress')
-        .in('bioguide_id', bioguideIds)
-        .order('congress', { ascending: false })
-      if (rows) {
-        for (const row of rows) {
-          if (!(row.bioguide_id in ideologyMap)) {
-            ideologyMap[row.bioguide_id] = row.nominate_dim1 ?? null
-          }
-        }
-      }
-    }
 
     const enriched = representatives.map(r => ({
       ...r,

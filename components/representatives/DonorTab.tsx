@@ -25,10 +25,18 @@ interface FundingBreakdown {
   superPacFor: number
   superPacAgainst: number
   cycle: number
+  minCycle?: number
+}
+
+interface TopContributor {
+  rank: number
+  orgName: string
+  total: string
 }
 
 interface DonorTabProps {
   pacDonors: Donor[]
+  topContributors: TopContributor[]
   fundingBreakdown?: FundingBreakdown | null
   fecUrl?: string | null
 }
@@ -68,10 +76,11 @@ function cleanList(list: Donor[]): Donor[] {
     .slice(0, 6)
 }
 
-export function DonorTab({ pacDonors, fundingBreakdown, fecUrl }: DonorTabProps) {
+export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl }: DonorTabProps) {
   const bd = fundingBreakdown && fundingBreakdown.total > 0 ? fundingBreakdown : null
   const cleanPacDonors = cleanList(pacDonors)
-  const hasDonorData   = cleanPacDonors.length > 0
+  const hasContributors = topContributors.length > 0
+  const hasDonorData   = hasContributors || cleanPacDonors.length > 0
 
   if (!hasDonorData && !bd) {
     return (
@@ -166,13 +175,60 @@ export function DonorTab({ pacDonors, fundingBreakdown, fecUrl }: DonorTabProps)
             {verdict.description}
           </p>
           <p className="text-[#1C1C1A]/50 text-xs mt-1">
-            {formatTotal(bd.total)} raised · {bd.cycle - 1}–{bd.cycle} cycle
+            {formatTotal(bd.total)} raised · {(bd.minCycle ?? bd.cycle) - 1}–{bd.cycle} cycle
           </p>
         </div>
       )}
 
-      {/* ── Top PAC & Interest Group Donors ── */}
-      {cleanPacDonors.length > 0 && (
+      {/* ── Top Contributors (OpenSecrets-style: individuals + PACs combined) ── */}
+      {hasContributors ? (
+        <div className="mb-6">
+          <div className="mb-3">
+            <p
+              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5"
+              style={{ fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.08em' }}
+            >
+              Top Contributors
+            </p>
+            <p className="text-[#1C1C1A]/40 text-xs">
+              Employee donations &amp; PAC contributions by organization
+              {bd ? ` · ${(bd.minCycle ?? bd.cycle) - 1}–${bd.cycle}` : ''}
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            {topContributors.map((c, i) => (
+              <div
+                key={i}
+                className={`rounded-lg px-3 py-2.5 border ${
+                  i === 0
+                    ? 'bg-[#F5F0E8] border-[rgba(28,28,26,0.06)]'
+                    : 'bg-white border-[rgba(28,28,26,0.04)]'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span
+                    className="text-[#1C1C1A] text-sm truncate"
+                    style={{ fontWeight: i === 0 ? 500 : 400 }}
+                  >
+                    {c.orgName}
+                  </span>
+                  <span
+                    className={`flex-shrink-0 ${i === 0 ? 'text-[#9B7FA6]' : 'text-[#1C1C1A]/70'}`}
+                    style={{
+                      fontSize: i === 0 ? '1rem' : '0.875rem',
+                      fontWeight: 600,
+                      fontFamily: i === 0 ? 'var(--font-serif)' : undefined,
+                    }}
+                  >
+                    {c.total}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : cleanPacDonors.length > 0 && (
         <div className="mb-6">
           <div className="mb-3">
             <p
@@ -229,6 +285,9 @@ export function DonorTab({ pacDonors, fundingBreakdown, fecUrl }: DonorTabProps)
           >
             Data via FEC →
           </a>
+          <p className="text-[10px] text-[#1C1C1A]/25 mt-1.5">
+            Source: FEC bulk filings. Combines employee donations &amp; PAC contributions by organization.
+          </p>
         </div>
       )}
     </div>

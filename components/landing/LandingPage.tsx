@@ -64,7 +64,7 @@ export function LandingPage() {
               onClick={() => setShowSignUp(true)}
               className="text-sm bg-[#9B7FA6] text-white px-4 py-2 rounded-lg hover:bg-[#8a6e95] transition-colors shadow-sm font-medium"
             >
-              Sign up free
+              Sign up
             </button>
           </div>
         </div>

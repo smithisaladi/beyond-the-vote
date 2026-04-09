@@ -113,9 +113,9 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
             <input type="checkbox" className="mt-0.5 rounded border-[rgba(28,28,26,0.2)]" required />
             <span>
               I agree to the{' '}
-              <button type="button" className="text-[#9B7FA6] hover:text-[#8a6e95]">Terms of Service</button>
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#9B7FA6] hover:text-[#8a6e95]">Terms of Service</a>
               {' '}and{' '}
-              <button type="button" className="text-[#9B7FA6] hover:text-[#8a6e95]">Privacy Policy</button>
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#9B7FA6] hover:text-[#8a6e95]">Privacy Policy</a>
             </span>
           </label>
 

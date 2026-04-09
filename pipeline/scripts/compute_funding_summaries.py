@@ -13,6 +13,7 @@ Usage:
 import argparse
 import logging
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -27,6 +28,16 @@ log = logging.getLogger(__name__)
 SCRIPT = "compute_funding_summaries"
 LARGE_DONOR_THRESHOLD = 200.0  # FEC itemization threshold
 TOP_PACS_LIMIT = 20
+TOP_CONTRIBUTORS_LIMIT = 20
+
+# Non-employer values to exclude when grouping individual contributions by employer
+NON_EMPLOYERS = {
+    'SELF-EMPLOYED', 'SELF EMPLOYED', 'SELF', 'NONE', 'N/A', 'NA',
+    'NOT EMPLOYED', 'RETIRED', 'INFORMATION REQUESTED',
+    'INFORMATION REQUESTED PER BEST EFFORTS', 'REFUSED',
+    'NOT APPLICABLE', 'HOMEMAKER', 'STUDENT', 'UNEMPLOYED',
+    'NOT AVAILABLE', 'REQUESTED', 'BEST EFFORTS', 'DISABLED',
+}
 
 
 # ── Data loading ─────────────────────────────────────────────────────────────
@@ -49,13 +60,16 @@ def load_legislators() -> dict[str, dict]:
 
 # ── Industry classification ───────────────────────────────────────────────────
 
-def classify_industry(org_name: str | None) -> str:
-    if not org_name:
-        return "Other"
-    lower = org_name.lower()
-    for keyword, industry in INDUSTRY_KEYWORDS:
-        if keyword in lower:
-            return industry
+def classify_industry(*names: str | None) -> str:
+    """Classify industry from one or more name fields (connected_org_nm, cmte_nm).
+    First match across all provided names wins."""
+    for name in names:
+        if not name:
+            continue
+        lower = name.lower()
+        for keyword, industry in INDUSTRY_KEYWORDS:
+            if keyword in lower:
+                return industry
     return "Other"
 
 
@@ -225,22 +239,23 @@ def _fetch_individual_totals(conn) -> dict[str, dict]:
 
 
 def _fetch_industry_data(conn) -> list[tuple]:
-    """PAC contributions grouped by bioguide_id + connected_org_nm for industry classification."""
+    """PAC contributions grouped by bioguide_id + connected_org_nm + cmte_nm for industry classification."""
     return conn.execute("""
-        SELECT m.bioguide_id, cm.connected_org_nm, SUM(CAST(p.transaction_amt AS DOUBLE)) AS total
+        SELECT m.bioguide_id, cm.connected_org_nm, cm.cmte_nm,
+               SUM(CAST(p.transaction_amt AS DOUBLE)) AS total
         FROM pac p
         JOIN cmte_to_bioguide m ON p.cmte_id = m.cmte_id
         JOIN committees cm ON p.cmte_id = cm.cmte_id
-        GROUP BY m.bioguide_id, cm.connected_org_nm
+        GROUP BY m.bioguide_id, cm.connected_org_nm, cm.cmte_nm
     """).fetchall()
 
 
 def _classify_industry_totals(industry_data: list[tuple]) -> dict[str, dict[str, float]]:
     """Apply Python-side industry keyword classification."""
-    from collections import defaultdict
+
     result: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
-    for bioguide_id, org_name, total in industry_data:
-        industry = classify_industry(org_name)
+    for bioguide_id, org_name, cmte_nm, total in industry_data:
+        industry = classify_industry(org_name, cmte_nm)
         result[bioguide_id][industry] += total
     return {bid: dict(ind_map) for bid, ind_map in result.items()}
 
@@ -300,7 +315,7 @@ def _compute_top_pacs(conn, cycle: int) -> list[dict]:
             "cmte_id":             row_dict["cmte_id"],
             "cmte_name":           row_dict.get("cmte_nm"),
             "connected_org":       row_dict.get("connected_org_nm"),
-            "industry":            classify_industry(row_dict.get("connected_org_nm")),
+            "industry":            classify_industry(row_dict.get("connected_org_nm"), row_dict.get("cmte_nm")),
             "direct_contribution": round(row_dict.get("direct_contribution", 0), 2),
             "ie_for":              round(row_dict.get("ie_for", 0), 2),
             "ie_against":          round(row_dict.get("ie_against", 0), 2),
@@ -308,6 +323,186 @@ def _compute_top_pacs(conn, cycle: int) -> list[dict]:
             "rank":                row_dict.get("rank"),
         })
     return result
+
+
+# ── Top Contributors computation (OpenSecrets-style) ─────────────────────────
+
+def _to_title_case(s: str) -> str:
+    """Convert ALL-CAPS org name to Title Case, preserving short words."""
+    if not s:
+        return s
+    words = s.lower().split()
+    small = {"of", "the", "and", "for", "in", "on", "at", "to", "a", "an"}
+    result = []
+    for i, w in enumerate(words):
+        result.append(w if (i > 0 and w in small) else w.capitalize())
+    return " ".join(result)
+
+
+def _compute_top_contributors(conn, cycle: int) -> list[dict]:
+    """Compute top contributors per legislator by combining individual employee
+    donations (grouped by employer) with PAC contributions (grouped by connected org).
+    Matches the OpenSecrets 'Top Contributors' format."""
+
+    # Build exclusion list for SQL
+    non_emp_list = ", ".join(f"'{v}'" for v in NON_EMPLOYERS)
+
+    rows = conn.execute(f"""
+        WITH indiv_by_employer AS (
+            SELECT m.bioguide_id,
+                   regexp_replace(UPPER(TRIM(i.employer)), '\s+', ' ', 'g') AS org_name,
+                   SUM(CAST(i.transaction_amt AS DOUBLE)) AS individual_total
+            FROM indiv i
+            JOIN cmte_to_bioguide m ON i.cmte_id = m.cmte_id
+            WHERE i.employer IS NOT NULL
+              AND TRIM(i.employer) != ''
+              AND UPPER(TRIM(i.employer)) NOT IN ({non_emp_list})
+            GROUP BY m.bioguide_id, regexp_replace(UPPER(TRIM(i.employer)), '\s+', ' ', 'g')
+        ),
+        pac_direct_by_org AS (
+            SELECT f.bioguide_id,
+                   regexp_replace(UPPER(TRIM(
+                       COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm)
+                   )), '\s+', ' ', 'g') AS org_name,
+                   SUM(CAST(p.transaction_amt AS DOUBLE)) AS amt,
+                   ARG_MAX(p.cmte_id, CAST(p.transaction_amt AS DOUBLE)) AS top_cmte_id
+            FROM pac p
+            JOIN fec_map f ON p.cand_id = f.fec_id
+            JOIN committees cm ON p.cmte_id = cm.cmte_id
+            WHERE COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm) IS NOT NULL
+            GROUP BY f.bioguide_id, regexp_replace(UPPER(TRIM(
+                COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm)
+            )), '\s+', ' ', 'g')
+        ),
+        ie_by_org AS (
+            SELECT f.bioguide_id,
+                   regexp_replace(UPPER(TRIM(
+                       COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm)
+                   )), '\s+', ' ', 'g') AS org_name,
+                   SUM(CASE WHEN ie.sup_opp = 'S'
+                       THEN CAST(ie.transaction_amt AS DOUBLE) ELSE 0 END) AS amt,
+                   ARG_MAX(ie.cmte_id, CAST(ie.transaction_amt AS DOUBLE)) AS top_cmte_id
+            FROM ie
+            JOIN fec_map f ON ie.cand_id = f.fec_id
+            JOIN committees cm ON ie.cmte_id = cm.cmte_id
+            WHERE COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm) IS NOT NULL
+            GROUP BY f.bioguide_id, regexp_replace(UPPER(TRIM(
+                COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm)
+            )), '\s+', ' ', 'g')
+        ),
+        pac_by_org AS (
+            SELECT
+                COALESCE(d.bioguide_id, e.bioguide_id) AS bioguide_id,
+                COALESCE(d.org_name, e.org_name) AS org_name,
+                COALESCE(d.amt, 0) + COALESCE(e.amt, 0) AS pac_total,
+                COALESCE(d.top_cmte_id, e.top_cmte_id) AS top_cmte_id
+            FROM pac_direct_by_org d
+            FULL OUTER JOIN ie_by_org e
+                ON d.bioguide_id = e.bioguide_id AND d.org_name = e.org_name
+        ),
+        combined AS (
+            SELECT
+                COALESCE(i.bioguide_id, p.bioguide_id) AS bioguide_id,
+                COALESCE(i.org_name, p.org_name) AS org_name,
+                COALESCE(i.individual_total, 0) AS individual_total,
+                COALESCE(p.pac_total, 0) AS pac_total,
+                COALESCE(i.individual_total, 0) + COALESCE(p.pac_total, 0) AS grand_total,
+                p.top_cmte_id AS cmte_id
+            FROM indiv_by_employer i
+            FULL OUTER JOIN pac_by_org p
+                ON i.bioguide_id = p.bioguide_id AND i.org_name = p.org_name
+            WHERE COALESCE(i.org_name, p.org_name) IS NOT NULL
+              AND COALESCE(i.org_name, p.org_name) != ''
+              AND COALESCE(i.org_name, p.org_name) NOT IN ({non_emp_list})
+        ),
+        ranked AS (
+            SELECT *,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY bioguide_id ORDER BY grand_total DESC
+                   ) AS rank
+            FROM combined
+            WHERE grand_total > 0
+        )
+        SELECT * FROM ranked WHERE rank <= {TOP_CONTRIBUTORS_LIMIT}
+    """).fetchall()
+
+    desc = conn.description
+    col_names = [d[0] for d in desc] if desc else []
+
+    # Deduplicate by (bioguide_id, org_name) after title-casing — title-casing
+    # can collapse distinct UPPER strings (e.g. punctuation variants)
+    merged: dict[tuple[str, str], dict] = {}
+    for row in rows:
+        row_dict = dict(zip(col_names, row))
+        raw_org = row_dict["org_name"]
+        org_name = _to_title_case(raw_org or "")
+        if not org_name or org_name.upper() in NON_EMPLOYERS:
+            continue
+        bio_id = row_dict["bioguide_id"]
+        key = (bio_id, org_name)
+        indiv = round(row_dict.get("individual_total", 0), 2)
+        pac = round(row_dict.get("pac_total", 0), 2)
+        cmte_id = row_dict.get("cmte_id")
+        if key in merged:
+            merged[key]["individual_total"] += indiv
+            merged[key]["pac_total"] += pac
+            merged[key]["grand_total"] += indiv + pac
+            # Keep cmte_id from the entry with PAC data if current has none
+            if cmte_id and not merged[key].get("cmte_id"):
+                merged[key]["cmte_id"] = cmte_id
+        else:
+            merged[key] = {
+                "bioguide_id":      bio_id,
+                "cycle":            cycle,
+                "org_name":         org_name,
+                "individual_total": indiv,
+                "pac_total":        pac,
+                "grand_total":      round(indiv + pac, 2),
+                "rank":             row_dict.get("rank"),
+                "cmte_id":          cmte_id,
+            }
+
+    # Re-rank after dedup
+
+    by_legislator: dict[str, list[dict]] = defaultdict(list)
+    for entry in merged.values():
+        by_legislator[entry["bioguide_id"]].append(entry)
+
+    result = []
+    for bio_id, entries in by_legislator.items():
+        entries.sort(key=lambda e: e["grand_total"], reverse=True)
+        for rank, entry in enumerate(entries[:TOP_CONTRIBUTORS_LIMIT], 1):
+            entry["rank"] = rank
+            result.append(entry)
+
+    return result
+
+
+# ── Committee name lookup ────────────────────────────────────────────────────
+
+def _upsert_cmte_names(conn) -> int:
+    """Populate fec_cmte_names lookup table from local committees.csv via DuckDB."""
+    rows = conn.execute("""
+        SELECT DISTINCT cmte_id, cmte_nm, connected_org_nm
+        FROM committees
+        WHERE cmte_id IS NOT NULL AND cmte_id != ''
+          AND cmte_nm IS NOT NULL AND cmte_nm != ''
+    """).fetchall()
+
+    records = [
+        {
+            "cmte_id": r[0].strip(),
+            "cmte_name": r[1].strip(),
+            "connected_org": r[2].strip() if r[2] and r[2].strip() else None,
+        }
+        for r in rows
+    ]
+
+    log.info("Upserting %d committee names to fec_cmte_names…", len(records))
+    for chunk in batch(records, UPSERT_BATCH):
+        upsert("fec_cmte_names", chunk)
+
+    return len(records)
 
 
 # ── Summary assembly ──────────────────────────────────────────────────────────
@@ -321,6 +516,9 @@ def compute_cycle(cycle: int) -> dict[str, int]:
     with duckdb_connect() as conn:
         _register_csvs(conn, cycle)
         _build_mappings(conn, legislators)
+
+        log.info("Upserting committee names…")
+        cmte_names_count = _upsert_cmte_names(conn)
 
         log.info("Fetching candidate financial totals (webl)…")
         cand_totals = _fetch_candidate_totals(conn)
@@ -340,6 +538,9 @@ def compute_cycle(cycle: int) -> dict[str, int]:
 
         log.info("Computing top PACs…")
         top_pacs_rows = _compute_top_pacs(conn, cycle)
+
+        log.info("Computing top contributors…")
+        top_contributors_rows = _compute_top_contributors(conn, cycle)
 
     # ── Build funding summary rows ───────────────────────────────────────────
     rows: list[dict] = []
@@ -415,25 +616,38 @@ def compute_cycle(cycle: int) -> dict[str, int]:
     for chunk in batch(top_pacs_rows, UPSERT_BATCH):
         upsert("legislator_top_pacs", chunk)
 
-    return {"funding_summary": len(rows), "top_pacs": len(top_pacs_rows)}
+    # ── Upsert top contributors ─────────────────────────────────────────────
+    log.info("Upserting %d top contributor rows for cycle %d…", len(top_contributors_rows), cycle)
+    for chunk in batch(top_contributors_rows, UPSERT_BATCH):
+        upsert("legislator_top_contributors", chunk)
+
+    return {"funding_summary": len(rows), "top_pacs": len(top_pacs_rows), "top_contributors": len(top_contributors_rows), "cmte_names": cmte_names_count}
 
 
 def run(cycles: list[int]) -> None:
     run_id = log_run_start(SCRIPT)
     total_summary = 0
     total_pacs = 0
+    total_contributors = 0
+    total_cmte_names = 0
 
     try:
         for cycle in cycles:
             counts = compute_cycle(cycle)
             total_summary += counts["funding_summary"]
             total_pacs += counts["top_pacs"]
-            log.info("Cycle %d: %d summary rows, %d top PAC rows", cycle, counts["funding_summary"], counts["top_pacs"])
+            total_contributors += counts["top_contributors"]
+            total_cmte_names = max(total_cmte_names, counts["cmte_names"])
+            log.info("Cycle %d: %d summary, %d top PAC, %d top contributor rows",
+                     cycle, counts["funding_summary"], counts["top_pacs"], counts["top_contributors"])
 
-        log.info("Done. Total: %d funding summary rows, %d top PAC rows", total_summary, total_pacs)
+        log.info("Done. Total: %d funding summary, %d top PAC, %d top contributor, %d cmte name rows",
+                 total_summary, total_pacs, total_contributors, total_cmte_names)
         log_run_end(run_id, "success", {
             "total_summary_rows": total_summary,
             "total_top_pacs_rows": total_pacs,
+            "total_top_contributors_rows": total_contributors,
+            "total_cmte_names": total_cmte_names,
             "cycles": cycles,
         })
 

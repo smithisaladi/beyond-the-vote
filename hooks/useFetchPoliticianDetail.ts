@@ -36,6 +36,12 @@ interface Donor {
   summary?: string
 }
 
+export interface TopContributor {
+  rank: number
+  orgName: string
+  total: string
+}
+
 interface Committee {
   name: string
   url: string | null
@@ -87,6 +93,7 @@ export interface Politician {
   bills: PoliticianBill[]
   donors: Donor[]
   pacDonors: Donor[]
+  topContributors: TopContributor[]
   fundingBreakdown?: FundingBreakdown | null
   committees: Committee[]
   donorAlignmentSyncedAt?: string | null

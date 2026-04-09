@@ -42,13 +42,13 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
             <div className="flex flex-col gap-3 lg:mt-0 mt-4">
               <MockBillCard
                 number="H.R. 4521"
-                title="America COMPETES Act — Strengthening domestic semiconductor manufacturing and supply chains"
+                title="America COMPETES Act: Strengthening domestic semiconductor manufacturing and supply chains"
                 status="Active"
                 category="Economy"
               />
               <MockBillCard
                 number="S. 1247"
-                title="Clean Energy Transition Act — Accelerating renewable energy adoption and carbon reduction targets"
+                title="Clean Energy Transition Act: Accelerating renewable energy adoption and carbon reduction targets"
                 status="Committee"
                 category="Climate & Environment"
               />
@@ -86,7 +86,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
             <Feature
               icon={<IconTrending />}
               title="Track progress"
-              description="Watch bills move through every stage — introduction, committee markup, floor vote, and final passage — with real-time status updates."
+              description="Watch bills move through every stage, from introduction and committee markup to floor vote and final passage, with real-time status updates."
             />
             <Feature
               icon={<IconBookmark />}
@@ -132,14 +132,14 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
             Legislation shapes everyday life
           </h2>
           <p className="text-base text-[#1C1C1A]/55 mb-8 leading-relaxed">
-            From healthcare costs to housing prices to climate policy — the bills moving through
+            From healthcare costs to housing prices to climate policy, the bills moving through
             Congress today will affect you tomorrow. Stay ahead of it.
           </p>
           <button
             onClick={onSignUp}
             className="px-10 py-3.5 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
           >
-            Create your free account
+            Create your account
           </button>
         </div>
       </section>

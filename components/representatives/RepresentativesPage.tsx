@@ -47,10 +47,13 @@ function RepresentativesContent() {
   const searchParams = useSearchParams()
   const addressParam = searchParams.get('address') ?? ''
 
+  const nameParam = searchParams.get('name') ?? ''
+  const modeParam = searchParams.get('mode')
+
   const [address, setAddress] = useState(addressParam)
   const [inputFocused, setInputFocused] = useState(false)
-  const [searchMode, setSearchMode] = useState<'address' | 'name'>('name')
-  const [nameQuery, setNameQuery] = useState('')
+  const [searchMode, setSearchMode] = useState<'address' | 'name'>(modeParam === 'address' ? 'address' : 'name')
+  const [nameQuery, setNameQuery] = useState(nameParam)
   const hasResults = addressParam.length > 0
 
   // Resolve display address (shortened form for the input after submission)
@@ -64,6 +67,24 @@ function RepresentativesContent() {
   useEffect(() => {
     setAddress(addressParam)
   }, [addressParam])
+
+  // Persist search state to URL
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (searchMode === 'name') {
+      params.set('mode', 'name')
+      if (nameQuery) params.set('name', nameQuery)
+      else params.delete('name')
+      params.delete('address')
+    } else {
+      params.set('mode', 'address')
+      params.delete('name')
+    }
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    if (newUrl !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(null, '', newUrl)
+    }
+  }, [searchMode, nameQuery, searchParams])
 
   const { representatives, loading, error } = useFetchRepresentatives(addressParam)
   const {
@@ -161,7 +182,7 @@ function RepresentativesContent() {
                       value={inputDisplayValue}
                       onChange={(e) => { setAddress(e.target.value); setShowSuggestions(true) }}
                       onFocus={() => { setInputFocused(true); suggestions.length > 0 && setShowSuggestions(true) }}
-                      onBlur={() => setInputFocused(false)}
+                      onBlur={() => { setInputFocused(false); setTimeout(() => setShowSuggestions(false), 200) }}
                       placeholder="Enter your address"
                       className="flex-1 px-4 py-3 bg-transparent outline-none text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
                       autoComplete="off"

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getIdeologyLabel } from '@/lib/ideology'
+import { mapStatus as mapBillStatusFull } from '@/lib/bills'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const CONGRESS_BASE    = 'https://api.congress.gov/v3'
@@ -13,11 +14,8 @@ function formatBillNumber(type: string, number: number): string {
   return `${types[type.toLowerCase()] ?? type.toUpperCase()} ${number}`
 }
 
-function mapBillStatus(action?: string): 'Passed' | 'Pending' | 'Failed' {
-  const a = (action ?? '').toLowerCase()
-  if (a.includes('became public law') || a.includes('signed by president') || a.includes('passed')) return 'Passed'
-  if (a.includes('failed') || a.includes('vetoed')) return 'Failed'
-  return 'Pending'
+function mapBillStatus(action?: string, introducedDate?: string) {
+  return mapBillStatusFull(action, introducedDate)
 }
 
 type SettledResult<T> = { status: 'fulfilled'; value: T } | { status: 'rejected' }
@@ -47,7 +45,7 @@ async function fetchSponsoredBills(bioguideId: string) {
     id:     `${b.congress}-${b.type.toLowerCase()}-${b.number}`,
     name:   b.title ?? '',
     number: formatBillNumber(b.type ?? '', b.number),
-    status: mapBillStatus(b.latestAction?.text),
+    status: mapBillStatus(b.latestAction?.text, b.introducedDate),
     date:   b.introducedDate
       ? new Date(b.introducedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       : '',
@@ -55,6 +53,8 @@ async function fetchSponsoredBills(bioguideId: string) {
 }
 
 interface Donor { rank: number; name: string; amount: string; category: string; summary?: string }
+
+interface TopContributor { rank: number; orgName: string; total: string }
 
 interface FundingBreakdown {
   pac: number
@@ -73,6 +73,7 @@ interface FundingBreakdown {
   superPacFor: number
   superPacAgainst: number
   cycle: number
+  minCycle?: number
 }
 
 const PAC_SKIP = new Set([
@@ -93,70 +94,129 @@ async function fetchDonors(opts: {
   bioguideId: string
   fecIds: string[] | null
   supabase: Awaited<ReturnType<typeof createClient>>
-}): Promise<{ donors: Donor[]; pacDonors: Donor[]; fecUrl: string | null; fundingBreakdown: FundingBreakdown | null }> {
+}): Promise<{ donors: Donor[]; pacDonors: Donor[]; topContributors: TopContributor[]; fecUrl: string | null; fundingBreakdown: FundingBreakdown | null }> {
   const { bioguideId, fecIds, supabase } = opts
   const fecUrl = fecIds && fecIds.length > 0
     ? `https://www.fec.gov/data/candidate/${fecIds[0]}/`
     : null
 
-  const [topPacsRes, fundingSummaryRes] = await Promise.allSettled([
+  const [topPacsRes, fundingSummaryRes, topContributorsRes] = await Promise.allSettled([
     supabase
       .from('legislator_top_pacs')
-      .select('rank, cmte_id, cmte_name, connected_org, industry, direct_contribution, ie_for, ie_against, total_support, cycle')
+      .select('rank, cmte_id, cmte_name, connected_org, direct_contribution, ie_for, ie_against, total_support, cycle')
       .eq('bioguide_id', bioguideId)
       .order('cycle', { ascending: false })
       .order('rank', { ascending: true })
-      .limit(20),
+      .limit(40),
 
     supabase
       .from('legislator_funding_summary')
       .select('total_receipts, pac_direct_total, pac_direct_pct, large_donor_total, large_donor_pct, small_donor_total, small_donor_pct, pol_pty_total, pol_pty_pct, self_funded_total, self_funded_pct, other_total, other_pct, superpac_ie_for, superpac_ie_against, cycle')
       .eq('bioguide_id', bioguideId)
       .order('cycle', { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(2),
+
+    supabase
+      .from('legislator_top_contributors')
+      .select('rank, org_name, individual_total, pac_total, grand_total, cycle')
+      .eq('bioguide_id', bioguideId)
+      .order('cycle', { ascending: false })
+      .order('rank', { ascending: true })
+      .limit(40),
   ])
 
-  // PAC donors from pre-computed top PACs — filter skip list, top 10
+  // PAC donors — merge across cycles by committee, sum total_support, top 10
   const rawPacRows = topPacsRes.status === 'fulfilled' ? ((topPacsRes.value.data ?? []) as any[]) : []
-  const pacDonors: Donor[] = rawPacRows
-    .filter((row: any) => {
-      const name = (row.cmte_name ?? '').toUpperCase().trim()
-      return name && !PAC_SKIP.has(name)
-    })
+  const pacMerged = new Map<string, { name: string; total: number; category: string }>()
+  for (const row of rawPacRows) {
+    const name = (row.cmte_name ?? '').toUpperCase().trim()
+    if (!name || PAC_SKIP.has(name)) continue
+    const key = row.cmte_id ?? name
+    const existing = pacMerged.get(key)
+    const support = Number(row.total_support ?? 0)
+    if (existing) {
+      existing.total += support
+    } else {
+      pacMerged.set(key, {
+        name: row.cmte_name ?? row.connected_org ?? row.cmte_id,
+        total: support,
+        category: 'PAC',
+      })
+    }
+  }
+  const pacDonors: Donor[] = [...pacMerged.values()]
+    .sort((a, b) => b.total - a.total)
     .slice(0, 10)
-    .map((row: any, i: number) => ({
-      rank: row.rank ?? i + 1,
-      name: row.cmte_name ?? row.connected_org ?? row.cmte_id,
-      amount: `$${Math.round(Number(row.total_support ?? 0)).toLocaleString()}`,
-      category: row.industry ?? 'PAC',
+    .map((d, i) => ({
+      rank: i + 1,
+      name: d.name,
+      amount: `$${Math.round(d.total).toLocaleString()}`,
+      category: d.category,
     }))
 
-  // Funding breakdown from pre-computed summary
+  // Top contributors — merge across cycles by org name, sum totals, top 10
+  const rawContribRows = topContributorsRes.status === 'fulfilled' ? ((topContributorsRes.value.data ?? []) as any[]) : []
+  const contribMerged = new Map<string, { orgName: string; total: number }>()
+  for (const row of rawContribRows) {
+    const orgName = (row.org_name ?? '').trim()
+    if (!orgName) continue
+    const existing = contribMerged.get(orgName)
+    const total = Number(row.grand_total ?? 0)
+    if (existing) {
+      existing.total += total
+    } else {
+      contribMerged.set(orgName, { orgName, total })
+    }
+  }
+  const topContributors: TopContributor[] = [...contribMerged.values()]
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 10)
+    .map((d, i) => ({
+      rank: i + 1,
+      orgName: d.orgName,
+      total: `$${Math.round(d.total).toLocaleString()}`,
+    }))
+
+  // Funding breakdown — aggregate across available cycles
   let fundingBreakdown: FundingBreakdown | null = null
-  const totalsRow = fundingSummaryRes.status === 'fulfilled' ? (fundingSummaryRes.value.data as any) : null
-  if (totalsRow) {
+  const fundingRows = fundingSummaryRes.status === 'fulfilled' ? ((fundingSummaryRes.value as any).data ?? []) as any[] : []
+  if (fundingRows.length > 0) {
+    const maxCycle = fundingRows[0].cycle
+    const minCycle = fundingRows[fundingRows.length - 1].cycle
+
+    const sum = (field: string) => fundingRows.reduce((acc: number, r: any) => acc + Number(r[field] ?? 0), 0)
+    const total = sum('total_receipts')
+    const pct = (val: number) => total > 0 ? (val / total) * 100 : 0
+
+    const pac = sum('pac_direct_total')
+    const individualLarge = sum('large_donor_total')
+    const individualSmall = sum('small_donor_total')
+    const partyContributions = sum('pol_pty_total')
+    const selfFunded = sum('self_funded_total')
+    const other = sum('other_total')
+
     fundingBreakdown = {
-      pac: Number(totalsRow.pac_direct_total ?? 0),
-      pacPct: Number(totalsRow.pac_direct_pct ?? 0),
-      individualLarge: Number(totalsRow.large_donor_total ?? 0),
-      individualLargePct: Number(totalsRow.large_donor_pct ?? 0),
-      individualSmall: Number(totalsRow.small_donor_total ?? 0),
-      individualSmallPct: Number(totalsRow.small_donor_pct ?? 0),
-      partyContributions: Number(totalsRow.pol_pty_total ?? 0),
-      partyContributionsPct: Number(totalsRow.pol_pty_pct ?? 0),
-      selfFunded: Number(totalsRow.self_funded_total ?? 0),
-      selfFundedPct: Number(totalsRow.self_funded_pct ?? 0),
-      other: Number(totalsRow.other_total ?? 0),
-      otherPct: Number(totalsRow.other_pct ?? 0),
-      total: Number(totalsRow.total_receipts ?? 0),
-      superPacFor: Number(totalsRow.superpac_ie_for ?? 0),
-      superPacAgainst: Number(totalsRow.superpac_ie_against ?? 0),
-      cycle: totalsRow.cycle,
+      pac,
+      pacPct: pct(pac),
+      individualLarge,
+      individualLargePct: pct(individualLarge),
+      individualSmall,
+      individualSmallPct: pct(individualSmall),
+      partyContributions,
+      partyContributionsPct: pct(partyContributions),
+      selfFunded,
+      selfFundedPct: pct(selfFunded),
+      other,
+      otherPct: pct(other),
+      total,
+      superPacFor: sum('superpac_ie_for'),
+      superPacAgainst: sum('superpac_ie_against'),
+      cycle: maxCycle,
+      minCycle,
     }
   }
 
-  return { donors: [], pacDonors, fecUrl, fundingBreakdown }
+  return { donors: [], pacDonors, topContributors, fecUrl, fundingBreakdown }
 }
 
 export async function GET(
@@ -251,7 +311,7 @@ export async function GET(
       : null
 
     const bills = extract(sponsoredRes) ?? []
-    const { donors, pacDonors, fecUrl, fundingBreakdown } = extract(donorsRes) ?? { donors: [], pacDonors: [], fecUrl: null, fundingBreakdown: null }
+    const { donors, pacDonors, topContributors, fecUrl, fundingBreakdown } = extract(donorsRes) ?? { donors: [], pacDonors: [], topContributors: [], fecUrl: null, fundingBreakdown: null }
 
     return NextResponse.json({
       politician: {
@@ -269,7 +329,7 @@ export async function GET(
         phone: member.addressInformation?.phoneNumber ?? null,
         fecUrl,
         stats: { yearsInOffice, attendance: null, ideologyScore: null, ideologyLabel: null, billVotesCast: 0, votedWithParty: null },
-        nextElectionYear, votes: [], billVotes: [], bills, donors, pacDonors, fundingBreakdown, committees: [],
+        nextElectionYear, votes: [], billVotes: [], bills, donors, pacDonors, topContributors, fundingBreakdown, committees: [],
         donorAlignmentSyncedAt:  (lastDonorRun as any)?.finished_at ?? null,
         donorAlignmentIsStale:   isDonorDataStale((lastDonorRun as any)?.finished_at),
         _sources: {
@@ -288,23 +348,6 @@ export async function GET(
   // ── Build billVotes with withParty ─────────────────────────────────────────
   const party = legislator.party
 
-  // Fetch bill titles for the votes so we can show descriptive names
-  const voteBillIds = [...new Set(
-    (voteRows as any[])
-      .map((r: any) => r.bill_vote_summaries?.bill_id)
-      .filter(Boolean)
-  )]
-  const billTitleMap: Record<string, string> = {}
-  if (voteBillIds.length > 0) {
-    const { data: billRows } = await supabase
-      .from('bills')
-      .select('bill_id, title, bill_number')
-      .in('bill_id', voteBillIds)
-    for (const b of billRows ?? []) {
-      billTitleMap[b.bill_id] = b.title ?? b.bill_number ?? ''
-    }
-  }
-
   const billVotes = (voteRows as any[])
     .map((row: any) => {
       const summary = row.bill_vote_summaries
@@ -314,14 +357,13 @@ export async function GET(
       const partyYeas = summary[`yea_${partyKey}`] ?? 0
       const partyNays = summary[`nay_${partyKey}`] ?? 0
       const partyMajority = partyYeas >= partyNays ? 'Yea' : 'Nay'
-      const billTitle = billTitleMap[summary.bill_id]
       return {
         billId:    summary.bill_id,
         date:      summary.date,
         position,
         result:    `${summary.result} (${summary.yea_total}-${summary.nay_total})`,
         withParty: position === partyMajority,
-        question:  billTitle || summary.question,
+        question:  summary.title || summary.question,
         chamber:   summary.chamber,
         voteId:    summary.id,
       }
@@ -354,7 +396,7 @@ export async function GET(
         : null)
 
   const bills  = extract(sponsoredRes) ?? []
-  const { donors, pacDonors, fecUrl, fundingBreakdown } = extract(donorsRes) ?? { donors: [], pacDonors: [], fecUrl: null, fundingBreakdown: null }
+  const { donors, pacDonors, topContributors, fecUrl, fundingBreakdown } = extract(donorsRes) ?? { donors: [], pacDonors: [], topContributors: [], fecUrl: null, fundingBreakdown: null }
 
   const votes = billVotes.map((v: any) => ({
     id:             v.voteId,
@@ -397,6 +439,7 @@ export async function GET(
       bills,
       donors,
       pacDonors,
+      topContributors,
       fundingBreakdown,
       committees,
       donorAlignmentSyncedAt:  (lastDonorRun as any)?.finished_at ?? null,

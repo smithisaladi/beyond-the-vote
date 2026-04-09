@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { SignInModal } from '@/components/auth/SignInModal'
 import { SignUpModal } from '@/components/auth/SignUpModal'
 import { useAuth } from '@/hooks/useAuth'
@@ -186,14 +187,26 @@ function BillCard({
   )
 }
 
-export default function BillsPage() {
+function BillsContent() {
+  const searchParams = useSearchParams()
   const { user } = useAuth()
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
 
-  // ─── Search + filter state ───────────────────────────────────────────────────
-  const [query, setQuery] = useState('')
+  // ─── Search + filter state (initialize from URL) ────────────────────────────
+  const [query, setQuery] = useState(searchParams.get('q') ?? '')
   const debouncedQuery = useDebounce(query, 300)
+
+  // Persist search query to URL
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (query) params.set('q', query)
+    else params.delete('q')
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    if (newUrl !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(null, '', newUrl)
+    }
+  }, [query, searchParams])
   const [openDropdown, setOpenDropdown] = useState<DropdownId>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -501,5 +514,13 @@ export default function BillsPage() {
         onSwitchToSignIn={() => { setShowSignUp(false); setShowSignIn(true) }}
       />
     </div>
+  )
+}
+
+export default function BillsPage() {
+  return (
+    <Suspense>
+      <BillsContent />
+    </Suspense>
   )
 }

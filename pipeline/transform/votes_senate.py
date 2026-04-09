@@ -63,6 +63,7 @@ def parse_vote_xml(xml_bytes: bytes, congress: int) -> tuple[dict | None, list[d
         "congress":        congress,
         "chamber":         "Senate",
         "date":            _parse_date(date),
+        "title":           title,
         "question":        question,
         "result":          result,
         "required":        _text(root, ".//majority_requirement"),

@@ -36,6 +36,7 @@ cross-referenced with voting records and ideology scores.
 | independent_expenditures     | ~10MB         |
 | legislator_funding_summary   | <1MB          |
 | legislator_top_pacs          | ~2MB          |
+| legislator_top_contributors  | ~2MB          |
 | pipeline_runs + checkpoints  | <1MB          |
 
 ## Scoping Rules (enforced in load scripts)
@@ -47,6 +48,7 @@ cross-referenced with voting records and ideology scores.
 - `bills`: only WHERE bill_id has a recorded vote (use `--voted-only` flag after votes load)
 - `bills`: `combined_text` excluded — search_vector trigger computes from title/summary/sponsor/topics
 - `legislator_top_pacs`: top 20 PACs per legislator per cycle only
+- `legislator_top_contributors`: top 20 contributors per legislator per cycle (individuals + PACs by org)
 
 pipeline/
 ├── CLAUDE.md
@@ -161,6 +163,7 @@ pipeline/
 - `independent_expenditures`      — Super PAC outside spending
 - `legislator_funding_summary`    — pre-computed funding metrics per legislator per cycle
 - `legislator_top_pacs`           — top 20 PACs per legislator per cycle (derived)
+- `legislator_top_contributors`   — top 20 contributors per legislator per cycle (individuals + PACs by org, derived)
 - `pipeline_runs`                 — watermarks and job status
 - `bulk_import_checkpoints`       — chunk-level progress for bulk jobs
 
@@ -232,8 +235,23 @@ CREATE TABLE legislator_top_pacs (
 );
 ```
 
+## `legislator_top_contributors` Schema
+```sql
+CREATE TABLE legislator_top_contributors (
+  bioguide_id      TEXT,
+  cycle            INT,
+  org_name         TEXT,            -- title-cased organization name
+  individual_total NUMERIC,         -- employee contributions grouped by employer
+  pac_total        NUMERIC,         -- PAC contributions grouped by connected_org
+  grand_total      NUMERIC,         -- individual_total + pac_total
+  rank             INTEGER,         -- 1 = biggest contributor
+  cmte_id          TEXT,            -- best-matching PAC committee ID (nullable, from pipeline)
+  PRIMARY KEY (bioguide_id, cycle, org_name)
+);
+```
+
 ## Funding Summary Computation
-- `legislator_funding_summary` and `legislator_top_pacs` are computed by `compute_funding_summaries.py`
+- `legislator_funding_summary`, `legislator_top_pacs`, and `legislator_top_contributors` are computed by `compute_funding_summaries.py`
 - They are never loaded from a raw source — always derived from local FEC CSVs via DuckDB
 - Re-running is safe and fully idempotent — rows are replaced each run
 - DuckDB queries `data/processed/fec/*.csv` files directly (pipe-delimited, with headers)
@@ -254,6 +272,9 @@ CREATE TABLE legislator_top_pacs (
 - DC donors tracked separately — disproportionately lobbyists and staff
 - `top_industries` stored as JSONB — fully replaced each pipeline run
 - `legislator_top_pacs` stores top 20 PACs per legislator per cycle
+- `legislator_top_contributors` stores top 20 orgs per legislator per cycle (individual employee donations + PAC contributions merged by org name)
+- Top contributors employer normalization: UPPER(TRIM(employer)), non-employer values excluded (SELF-EMPLOYED, RETIRED, etc.)
+- Top contributors PAC-to-org mapping: uses `connected_org_nm` from committee master file
 - Large donor threshold: itemized individual contributions >= $200 (FEC disclosure line)
 
 ## Run Order (Critical)
@@ -275,6 +296,7 @@ Always run in this order — FK dependencies will break if violated:
 9.  compute_funding_summaries          → reads local CSVs via DuckDB → Supabase
     - legislator_funding_summary       → Supabase
     - legislator_top_pacs              → Supabase
+    - legislator_top_contributors      → Supabase
 10. refresh_views
 
 ## FEC Cycles
@@ -405,4 +427,4 @@ Senate votes use senate.gov XML:
 - Run refresh_views mid-pipeline — always at the end after all jobs succeed
 - Run compute_funding_summaries without local CSVs present in data/processed/fec/
 - Process a partial or unverified download
-- Treat `legislator_funding_summary` or `legislator_top_pacs` as source tables — they are always derived
+- Treat `legislator_funding_summary`, `legislator_top_pacs`, or `legislator_top_contributors` as source tables — they are always derived

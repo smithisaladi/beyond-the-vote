@@ -22,19 +22,11 @@ function formatBillNumber(type: string, number: number): string {
   return `${types[type.toLowerCase()] ?? type.toUpperCase()} ${number}`
 }
 
-function mapStatus(actions: any[]): 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed' {
-  const latestText = (actions?.[0]?.text ?? '').toLowerCase()
-  if (latestText.includes('became public law') || latestText.includes('signed by president') || latestText.includes('presented to president')) return 'Passed'
-  if (latestText.includes('failed') || latestText.includes('vetoed')) return 'Failed'
-  if (latestText.includes('referred to') || latestText.includes('committee')) {
-    const lastDate = actions?.[0]?.actionDate ? new Date(actions[0].actionDate) : null
-    if (lastDate) {
-      const months = (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
-      if (months > 6) return 'Stalled'
-    }
-    return 'Committee'
-  }
-  return 'Active'
+import { mapStatus as mapBillStatus } from '@/lib/bills'
+
+function mapStatus(actions: any[], introducedDate?: string) {
+  const latestText = actions?.[0]?.text ?? ''
+  return mapBillStatus(latestText, introducedDate)
 }
 
 export async function GET(
@@ -101,7 +93,17 @@ export async function GET(
   const actions: any[] = actionsData.actions ?? []
   const summariesData = summaryFetch?.ok ? await summaryFetch.json() : {}
   const summaries: any[] = summariesData.summaries ?? []
-  const latestSummary = summaries.at(-1)?.text?.replace(/<[^>]+>/g, '') ?? ''
+  const rawSummary = summaries.at(-1)?.text?.replace(/<[^>]+>/g, '') ?? ''
+  const latestSummary = rawSummary
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_: string, n: string) => String.fromCharCode(parseInt(n)))
+    .replace(/\s+/g, ' ')
+    .trim()
 
   const sponsor    = bill.sponsors?.[0]
   const cosponsors: any[] = Array.isArray(bill.cosponsors)
@@ -161,7 +163,7 @@ export async function GET(
       title:  bill.title,
       congress,
       introducedDate: bill.introducedDate,
-      status: mapStatus(actions),
+      status: mapStatus(actions, bill.introducedDate),
       summary: latestSummary,
       sponsor: sponsor ? {
         name: sponsor.fullName, bioguideId: sponsor.bioguideId,

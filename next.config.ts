@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         hostname: 'bioguide.congress.gov',
         pathname: '/bioguide/photo/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'www.congress.gov',
+        pathname: '/img/member/**',
+      },
     ],
   },
 }

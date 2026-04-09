@@ -24,10 +24,12 @@ const PARTY_STYLES: Record<Party, { bg: string; text: string }> = {
   Independent: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' },
 }
 
-const BILL_STATUS_STYLES: Record<'Passed' | 'Pending' | 'Failed', { bg: string; text: string }> = {
-  Passed:  { bg: 'bg-[#9B7FA6]/10', text: 'text-[#9B7FA6]' },
-  Pending: { bg: 'bg-[#8A8A7A]/10', text: 'text-[#8A8A7A]' },
-  Failed:  { bg: 'bg-[#B85C38]/10', text: 'text-[#B85C38]' },
+const BILL_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
+  Active:    { bg: 'bg-[#9B7FA6]/[0.12]', text: 'text-[#9B7FA6]' },
+  Committee: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' },
+  Stalled:   { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
+  Passed:    { bg: 'bg-[#6A9B7B]/[0.12]', text: 'text-[#6A9B7B]' },
+  Failed:    { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -161,7 +163,7 @@ function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment[] }) {
             </div>
           ))}
           <p className="text-[10px] text-[#1C1C1A]/30 pt-1 border-t border-[rgba(28,28,26,0.06)]">
-            AI-generated analysis. Identifies potential connections, not proven influence.
+            AI-generated from FEC data. Shows contribution patterns, not proven influence or intent.
           </p>
         </div>
       )}
@@ -377,15 +379,15 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                       (politician.bills?.length ?? 0) === 0 ? (
                         <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">No sponsored bills found.</p>
                       ) : politician.bills.map(b => (
-                        <div key={b.id} className="flex items-center justify-between px-6 py-4">
+                        <Link key={b.id} href={`/bills/${b.id}`} className="flex items-center justify-between px-6 py-4 hover:bg-[#F5F0E8]/60 transition-colors">
                           <div className="min-w-0 flex-1 mr-4">
-                            <p className="text-sm text-[#1C1C1A] line-clamp-2" title={b.name}>{b.name}</p>
+                            <p className="text-sm text-[#1C1C1A] hover:text-[#9B7FA6] transition-colors line-clamp-2" title={b.name}>{b.name}</p>
                             <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{b.number} · {b.date}</p>
                           </div>
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${BILL_STATUS_STYLES[b.status].bg} ${BILL_STATUS_STYLES[b.status].text}`}>
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${(BILL_STATUS_STYLES[b.status] ?? BILL_STATUS_STYLES.Committee).bg} ${(BILL_STATUS_STYLES[b.status] ?? BILL_STATUS_STYLES.Committee).text}`}>
                             {b.status}
                           </span>
-                        </div>
+                        </Link>
                       ))
                     )}
 
@@ -393,6 +395,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                     {activeTab === 'donors' && (
                       <DonorTab
                         pacDonors={politician.pacDonors ?? []}
+                        topContributors={politician.topContributors ?? []}
                         fundingBreakdown={politician.fundingBreakdown}
                         fecUrl={politician.fecUrl}
                       />
