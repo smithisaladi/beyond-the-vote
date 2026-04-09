@@ -80,6 +80,31 @@ PAS2_COLS = [
     "sub_id",
 ]
 
+# FEC candidate financial summary (webl{yy}.txt — all candidates, no header row)
+WEBL_COLS = [
+    "cand_id", "cand_name", "cand_ici", "pty_cd", "cand_pty_affiliation",
+    "ttl_receipts", "trans_from_auth", "ttl_disb", "trans_to_auth",
+    "coh_bop", "coh_cop", "cand_contrib", "cand_loans", "other_loans",
+    "cand_loan_repay", "other_loan_repay", "debts_owed_by",
+    "ttl_indiv_contrib", "cand_office_st", "cand_office_district",
+    "spec_election", "prim_election", "run_election", "gen_election",
+    "gen_election_pct",
+    "other_pol_cmte_contrib", "pol_pty_contrib", "cvg_end_dt",
+    "indiv_refunds", "cmte_refunds",
+]
+
+# FEC committee financial summary (webk{yy}.txt — all committees, no header row)
+WEBK_COLS = [
+    "cmte_id", "cmte_nm", "cmte_tp", "cmte_dsgn", "cmte_filing_freq",
+    "ttl_receipts", "trans_from_aff", "indv_contrib",
+    "other_pol_cmte_contrib", "cand_contrib", "cand_loans",
+    "ttl_loans_received", "ttl_disb", "tranf_to_aff", "indv_refunds",
+    "other_pol_cmte_refunds", "cand_loan_repay", "ttl_loan_repay",
+    "debts_owed_by", "ttl_contrib", "trans_from_nonfed_acct",
+    "trans_from_nonfed_levin", "ttl_nonfed_trans", "cand_id",
+    "ind_exp", "pty_coord_exp", "cvg_end_dt",
+]
+
 # ── CSV output column names (match transform output schemas) ─────────────────
 # Used by write_csv / append_csv and DuckDB reads.
 
@@ -107,6 +132,12 @@ PAC_CSV_COLS = [
 IE_CSV_COLS = [
     "sub_id", "cmte_id", "cand_id", "sup_opp", "transaction_tp",
     "transaction_amt", "transaction_dt", "cycle",
+]
+
+CAND_SUMMARY_CSV_COLS = [
+    "cand_id", "cand_name", "ttl_receipts", "ttl_indiv_contrib",
+    "other_pol_cmte_contrib", "pol_pty_contrib", "cand_contrib",
+    "cand_office_st", "cand_office_district", "cycle",
 ]
 
 # ── FEC Committee Type Codes ───────────────────────────────────────────────────

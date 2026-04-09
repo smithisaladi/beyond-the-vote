@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md bg-[#F5F0E8] rounded-lg shadow-xl p-8">
         <Link href="/" className="inline-block mb-8">
           <span className="text-xl font-semibold text-[#1C1C1A] tracking-tight" style={{ fontFamily: 'var(--font-serif)' }}>
-            Beyond the Ballot
+            Beyond the Vote
           </span>
         </Link>
 

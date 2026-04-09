@@ -124,11 +124,14 @@ export async function GET(request: NextRequest) {
       const supabase = await createClient()
       const { data: rows } = await supabase
         .from('member_scores')
-        .select('bioguide_id, nominate_dim1')
+        .select('bioguide_id, nominate_dim1, congress')
         .in('bioguide_id', bioguideIds)
+        .order('congress', { ascending: false })
       if (rows) {
         for (const row of rows) {
-          ideologyMap[row.bioguide_id] = row.nominate_dim1 ?? null
+          if (!(row.bioguide_id in ideologyMap)) {
+            ideologyMap[row.bioguide_id] = row.nominate_dim1 ?? null
+          }
         }
       }
     }

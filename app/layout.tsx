@@ -2,14 +2,14 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://beyondtheballot.app'),
+  metadataBase: new URL('https://beyondtheVote.app'),
   title: {
-    default: 'Beyond the Ballot',
-    template: '%s | Beyond the Ballot',
+    default: 'Beyond the Vote',
+    template: '%s | Beyond the Vote',
   },
   description: 'Uncover the votes, funding, and values behind your elected officials.',
   openGraph: {
-    siteName: 'Beyond the Ballot',
+    siteName: 'Beyond the Vote',
     type: 'website',
     images: [{ url: '/api/og?type=default', width: 1200, height: 630 }],
   },

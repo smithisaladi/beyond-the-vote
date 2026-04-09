@@ -28,6 +28,8 @@ interface Action {
 interface Vote {
   date: string
   chamber: 'House' | 'Senate'
+  question: string | null
+  result: string | null
   yeas: number | null
   nays: number | null
   url: string | null

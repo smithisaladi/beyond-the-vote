@@ -85,6 +85,7 @@ def _register_csvs(conn, cycle: int) -> None:
     """Register local FEC CSVs as DuckDB views for the given cycle."""
     files = {
         "candidates":     _csv_path("candidates", cycle),
+        "cand_summary":   _csv_path("candidate_summaries", cycle),
         "indiv":          _csv_path("individual_contributions", cycle),
         "pac":            _csv_path("pac_to_candidate", cycle),
         "ie":             _csv_path("independent_expenditures", cycle),
@@ -96,6 +97,8 @@ def _register_csvs(conn, cycle: int) -> None:
             # Create an empty table so queries don't fail
             if name == "candidates":
                 conn.execute(f"CREATE VIEW {name} AS SELECT '' as cand_id, '' as cand_pcc WHERE false")
+            elif name == "cand_summary":
+                conn.execute(f"CREATE VIEW {name} AS SELECT '' as cand_id, 0.0 as ttl_receipts, 0.0 as ttl_indiv_contrib, 0.0 as other_pol_cmte_contrib WHERE false")
             elif name == "indiv":
                 conn.execute(f"CREATE VIEW {name} AS SELECT '' as cmte_id, '' as state, 0.0 as transaction_amt WHERE false")
             elif name == "pac":
@@ -152,6 +155,31 @@ def _fetch_pac_totals(conn) -> dict[str, float]:
         GROUP BY m.bioguide_id
     """).fetchall()
     return {r[0]: r[1] for r in rows}
+
+
+def _fetch_candidate_totals(conn) -> dict[str, dict]:
+    """FEC-reported candidate financial totals per bioguide_id (from webl file)."""
+    rows = conn.execute("""
+        SELECT f.bioguide_id,
+               SUM(CAST(cs.ttl_receipts AS DOUBLE)) AS ttl_receipts,
+               SUM(CAST(cs.ttl_indiv_contrib AS DOUBLE)) AS ttl_indiv_contrib,
+               SUM(CAST(cs.other_pol_cmte_contrib AS DOUBLE)) AS other_pol_cmte_contrib,
+               SUM(CAST(cs.pol_pty_contrib AS DOUBLE)) AS pol_pty_contrib,
+               SUM(CAST(cs.cand_contrib AS DOUBLE)) AS cand_contrib
+        FROM cand_summary cs
+        JOIN fec_map f ON cs.cand_id = f.fec_id
+        GROUP BY f.bioguide_id
+    """).fetchall()
+    return {
+        r[0]: {
+            "ttl_receipts": r[1] or 0.0,
+            "ttl_indiv_contrib": r[2] or 0.0,
+            "other_pol_cmte_contrib": r[3] or 0.0,
+            "pol_pty_contrib": r[4] or 0.0,
+            "cand_contrib": r[5] or 0.0,
+        }
+        for r in rows
+    }
 
 
 def _fetch_ie_totals(conn) -> dict[str, dict]:
@@ -273,10 +301,10 @@ def _compute_top_pacs(conn, cycle: int) -> list[dict]:
             "cmte_name":           row_dict.get("cmte_nm"),
             "connected_org":       row_dict.get("connected_org_nm"),
             "industry":            classify_industry(row_dict.get("connected_org_nm")),
-            "direct_contribution": round(row_dict.get("direct_contribution", 0), 2) or None,
-            "ie_for":              round(row_dict.get("ie_for", 0), 2) or None,
-            "ie_against":          round(row_dict.get("ie_against", 0), 2) or None,
-            "total_support":       round(row_dict.get("total_support", 0), 2) or None,
+            "direct_contribution": round(row_dict.get("direct_contribution", 0), 2),
+            "ie_for":              round(row_dict.get("ie_for", 0), 2),
+            "ie_against":          round(row_dict.get("ie_against", 0), 2),
+            "total_support":       round(row_dict.get("total_support", 0), 2),
             "rank":                row_dict.get("rank"),
         })
     return result
@@ -293,6 +321,9 @@ def compute_cycle(cycle: int) -> dict[str, int]:
     with duckdb_connect() as conn:
         _register_csvs(conn, cycle)
         _build_mappings(conn, legislators)
+
+        log.info("Fetching candidate financial totals (webl)…")
+        cand_totals = _fetch_candidate_totals(conn)
 
         log.info("Fetching PAC contributions…")
         pac_totals = _fetch_pac_totals(conn)
@@ -312,39 +343,65 @@ def compute_cycle(cycle: int) -> dict[str, int]:
 
     # ── Build funding summary rows ───────────────────────────────────────────
     rows: list[dict] = []
-    all_bioguide_ids = set(pac_totals) | set(ie_totals) | set(indiv_totals)
+    all_bioguide_ids = set(pac_totals) | set(ie_totals) | set(indiv_totals) | set(cand_totals)
 
     for bioguide_id in all_bioguide_ids:
         pac_total = pac_totals.get(bioguide_id, 0.0)
         ie = ie_totals.get(bioguide_id, {})
         indiv = indiv_totals.get(bioguide_id, {})
         ind_sums = industry_totals.get(bioguide_id, {})
+        fec_totals = cand_totals.get(bioguide_id, {})
 
         large_donor = indiv.get("large_donor_total", 0.0)
         in_state = indiv.get("in_state_total", 0.0)
         out_of_state = indiv.get("out_of_state_total", 0.0)
         dc_total = indiv.get("dc_donor_total", 0.0)
 
-        # total_receipts = PAC direct + large individual (conservative from itemized data)
-        total_receipts = pac_total + large_donor
-        small_donor = max(0.0, total_receipts - pac_total - large_donor)
+        ie_for = ie.get("superpac_ie_for", 0.0)
+        ie_against = ie.get("superpac_ie_against", 0.0)
+
+        # Use FEC-reported total_receipts from webl; fall back to sum of known sources
+        fec_receipts = fec_totals.get("ttl_receipts", 0.0)
+        total_receipts = fec_receipts if fec_receipts else (pac_total + large_donor)
+
+        # Small donor = FEC total individual contributions minus itemized large donors
+        fec_indiv = fec_totals.get("ttl_indiv_contrib", 0.0)
+        small_donor = max(0.0, fec_indiv - large_donor) if fec_indiv else None
+
+        # PAC % uses FEC-reported other_pol_cmte_contrib for accuracy
+        fec_pac = fec_totals.get("other_pol_cmte_contrib", 0.0)
+        pac_for_pct = fec_pac if fec_pac else pac_total
+
+        # Party contributions and self-funding from webl
+        fec_party = fec_totals.get("pol_pty_contrib", 0.0)
+        fec_self = fec_totals.get("cand_contrib", 0.0)
+
+        # Other = remainder so all categories sum to total_receipts
+        known_sources = pac_for_pct + large_donor + (small_donor or 0.0) + fec_party + fec_self
+        other_total = max(0.0, total_receipts - known_sources) if total_receipts else 0.0
 
         rows.append({
             "bioguide_id":         bioguide_id,
             "cycle":               cycle,
-            "total_receipts":      round(total_receipts, 2) if total_receipts else None,
-            "pac_direct_total":    round(pac_total, 2) if pac_total else None,
-            "pac_direct_pct":      round(pac_total / total_receipts * 100, 1) if total_receipts else None,
-            "superpac_ie_for":     round(ie.get("superpac_ie_for", 0), 2) or None,
-            "superpac_ie_against": round(ie.get("superpac_ie_against", 0), 2) or None,
-            "large_donor_total":   round(large_donor, 2) if large_donor else None,
-            "large_donor_pct":     round(large_donor / total_receipts * 100, 1) if total_receipts else None,
-            "small_donor_total":   round(small_donor, 2) if small_donor else None,
-            "small_donor_pct":     round(small_donor / total_receipts * 100, 1) if total_receipts else None,
-            "in_state_total":      round(in_state, 2) if in_state else None,
-            "out_of_state_total":  round(out_of_state, 2) if out_of_state else None,
-            "out_of_state_pct":    round(out_of_state / (in_state + out_of_state) * 100, 1) if (in_state + out_of_state) else None,
-            "dc_donor_total":      round(dc_total, 2) if dc_total else None,
+            "total_receipts":      round(total_receipts, 2),
+            "pac_direct_total":    round(pac_for_pct, 2),
+            "pac_direct_pct":      round(pac_for_pct / total_receipts * 100, 1) if total_receipts else 0.0,
+            "superpac_ie_for":     round(ie_for, 2),
+            "superpac_ie_against": round(ie_against, 2),
+            "large_donor_total":   round(large_donor, 2),
+            "large_donor_pct":     round(large_donor / total_receipts * 100, 1) if total_receipts else 0.0,
+            "small_donor_total":   round(small_donor, 2) if small_donor is not None else None,
+            "small_donor_pct":     round(small_donor / total_receipts * 100, 1) if (total_receipts and small_donor is not None) else None,
+            "pol_pty_total":       round(fec_party, 2),
+            "pol_pty_pct":         round(fec_party / total_receipts * 100, 1) if total_receipts else 0.0,
+            "self_funded_total":   round(fec_self, 2),
+            "self_funded_pct":     round(fec_self / total_receipts * 100, 1) if total_receipts else 0.0,
+            "other_total":         round(other_total, 2),
+            "other_pct":           round(other_total / total_receipts * 100, 1) if total_receipts else 0.0,
+            "in_state_total":      round(in_state, 2),
+            "out_of_state_total":  round(out_of_state, 2),
+            "out_of_state_pct":    round(out_of_state / (in_state + out_of_state) * 100, 1) if (in_state + out_of_state) else 0.0,
+            "dc_donor_total":      round(dc_total, 2),
             "top_industries":      build_top_industries(ind_sums, pac_total),
         })
 

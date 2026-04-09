@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { ALL_TOPICS, topicToSlug } from '@/lib/topics'
 
-const BASE_URL = 'https://beyondtheballot.app'
+const BASE_URL = 'https://beyondtheVote.app'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [

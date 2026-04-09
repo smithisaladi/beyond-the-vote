@@ -34,15 +34,6 @@ function IconFileText() {
   )
 }
 
-function IconTag() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-      <line x1="7" y1="7" x2="7.01" y2="7" />
-    </svg>
-  )
-}
-
 function IconSettings() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -72,7 +63,6 @@ const NAV_ITEMS = [
   { label: 'Dashboard',      href: '/',               icon: <IconHome /> },
   { label: 'My Politicians', href: '/representatives', icon: <IconUsers /> },
   { label: 'Bills Tracker',  href: '/bills',           icon: <IconFileText /> },
-  { label: 'Topics',         href: '/topics',          icon: <IconTag /> },
   { label: 'Settings',       href: '/settings',        icon: <IconSettings /> },
 ]
 
@@ -102,10 +92,10 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         ) : (
           <Link href="/" className="flex items-center">
             <span
-              className="text-sm font-semibold text-[#1C1C1A] tracking-tight whitespace-nowrap"
+              className="text-base font-semibold text-[#1C1C1A] tracking-tight whitespace-nowrap"
               style={{ fontFamily: 'var(--font-serif)' }}
             >
-              Beyond the Ballot
+              Beyond the Vote
             </span>
           </Link>
         )}

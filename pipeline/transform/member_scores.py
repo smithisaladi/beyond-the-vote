@@ -10,8 +10,10 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-# VoteView chamber codes
-CHAMBER_MAP = {100: "Senate", 200: "House", 10: "President"}
+# VoteView chamber codes (integer format in older files)
+CHAMBER_CODE_MAP = {100: "Senate", 200: "House", 10: "President"}
+# VoteView chamber names (text format in newer files)
+VALID_CHAMBERS = {"House", "Senate"}
 
 
 def transform_member_scores(
@@ -34,21 +36,28 @@ def transform_member_scores(
     skipped = 0
 
     for r in df_rows:
-        try:
-            icpsr = int(r.get("icpsr", 0) or 0)
-        except (ValueError, TypeError):
-            skipped += 1
-            continue
-
-        bioguide_id = icpsr_to_bioguide.get(icpsr)
+        # Resolve bioguide_id: prefer CSV column, fall back to icpsr lookup
+        bioguide_id = (r.get("bioguide_id") or "").strip() or None
+        if not bioguide_id:
+            try:
+                icpsr = int(r.get("icpsr", 0) or 0)
+            except (ValueError, TypeError):
+                skipped += 1
+                continue
+            bioguide_id = icpsr_to_bioguide.get(icpsr)
         if not bioguide_id:
             skipped += 1
             continue
 
-        chamber_code = _safe_int(r.get("chamber"))
-        chamber = CHAMBER_MAP.get(chamber_code, "Unknown") if chamber_code else "Unknown"
-        if chamber == "Unknown" or chamber == "President":
-            continue  # skip non-congressional entries
+        # Resolve chamber: handle both text ("House") and integer code (200)
+        raw_chamber = (r.get("chamber") or "").strip()
+        if raw_chamber in VALID_CHAMBERS:
+            chamber = raw_chamber
+        else:
+            chamber_code = _safe_int(raw_chamber)
+            chamber = CHAMBER_CODE_MAP.get(chamber_code, "Unknown") if chamber_code else "Unknown"
+        if chamber not in VALID_CHAMBERS:
+            continue
 
         rows.append({
             "bioguide_id":   bioguide_id,
@@ -63,7 +72,16 @@ def transform_member_scores(
     if skipped:
         log.warning("Skipped %d rows without bioguide_id mapping (congress=%d)", skipped, congress)
 
-    return rows
+    # Deduplicate by (bioguide_id, congress) — keep row with most votes
+    seen: dict[str, dict] = {}
+    for row in rows:
+        key = row["bioguide_id"]
+        prev = seen.get(key)
+        if prev is None or (row.get("num_votes") or 0) > (prev.get("num_votes") or 0):
+            seen[key] = row
+    if len(seen) < len(rows):
+        log.info("Deduplicated %d → %d rows (congress=%d)", len(rows), len(seen), congress)
+    return list(seen.values())
 
 
 def _safe_float(val: Any) -> float | None:

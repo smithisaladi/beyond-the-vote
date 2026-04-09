@@ -12,13 +12,12 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { PageHeader } from '@/components/layout/PageHeader'
 import type { BillStatus as Status } from '@/lib/types'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
+import { ALL_TOPICS, TOPIC_TO_CATEGORY, type Topic } from '@/lib/topics'
 
-type Category = 'Environment' | 'Economy' | 'Healthcare' | 'Defense' | 'Education' | 'Housing' | 'Technology' | 'Immigration'
 type DateFilter = 'all' | 'month' | 'year'
-type DropdownId = 'status' | 'category' | 'date' | null
+type DropdownId = 'status' | 'date' | 'topics' | null
 
 const ALL_STATUSES: Status[] = ['Active', 'Committee', 'Stalled', 'Passed', 'Failed']
-const ALL_CATEGORIES: Category[] = ['Environment', 'Economy', 'Healthcare', 'Defense', 'Education', 'Housing', 'Technology', 'Immigration']
 
 function TopoBackground() {
   return (
@@ -210,14 +209,13 @@ export default function BillsPage() {
   }, [])
 
   const {
-    selectedStatuses, selectedCategories, dateFilter,
-    toggleStatus, toggleCategory, setDateFilter,
+    selectedStatuses, dateFilter,
+    toggleStatus, setDateFilter,
     clearFilters, hasFilters,
   } = useBillFilters()
 
   const filters: BillFilters = {
     statuses: selectedStatuses.size > 0 ? Array.from(selectedStatuses) : undefined,
-    categories: selectedCategories.size > 0 ? Array.from(selectedCategories) : undefined,
     dateFilter: dateFilter,
   }
 
@@ -228,10 +226,32 @@ export default function BillsPage() {
 
   const { trackedBills, toggleTrack: _toggleTrack } = useTrackedBills(user?.id ?? null)
 
+  const [showTrackedOnly, setShowTrackedOnly] = useState(false)
+  const [selectedTopics, setSelectedTopics] = useState<Set<Topic>>(new Set())
+
+  const toggleTopic = (topic: Topic) => {
+    setSelectedTopics(prev => {
+      const next = new Set(prev)
+      next.has(topic) ? next.delete(topic) : next.add(topic)
+      return next
+    })
+  }
+
   const handleToggleTrack = (billId: string) => {
     if (!user) { setShowSignIn(true); return }
     _toggleTrack(billId)
   }
+
+  // Build set of category values that match selected topics
+  const topicCategories = new Set(
+    Array.from(selectedTopics)
+      .map(t => TOPIC_TO_CATEGORY[t])
+      .filter((c): c is string => !!c)
+  )
+
+  let displayBills = bills
+  if (showTrackedOnly) displayBills = displayBills.filter(b => trackedBills.has(b.id))
+  if (selectedTopics.size > 0) displayBills = displayBills.filter(b => b.category && topicCategories.has(b.category))
 
   return (
     <div className="relative flex flex-col flex-1 overflow-hidden">
@@ -240,22 +260,22 @@ export default function BillsPage() {
       <div className="relative z-10 flex flex-col flex-1">
         <PageHeader title="Bills Tracker" />
         <main className="flex-1 px-6 py-10">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-2xl mx-auto">
 
             {/* Page header + unified search */}
             <div className="mb-8">
               <h1
-                className="text-4xl text-[#1C1C1A] mb-1 tracking-tight"
+                className="text-4xl text-[#1C1C1A] mb-1.5 tracking-tight text-center"
                 style={{ fontFamily: 'var(--font-serif)' }}
               >
-                Bill Tracker
+                Legislation
               </h1>
-              <p className="text-sm text-[#1C1C1A]/50 mb-6">
+              <p className="text-sm text-[#1C1C1A]/50 mb-6 text-center">
                 Follow legislation that matters to you.
               </p>
 
               {/* Search input */}
-              <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] px-4 py-3 shadow-sm max-w-2xl">
+              <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] px-4 py-3 shadow-sm">
                 <span className="text-[#1C1C1A]/35 flex-shrink-0">
                   <SearchIcon />
                 </span>
@@ -302,30 +322,6 @@ export default function BillsPage() {
                   )}
                 </div>
 
-                {/* Category chip */}
-                <div className="relative">
-                  <button
-                    onClick={() => setOpenDropdown(openDropdown === 'category' ? null : 'category')}
-                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                      selectedCategories.size > 0
-                        ? 'border-[#9B7FA6] bg-[#9B7FA6]/8 text-[#9B7FA6]'
-                        : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#9B7FA6]/50'
-                    }`}
-                  >
-                    {selectedCategories.size > 0 ? `Category: ${[...selectedCategories].join(', ')}` : 'Category'}
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M6 9l6 6 6-6" />
-                    </svg>
-                  </button>
-                  {openDropdown === 'category' && (
-                    <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[#D6CFC4] shadow-lg p-3 min-w-[150px] z-20 space-y-1.5">
-                      {ALL_CATEGORIES.map(c => (
-                        <FilterCheckbox key={c} label={c} checked={selectedCategories.has(c)} onChange={() => toggleCategory(c)} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-
                 {/* Date chip */}
                 <div className="relative">
                   <button
@@ -366,10 +362,49 @@ export default function BillsPage() {
                   )}
                 </div>
 
-                {/* Clear all */}
-                {hasFilters && (
+                {/* Topics chip */}
+                <div className="relative">
                   <button
-                    onClick={() => { clearFilters(); setQuery('') }}
+                    onClick={() => setOpenDropdown(openDropdown === 'topics' ? null : 'topics')}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      selectedTopics.size > 0
+                        ? 'border-[#9B7FA6] bg-[#9B7FA6]/8 text-[#9B7FA6]'
+                        : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#9B7FA6]/50'
+                    }`}
+                  >
+                    {selectedTopics.size > 0 ? `Topics: ${selectedTopics.size}` : 'Topics'}
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </button>
+                  {openDropdown === 'topics' && (
+                    <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[#D6CFC4] shadow-lg p-3 min-w-[200px] max-h-[280px] overflow-y-auto z-20 space-y-1.5">
+                      {ALL_TOPICS.map(t => (
+                        <FilterCheckbox key={t} label={t} checked={selectedTopics.has(t)} onChange={() => toggleTopic(t)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Tracked pill — only when logged in */}
+                {user && (
+                  <button
+                    onClick={() => setShowTrackedOnly(prev => !prev)}
+                    className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                      showTrackedOnly
+                        ? 'border-[#9B7FA6] bg-[#9B7FA6]/8 text-[#9B7FA6]'
+                        : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#9B7FA6]/50'
+                    }`}
+                  >
+                    <BookmarkIcon filled={showTrackedOnly} />
+                    Tracked
+                  </button>
+                )}
+
+                {/* Clear all */}
+                {(hasFilters || showTrackedOnly || selectedTopics.size > 0) && (
+                  <button
+                    onClick={() => { clearFilters(); setQuery(''); setShowTrackedOnly(false); setSelectedTopics(new Set()) }}
                     className="text-xs text-[#9B7FA6] hover:text-[#8a6e95] px-2"
                   >
                     Clear all ×
@@ -379,12 +414,12 @@ export default function BillsPage() {
             </div>
 
             {/* Bill list */}
-            <div className="max-w-2xl">
+            <div>
               <div className="flex-1 min-w-0">
                 {/* Result count */}
                 {!billsLoading && !billsError && (
                   <p className="text-xs text-[#1C1C1A]/40 mb-4">
-                    {`${bills.length} bills`}
+                    {`${displayBills.length} bills`}
                     {trackedBills.size > 0 && (
                       <span className="ml-2 text-[#9B7FA6]">· {trackedBills.size} tracked</span>
                     )}
@@ -411,11 +446,13 @@ export default function BillsPage() {
                       Try again
                     </button>
                   </div>
-                ) : bills.length === 0 ? (
+                ) : displayBills.length === 0 ? (
                   <div className="bg-white rounded-xl border border-[#D6CFC4] p-12 text-center">
-                    <p className="text-[#1C1C1A]/40 text-sm">No bills match your filters.</p>
+                    <p className="text-[#1C1C1A]/40 text-sm">
+                      {showTrackedOnly ? 'You haven\'t tracked any bills yet.' : 'No bills match your filters.'}
+                    </p>
                     <button
-                      onClick={() => { setQuery(''); clearFilters() }}
+                      onClick={() => { setQuery(''); clearFilters(); setShowTrackedOnly(false); setSelectedTopics(new Set()) }}
                       className="mt-3 text-sm text-[#9B7FA6] hover:text-[#8a6e95]"
                     >
                       Clear all filters
@@ -424,7 +461,7 @@ export default function BillsPage() {
                 ) : (
                   <>
                     <div className="space-y-4">
-                      {bills.map(bill => (
+                      {displayBills.map(bill => (
                         <BillCard
                           key={bill.id}
                           bill={bill}

@@ -22,11 +22,10 @@ jobs:
         run: uv sync
 
       - name: Run sync
-        run: uv run python -m scripts.sync_legislators
+        run: uv run python -m scripts.sync.sync_legislators
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          OPENFEC_API_KEY: ${{ secrets.OPENFEC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
   sync-voteview:
     name: Sync VoteView Ideology Scores
@@ -44,7 +43,7 @@ jobs:
         run: uv sync
 
       - name: Run sync
-        run: uv run python -m scripts.sync_voteview
+        run: uv run python -m scripts.sync.sync_member_scores
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

@@ -6,7 +6,7 @@ Checkpoints every page so the job can be resumed after interruption.
 
 Usage:
     python scripts/bulk/bulk_import_bills.py --congress 118 119
-    python scripts/bulk/bulk_import_bills.py --congress 119 --resume
+    python3 scripts/bulk/bulk_import_bills.py --congress 119 --resume
 """
 
 import argparse

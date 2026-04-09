@@ -45,10 +45,10 @@ export function Navigation() {
           {/* Logo — wordmark only */}
           <Link href="/" className="flex-shrink-0">
             <span
-              className="text-xl font-semibold text-[#1C1C1A] tracking-tight"
+              className="text-2xl font-semibold text-[#1C1C1A] tracking-tight"
               style={{ fontFamily: 'var(--font-serif)' }}
             >
-              Beyond the Ballot
+              Beyond the Vote
             </span>
           </Link>
 

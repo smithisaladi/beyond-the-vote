@@ -1,4 +1,4 @@
-# Beyond the Ballot — Design System
+# Beyond the Vote — Design System
 
 When designing or modifying any component, follow this design system exactly. The source of truth is the Landing Page (`components/landing/`) and the Dashboard (`app/(authenticated)/dashboard/page.tsx`).
 

@@ -44,10 +44,20 @@ interface Committee {
 
 interface FundingBreakdown {
   pac: number
+  pacPct: number
   individualLarge: number
+  individualLargePct: number
   individualSmall: number
+  individualSmallPct: number
+  partyContributions: number
+  partyContributionsPct: number
   selfFunded: number
+  selfFundedPct: number
+  other: number
+  otherPct: number
   total: number
+  superPacFor: number
+  superPacAgainst: number
   cycle: number
 }
 

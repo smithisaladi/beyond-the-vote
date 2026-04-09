@@ -3,14 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Bell, LogOut, Tag } from 'lucide-react'
-import { topicToSlug } from '@/lib/topics'
+import { Bell, LogOut } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import type { BillStatus } from '@/lib/types'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useDashboard } from '@/hooks/useDashboard'
-import type { TopicFeedItem } from '@/hooks/useTopicBills'
 
 function Initials({ name }: { name: string }) {
   const parts = name.trim().split(' ')
@@ -94,8 +92,6 @@ export default function DashboardPage() {
   const {
     followedPoliticians: politicians,
     trackedBillDetails: trackedBills,
-    topicFeedItems,
-    followedTopics,
     activity: activityFeed,
     loading,
   } = useDashboard(user)
@@ -240,59 +236,6 @@ export default function DashboardPage() {
                 </div>
               )}
             </section>
-
-            {/* ── Personalized topic feed ── */}
-            {topicFeedItems.length > 0 && (
-              <section className="mb-14">
-                <div className="flex items-baseline justify-between mb-5">
-                  <div className="flex items-baseline gap-2.5">
-                    <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Your Topics</h2>
-                    <span className="text-sm text-[#1C1C1A]/38">{followedTopics.length} followed</span>
-                  </div>
-                  <Link href="/topics" className="text-xs text-[#9B7FA6] hover:underline underline-offset-2">
-                    Manage topics →
-                  </Link>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-5">
-                  {followedTopics.map(t => (
-                    <Link
-                      key={t}
-                      href={`/topics/${topicToSlug(t)}`}
-                      className="text-xs font-medium px-3 py-1 rounded-full bg-[#9B7FA6]/10 text-[#9B7FA6] hover:bg-[#9B7FA6]/18 transition-colors"
-                    >
-                      {t}
-                    </Link>
-                  ))}
-                </div>
-
-                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] divide-y divide-[rgba(28,28,26,0.05)]">
-                  {topicFeedItems.map(({ topic, bill }, i) => {
-                    const s = STATUS_STYLES[bill.status as BillStatus] ?? STATUS_STYLES['Active']
-                    return (
-                      <Link key={i} href={`/bills/${bill.id}`} className="block px-6 py-5 hover:bg-[#F5F0E8]/60 transition-colors group">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <Tag size={10} color="#9B7FA6" />
-                          <span className="text-[10px] text-[#9B7FA6] font-medium">Because you follow {topic}</span>
-                        </div>
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[11px] font-mono text-[#1C1C1A]/38 mb-1">{bill.number}</p>
-                            <p className="text-base font-medium text-[#1C1C1A] leading-snug group-hover:text-[#9B7FA6] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
-                              {bill.title}
-                            </p>
-                            <BillProgress status={bill.status as BillStatus} />
-                          </div>
-                          <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full flex-shrink-0 mt-1 ${s.bg} ${s.text}`}>
-                            {bill.status}
-                          </span>
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              </section>
-            )}
 
             {/* ── Lower two-column ── */}
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_288px] gap-6">

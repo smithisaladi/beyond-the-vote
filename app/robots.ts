@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/settings', '/api/'],
       },
     ],
-    sitemap: 'https://beyondtheballot.app/sitemap.xml',
+    sitemap: 'https://beyondtheVote.app/sitemap.xml',
   }
 }

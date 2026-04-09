@@ -394,15 +394,29 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
                       <div className="space-y-5">
                         {bill.votes.map((vote, i) => (
-                          <div key={i}>
-                            <div className="flex items-center justify-between mb-2">
+                          <div key={i} className={i > 0 ? 'pt-5 border-t border-[rgba(28,28,26,0.06)]' : ''}>
+                            <div className="flex items-center justify-between mb-1">
                               <span className="text-xs font-medium text-[#1C1C1A]/60">{vote.chamber}</span>
                               <span className="text-xs text-[#1C1C1A]/35">{formatShortDate(vote.date)}</span>
                             </div>
+                            {vote.question && (
+                              <p className="text-xs text-[#1C1C1A]/50 mb-2">{vote.question}</p>
+                            )}
                             {vote.yeas !== null && vote.nays !== null ? (
                               <VoteBar yeas={vote.yeas} nays={vote.nays} />
                             ) : (
                               <p className="text-xs text-[#1C1C1A]/30">Vote data unavailable</p>
+                            )}
+                            {vote.result && (
+                              <p className={`text-xs font-medium mt-1.5 ${
+                                vote.result.toLowerCase().includes('pass') || vote.result.toLowerCase().includes('agreed')
+                                  ? 'text-[#6A9B7B]'
+                                  : vote.result.toLowerCase().includes('fail') || vote.result.toLowerCase().includes('rejected')
+                                    ? 'text-[#B85C38]'
+                                    : 'text-[#1C1C1A]/50'
+                              }`}>
+                                {vote.result}
+                              </p>
                             )}
                             {vote.url && (
                               <a

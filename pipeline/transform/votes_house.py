@@ -45,22 +45,41 @@ def transform_vote_summary(detail: dict, congress: int) -> dict | None:
         return None
 
     vote_id = make_vote_id(congress, roll_call)
-    date = vote.get("updateDate") or vote.get("actionDate") or vote.get("date")
+    date = vote.get("startDate") or vote.get("actionDate") or vote.get("date")
 
-    # Vote totals — field names vary across beta API versions
-    totals_raw = vote.get("totals") or vote.get("votePartyTotal") or {}
-    totals = totals_raw if isinstance(totals_raw, dict) else {}
-    yea_total = _safe_int(totals.get("yea") or totals.get("totalYea") or totals.get("yea_total") or 0)
-    nay_total = _safe_int(totals.get("nay") or totals.get("totalNay") or totals.get("nay_total") or 0)
-    present = _safe_int(totals.get("present") or 0)
-    not_voting = _safe_int(totals.get("notVoting") or totals.get("not_voting") or 0)
+    # Vote totals — votePartyTotal is a list of per-party objects
+    yea_total = 0
+    nay_total = 0
+    present_total = 0
+    not_voting_total = 0
+    party_totals = vote.get("votePartyTotal") or vote.get("totals") or []
+    if isinstance(party_totals, list):
+        for pt in party_totals:
+            yea_total += _safe_int(pt.get("yeaTotal")) or 0
+            nay_total += _safe_int(pt.get("nayTotal")) or 0
+            present_total += _safe_int(pt.get("presentTotal")) or 0
+            not_voting_total += _safe_int(pt.get("notVotingTotal")) or 0
+    elif isinstance(party_totals, dict):
+        yea_total = _safe_int(party_totals.get("yea") or party_totals.get("yeaTotal")) or 0
+        nay_total = _safe_int(party_totals.get("nay") or party_totals.get("nayTotal")) or 0
+        present_total = _safe_int(party_totals.get("present") or party_totals.get("presentTotal")) or 0
+        not_voting_total = _safe_int(party_totals.get("notVoting") or party_totals.get("notVotingTotal")) or 0
 
-    result = vote.get("voteResult") or vote.get("result") or ""
-    question = vote.get("question") or vote.get("voteQuestion") or ""
-    bill_ref_raw = vote.get("bill") or vote.get("legislation") or {}
-    bill_ref = bill_ref_raw if isinstance(bill_ref_raw, dict) else {}
-    bill_id = _extract_bill_id(bill_ref, congress)
-    source_url = vote.get("url") or ""
+    result = vote.get("result") or vote.get("voteResult") or ""
+    question = vote.get("voteQuestion") or vote.get("question") or ""
+
+    # Bill reference — API uses legislationType/legislationNumber at top level
+    bill_type = (vote.get("legislationType") or "").lower()
+    bill_number = vote.get("legislationNumber")
+    if bill_type and bill_number:
+        bill_id = f"{congress}-{bill_type}-{bill_number}"
+    else:
+        # Fallback: try nested bill object
+        bill_ref = vote.get("bill") or vote.get("legislation") or {}
+        bill_ref = bill_ref if isinstance(bill_ref, dict) else {}
+        bill_id = _extract_bill_id(bill_ref, congress)
+
+    source_url = vote.get("sourceDataURL") or vote.get("url") or ""
 
     return {
         "id":              vote_id,
@@ -71,10 +90,10 @@ def transform_vote_summary(detail: dict, congress: int) -> dict | None:
         "question":        question,
         "result":          result,
         "required":        vote.get("requiredForPassage") or vote.get("required"),
-        "yea_total":       yea_total or 0,
-        "nay_total":       nay_total or 0,
-        "present_total":   present or 0,
-        "not_voting_total": not_voting or 0,
+        "yea_total":       yea_total,
+        "nay_total":       nay_total,
+        "present_total":   present_total,
+        "not_voting_total": not_voting_total,
         # Party breakdown filled in second pass
         "yea_democrat":    None,
         "nay_democrat":    None,
@@ -95,24 +114,32 @@ def transform_vote_positions(members_data: dict, vote_id: str) -> list[dict]:
     if not members_data:
         return positions
 
-    # Beta API nests members under various keys; values may be lists or dicts
+    # API nests members under houseRollCallVoteMemberVotes.results or members
     if isinstance(members_data, list):
         member_list = members_data
     else:
-        members_block = members_data.get("members", {})
-        if isinstance(members_block, list):
-            member_list = members_block
-        elif isinstance(members_block, dict):
-            member_list = members_block.get("member", [])
+        # Primary path: houseRollCallVoteMemberVotes.results
+        wrapper = members_data.get("houseRollCallVoteMemberVotes") or {}
+        if isinstance(wrapper, dict):
+            member_list = wrapper.get("results") or []
         else:
-            member_list = members_data.get("member", []) or []
+            member_list = []
+        # Fallback: try other nesting
+        if not member_list:
+            members_block = members_data.get("members", {})
+            if isinstance(members_block, list):
+                member_list = members_block
+            elif isinstance(members_block, dict):
+                member_list = members_block.get("member", [])
+            else:
+                member_list = members_data.get("results", []) or []
 
     if isinstance(member_list, dict):
         member_list = [member_list]
 
     for m in member_list:
-        bioguide_id = m.get("bioguideId") or m.get("bioguide_id")
-        vote_raw = m.get("votePosition") or m.get("position") or ""
+        bioguide_id = m.get("bioguideID") or m.get("bioguideId") or m.get("bioguide_id")
+        vote_raw = m.get("voteCast") or m.get("votePosition") or m.get("position") or ""
         position = POSITION_MAP.get(vote_raw.lower().strip())
         if not position:
             log.debug("Unknown position '%s' for %s", vote_raw, bioguide_id)

@@ -252,7 +252,7 @@ function Wordmark() {
           letterSpacing: '-0.3px',
         }}
       >
-        Beyond the Ballot
+        Beyond the Vote
       </span>
     </div>
   )

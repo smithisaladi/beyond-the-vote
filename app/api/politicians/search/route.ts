@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient()
   const lastWord = q.split(/\s+/).at(-1) ?? q
-  const select = 'bioguide_id, full_name, party, chamber, state, district, photo_url, member_scores(nominate_dim1)'
+  const select = 'bioguide_id, full_name, party, chamber, state, district, photo_url, member_scores(nominate_dim1, congress)'
 
   // Two queries: full_name for exact matches, last_name to handle middle initials
   // (PostgREST .or() breaks on ilike values with spaces, hence separate queries)
@@ -53,7 +53,10 @@ export async function GET(request: NextRequest) {
     since: null,
     website: null,
     phone: null,
-    ideologyScore: (row.member_scores as { nominate_dim1: number | null } | null)?.nominate_dim1 ?? null,
+    ideologyScore: (() => {
+      const scores = (row.member_scores as Array<{ nominate_dim1: number | null; congress: number }>) ?? []
+      return scores.sort((a, b) => b.congress - a.congress)[0]?.nominate_dim1 ?? null
+    })(),
   }))
 
   return NextResponse.json({ politicians })

@@ -103,6 +103,26 @@ def log_run_end(
     log.info("[run_id=%s] Run ended with status=%s", run_id, status)
 
 
+def get_watermark(script: str) -> str | None:
+    """
+    Return the started_at timestamp of the last successful run for `script`,
+    or None if no successful run exists. Used as the incremental fetch boundary.
+    """
+    db = get_supabase()
+    res = _run(lambda: (
+        db.table("pipeline_runs")
+        .select("started_at")
+        .eq("script", script)
+        .eq("status", "success")
+        .order("started_at", desc=True)
+        .limit(1)
+        .execute()
+    ))
+    if res and res.data:
+        return res.data[0]["started_at"]
+    return None
+
+
 # ── Checkpoint tracking ───────────────────────────────────────────────────────
 
 def checkpoint_exists(script: str, source_file: str, chunk_index: int) -> bool:

@@ -65,13 +65,17 @@ pipeline/
 │   │   │   │   ├── cm24.zip
 │   │   │   │   ├── ccl24.zip
 │   │   │   │   ├── indiv24.zip
-│   │   │   │   └── pas224.zip
+│   │   │   │   ├── pas224.zip
+│   │   │   │   ├── webl24.zip
+│   │   │   │   └── webk24.zip
 │   │   │   └── 2026/
 │   │   │       ├── cn26.zip
 │   │   │       ├── cm26.zip
 │   │   │       ├── ccl26.zip
 │   │   │       ├── indiv26.zip
-│   │   │       └── pas226.zip
+│   │   │       ├── pas226.zip
+│   │   │       ├── webl26.zip
+│   │   │       └── webk26.zip
 │   │   ├── legislators/
 │   │   │   ├── legislators-current.yaml
 │   │   │   └── legislators-historical.yaml
@@ -117,6 +121,7 @@ pipeline/
 │   ├── bills.py
 │   ├── votes_house.py
 │   ├── votes_senate.py
+│   ├── candidate_summaries.py
 │   ├── candidates.py
 │   ├── committees.py
 │   ├── candidate_committee_linkages.py
@@ -161,6 +166,7 @@ pipeline/
 
 ## Local-Only Tables (CSV in data/processed/fec/)
 - `candidates_{cycle}.csv`                — FEC candidate master, used for ID resolution
+- `candidate_summaries_{cycle}.csv`       — FEC candidate financial totals (webl), used for total_receipts/small donor
 - `committees.csv`                        — FEC committee master, used for industry classification
 - `individual_contributions_{cycle}.csv`  — donor → committee, filtered to tracked legislators
 - `pac_to_candidate_{cycle}.csv`          — PAC contributions (also in Supabase)
@@ -184,8 +190,16 @@ CREATE TABLE legislator_funding_summary (
   -- Individual donors
   large_donor_total     NUMERIC,  -- itemized individuals >= $200
   large_donor_pct       NUMERIC,
-  small_donor_total     NUMERIC,  -- unitemized remainder
+  small_donor_total     NUMERIC,  -- unitemized remainder (ttl_indiv_contrib - large_donor)
   small_donor_pct       NUMERIC,
+
+  -- Party & Self-funded
+  pol_pty_total         NUMERIC,  -- party committee contributions
+  pol_pty_pct           NUMERIC,
+  self_funded_total     NUMERIC,  -- candidate self-contributions
+  self_funded_pct       NUMERIC,
+  other_total           NUMERIC,  -- transfers, loans, misc (remainder)
+  other_pct             NUMERIC,
 
   -- Geographic
   in_state_total        NUMERIC,
@@ -224,6 +238,15 @@ CREATE TABLE legislator_top_pacs (
 - Re-running is safe and fully idempotent — rows are replaced each run
 - DuckDB queries `data/processed/fec/*.csv` files directly (pipe-delimited, with headers)
 - Legislators are loaded from Supabase (small table); all FEC data from local CSVs
+- **total_receipts** sourced from `candidate_summaries_{cycle}.csv` (webl file) — the FEC-reported total
+- **Six funding categories** sum to ~100% of total_receipts:
+  1. PAC & Corporate (`pac_direct_pct`) — FEC `other_pol_cmte_contrib` from webl
+  2. Large Individual (`large_donor_pct`) — itemized individual contributions >= $200
+  3. Small Donors (`small_donor_pct`) — FEC `ttl_indiv_contrib` minus large donors
+  4. Party (`pol_pty_pct`) — FEC `pol_pty_contrib` from webl
+  5. Self-Funded (`self_funded_pct`) — FEC `cand_contrib` from webl
+  6. Other (`other_pct`) — remainder (transfers, loans, misc)
+- Falls back to sum of known sources (pac + large_donor) if webl data is missing
 - Industry buckets are defined in `config.py` as `INDUSTRY_KEYWORDS`
 - Industry is derived from `connected_org` on the committee master file
 - Unclassified PACs go into an "Other" bucket
@@ -232,7 +255,6 @@ CREATE TABLE legislator_top_pacs (
 - `top_industries` stored as JSONB — fully replaced each pipeline run
 - `legislator_top_pacs` stores top 20 PACs per legislator per cycle
 - Large donor threshold: itemized individual contributions >= $200 (FEC disclosure line)
-- Small donor total: total_receipts minus all itemized contributions (never individually visible)
 
 ## Run Order (Critical)
 Always run in this order — FK dependencies will break if violated:
@@ -246,6 +268,7 @@ Always run in this order — FK dependencies will break if violated:
 8.  FEC bulk_import_fec.py             → local CSVs + Supabase (pac/ie only)
     - candidates                       → local CSV only
     - committees                       → local CSV only
+    - candidate_summaries (webl)       → local CSV only
     - pac_to_candidate                 → Supabase + local CSV
     - independent_expenditures         → Supabase + local CSV
     - individual_contributions         → local CSV only
@@ -279,11 +302,11 @@ historical mode on next run.
 - data/raw/             — original downloaded files, never modified
 - data/processed/       — cleaned outputs from transform/
 - data/processed/fec/   — pipe-delimited CSVs with headers, queried by DuckDB
-  - candidates_{cycle}.csv, committees.csv — local-only, never in Supabase
+  - candidates_{cycle}.csv, candidate_summaries_{cycle}.csv, committees.csv — local-only, never in Supabase
   - individual_contributions_{cycle}.csv   — local-only (~1-2GB per cycle, filtered)
   - pac_to_candidate_{cycle}.csv           — also loaded to Supabase
   - independent_expenditures_{cycle}.csv   — also loaded to Supabase
-- Raw FEC files are named by FEC convention: cn{yy}.zip, cm{yy}.zip, etc.
+- Raw FEC files are named by FEC convention: cn{yy}.zip, cm{yy}.zip, webl{yy}.zip, webk{yy}.zip, etc.
 - Always download to data/raw/ before processing — never process in-memory downloads
 - Never delete data/processed/ — it is the full local archive
 
@@ -304,6 +327,8 @@ historical mode on next run.
 | ccl{yy}.zip   | in-memory only                                | Links cand_id to principal campaign committee_id   |
 | indiv{yy}.zip | local CSV only                                | ~4GB unzipped, stream only, never in Supabase      |
 | pas2{yy}.zip  | Supabase + local CSV                          | Split by transaction type code in transform layer  |
+| webl{yy}.zip  | local CSV only                                | Candidate financial summary; provides total_receipts |
+| webk{yy}.zip  | not used yet                                  | Committee financial summary; reserved for future use |
 | oth{yy}.zip   | not used                                      | PAC-to-PAC only — skip unless needed later         |
 
 ## pas2 Transaction Type Codes

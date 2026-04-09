@@ -31,7 +31,7 @@ export default function NotFound() {
         className="absolute bottom-8 text-xs text-[#1C1C1A]/30"
         style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
       >
-        Beyond the Ballot
+        Beyond the Vote
       </p>
     </div>
   )

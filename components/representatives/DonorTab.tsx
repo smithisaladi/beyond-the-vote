@@ -10,10 +10,20 @@ interface Donor {
 
 interface FundingBreakdown {
   pac: number
+  pacPct: number
   individualLarge: number
+  individualLargePct: number
   individualSmall: number
+  individualSmallPct: number
+  partyContributions: number
+  partyContributionsPct: number
   selfFunded: number
+  selfFundedPct: number
+  other: number
+  otherPct: number
   total: number
+  superPacFor: number
+  superPacAgainst: number
   cycle: number
 }
 
@@ -21,11 +31,6 @@ interface DonorTabProps {
   pacDonors: Donor[]
   fundingBreakdown?: FundingBreakdown | null
   fecUrl?: string | null
-}
-
-function pct(value: number, total: number): number {
-  if (total <= 0) return 0
-  return Math.round((value / total) * 100)
 }
 
 // FEC data comes in ALL CAPS — convert to Title Case only if all-uppercase
@@ -42,12 +47,11 @@ function formatTotal(n: number): string {
 }
 
 function fundingVerdict(bd: FundingBreakdown): { label: string; description: string } {
-  const { pac, individualLarge, individualSmall, selfFunded, total } = bd
-  if (total <= 0) return { label: '', description: '' }
-  const pacPct        = pct(pac, total)
-  const smallPct      = pct(individualSmall, total)
-  const selfPct       = pct(selfFunded, total)
-  const individualPct = pct(individualLarge + individualSmall, total)
+  if (bd.total <= 0) return { label: '', description: '' }
+  const pacPct  = Math.round(bd.pacPct)
+  const smallPct = Math.round(bd.individualSmallPct)
+  const selfPct = Math.round(bd.selfFundedPct)
+  const individualPct = Math.round(bd.individualLargePct + bd.individualSmallPct)
 
   if (pacPct >= 60)   return { label: 'Corporate-backed', description: `${pacPct}% of funding comes from PACs and corporate donors.` }
   if (smallPct >= 40) return { label: 'Grassroots-funded', description: `Primarily small-donor funded — ${smallPct}% from donations under $200.` }
@@ -90,12 +94,13 @@ export function DonorTab({ pacDonors, fundingBreakdown, fecUrl }: DonorTabProps)
       {/* ── Funding Split ── */}
       {bd && (
         <div className="grid grid-cols-3 gap-3 mb-7">
+          {/* Top row — primary sources */}
           <div className="bg-[#9B7FA6]/5 rounded-lg p-4 border border-[#9B7FA6]/10">
             <div
               className="text-[#9B7FA6] mb-0.5"
               style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
             >
-              {pct(bd.pac, bd.total)}%
+              {Math.round(bd.pacPct)}%
             </div>
             <div className="text-[#1C1C1A]/70 text-xs">PAC &amp; Corporate</div>
           </div>
@@ -105,19 +110,50 @@ export function DonorTab({ pacDonors, fundingBreakdown, fecUrl }: DonorTabProps)
               className="text-[#1C1C1A]/70 mb-0.5"
               style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
             >
-              {pct(bd.individualLarge, bd.total)}%
+              {Math.round(bd.individualLargePct)}%
             </div>
             <div className="text-[#1C1C1A]/60 text-xs">Large Individual</div>
           </div>
 
           <div className="bg-[#E8E3DA]/40 rounded-lg p-4 border border-[rgba(28,28,26,0.08)]">
             <div
-              className="text-[#1C1C1A]/60 mb-0.5"
+              className="text-[#1C1C1A]/70 mb-0.5"
               style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
             >
-              {pct(bd.individualSmall, bd.total)}%
+              {Math.round(bd.individualSmallPct)}%
             </div>
-            <div className="text-[#1C1C1A]/50 text-xs">Small Donors (&lt;$200)</div>
+            <div className="text-[#1C1C1A]/60 text-xs">Small Donors (&lt;$200)</div>
+          </div>
+
+          {/* Bottom row — secondary sources */}
+          <div className="bg-[#E8E3DA]/40 rounded-lg p-3 border border-[rgba(28,28,26,0.08)]">
+            <div
+              className="text-[#1C1C1A]/55 mb-0.5"
+              style={{ fontSize: '1.5rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
+            >
+              {Math.round(bd.partyContributionsPct)}%
+            </div>
+            <div className="text-[#1C1C1A]/45 text-xs">Party</div>
+          </div>
+
+          <div className="bg-[#E8E3DA]/40 rounded-lg p-3 border border-[rgba(28,28,26,0.08)]">
+            <div
+              className="text-[#1C1C1A]/55 mb-0.5"
+              style={{ fontSize: '1.5rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
+            >
+              {Math.round(bd.selfFundedPct)}%
+            </div>
+            <div className="text-[#1C1C1A]/45 text-xs">Self-Funded</div>
+          </div>
+
+          <div className="bg-[#E8E3DA]/40 rounded-lg p-3 border border-[rgba(28,28,26,0.08)]">
+            <div
+              className="text-[#1C1C1A]/55 mb-0.5"
+              style={{ fontSize: '1.5rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
+            >
+              {Math.round(bd.otherPct)}%
+            </div>
+            <div className="text-[#1C1C1A]/45 text-xs">Other</div>
           </div>
         </div>
       )}

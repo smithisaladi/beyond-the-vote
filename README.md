@@ -1,2 +1,2 @@
-# Beyond the Ballot
+# Beyond the Vote
 

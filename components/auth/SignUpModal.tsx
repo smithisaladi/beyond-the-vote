@@ -34,7 +34,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
           </svg>
         </button>
 
-        <h2 className="text-3xl mb-2" style={{ fontFamily: 'var(--font-serif)' }}>Join Beyond the Ballot</h2>
+        <h2 className="text-3xl mb-2" style={{ fontFamily: 'var(--font-serif)' }}>Join Beyond the Vote</h2>
         <p className="text-[#1C1C1A]/60 mb-8">Start tracking your representatives today</p>
 
         <button

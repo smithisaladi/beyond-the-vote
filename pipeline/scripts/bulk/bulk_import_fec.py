@@ -2,11 +2,12 @@
 bulk_import_fec.py — Load all FEC tables from bulk data files.
 
 Processes in dependency order for each cycle:
-  1. candidates      (cn{yy}.zip)  → local CSV only
-  2. fec_committees  (cm{yy}.zip)  → local CSV only
-  3. ccl linkages    (ccl{yy}.zip) — in-memory only
-  4. pac_to_candidate + independent_expenditures (pas2{yy}.zip) → Supabase + CSV
-  5. individual_contributions (indiv{yy}.zip) — local CSV only, streaming, filtered
+  1. candidates             (cn{yy}.zip)   → local CSV only
+  2. fec_committees         (cm{yy}.zip)   → local CSV only
+  3. candidate_summaries    (webl{yy}.zip) → local CSV only
+  4. ccl linkages           (ccl{yy}.zip)  — in-memory only
+  5. pac_to_candidate + independent_expenditures (pas2{yy}.zip) → Supabase + CSV
+  6. individual_contributions (indiv{yy}.zip) — local CSV only, streaming, filtered
 
 Active cycle detection: if today's year <= cycle year → active cycle.
 Active cycles: fresh download of indiv + pas2 before processing.
@@ -25,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from config import (
+    CAND_SUMMARY_CSV_COLS,
     CANDIDATES_CSV_COLS,
     CCL_COLS,
     CHUNK_SIZE,
@@ -40,6 +42,7 @@ from config import (
     PAC_CSV_COLS,
     PAS2_COLS,
     UPSERT_BATCH,
+    WEBL_COLS,
     is_active_cycle,
 )
 from load import (
@@ -50,6 +53,7 @@ from load import (
     mark_checkpoint,
     upsert,
 )
+from transform.candidate_summaries import transform_candidate_summaries_batch
 from transform.candidates import transform_candidates_batch
 from transform.committees import transform_committees_batch
 from transform.ind_exp import transform_independent_expenditures_batch
@@ -71,6 +75,8 @@ FEC_FILES = {
     "ccl":   ("ccl{yy}.zip",   "ccl{yy}.txt"),
     "indiv": ("indiv{yy}.zip", "indiv{yy}.txt"),
     "pas2":  ("itpas2{yy}.zip", "itpas2{yy}.txt"),  # FEC uses itpas2 naming
+    "webl":  ("webl{yy}.zip",  "webl{yy}.txt"),     # candidate financial summary
+    "webk":  ("webk{yy}.zip",  "webk{yy}.txt"),     # committee financial summary
 }
 
 # Alternative pas2 naming (FEC changed conventions across cycles)
@@ -137,9 +143,16 @@ def ensure_zip(cycle: int, file_key: str, active: bool) -> Path | None:
 
 
 def _clear_csv_if_fresh(source_file: str, csv_path: Path) -> None:
-    """Delete existing CSV if no checkpoints exist (fresh run)."""
+    """Delete existing CSV if no checkpoints exist (fresh run).
+    Also clears stale checkpoints if CSV is missing (e.g. from pre-DuckDB runs)."""
     last = get_last_checkpoint(SCRIPT, source_file)
-    if last < 0 and csv_path.exists():
+    if last >= 0 and not csv_path.exists():
+        # Checkpoints exist from a previous run but CSV was never written
+        # (pre-DuckDB runs wrote to Supabase only). Clear checkpoints to re-process.
+        log.info("Clearing stale checkpoints for %s (no CSV exists)", source_file)
+        db = get_supabase()
+        db.table("bulk_import_checkpoints").delete().eq("script", SCRIPT).eq("source_file", source_file).execute()
+    elif last < 0 and csv_path.exists():
         csv_path.unlink()
         log.info("Cleared stale CSV %s for fresh run", csv_path.name)
 
@@ -274,6 +287,34 @@ def import_committees(cycle: int, active: bool) -> int:
     return total
 
 
+def import_candidate_summaries(cycle: int, active: bool) -> int:
+    """Import candidate financial summaries (webl) to local CSV only."""
+    zip_path = ensure_zip(cycle, "webl", active)
+    if not zip_path:
+        log.error("Cannot find/download webl zip for cycle %d", cycle)
+        return 0
+
+    processed_dir = DATA_RAW.parent / "processed" / "fec"
+    txt_path = extract_zip(zip_path, processed_dir)
+    csv_path = DATA_PROCESSED_FEC / f"candidate_summaries_{cycle}.csv"
+
+    source_file = f"candidate_summaries_{cycle}"
+    _clear_csv_if_fresh(source_file, csv_path)
+
+    total = 0
+    for chunk_index, chunk in stream_fec_file(txt_path, WEBL_COLS, UPSERT_BATCH):
+        if checkpoint_exists(SCRIPT, source_file, chunk_index):
+            continue
+        rows = transform_candidate_summaries_batch(chunk, cycle)
+        if rows:
+            append_csv(csv_path, rows, CAND_SUMMARY_CSV_COLS)
+            total += len(rows)
+        mark_checkpoint(SCRIPT, source_file, chunk_index, len(chunk), "success")
+
+    log.info("Candidate summaries cycle=%d: %d rows written to CSV", cycle, total)
+    return total
+
+
 def load_ccl_map(cycle: int, active: bool) -> dict[str, str]:
     """Load CCL file into memory as cand_id → cmte_id dict."""
     zip_path = ensure_zip(cycle, "ccl", active)
@@ -397,19 +438,22 @@ def run(cycles: list[int]) -> None:
             # 2. Committees → local CSV only
             results[f"committees_{cycle}"] = import_committees(cycle, active)
 
-            # 3. CCL (in-memory — not stored as separate table)
+            # 3. Candidate financial summaries (webl) → local CSV only
+            results[f"candidate_summaries_{cycle}"] = import_candidate_summaries(cycle, active)
+
+            # 4. CCL (in-memory — not stored as separate table)
             ccl_map = load_ccl_map(cycle, active)
             log.info("CCL map loaded: %d entries", len(ccl_map))
 
-            # 4. PAC contributions + independent expenditures → Supabase + CSV
+            # 5. PAC contributions + independent expenditures → Supabase + CSV
             pac_n, ie_n = import_pas2(cycle, active)
             results[f"pac_to_candidate_{cycle}"] = pac_n
             results[f"independent_expenditures_{cycle}"] = ie_n
 
-        # 5. Build legislator committee filter (from local CSVs + Supabase legislators)
+        # 6. Build legislator committee filter (from local CSVs + Supabase legislators)
         valid_cmte_ids = build_legislator_cmte_ids(cycles)
 
-        # 6. Individual contributions → local CSV only (streaming, filtered)
+        # 7. Individual contributions → local CSV only (streaming, filtered)
         for cycle in cycles:
             active = is_active_cycle(cycle)
             results[f"individual_contributions_{cycle}"] = import_individual_contributions(
