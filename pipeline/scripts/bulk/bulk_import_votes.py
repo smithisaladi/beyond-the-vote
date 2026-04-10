@@ -57,7 +57,7 @@ def _normalize_api_response(data) -> dict:
 log = logging.getLogger(__name__)
 
 SCRIPT = "bulk_import_votes"
-SENATE_INDEX_URL = "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_{year}_{session}.xml"
+SENATE_INDEX_URL = "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_{congress}_{session}.xml"
 SENATE_VOTE_URL  = "https://www.senate.gov/legislative/LIS/roll_call_votes/vote{congress}{session}/vote_{congress}_{session}_{number:05d}.xml"
 
 
@@ -276,7 +276,7 @@ def import_senate_votes(congress: int, lis_map: dict, name_state_map: dict) -> t
             continue
 
         log.info("Senate congress=%d session=%d (year=%d)", congress, session, year)
-        index_url = SENATE_INDEX_URL.format(year=year, session=session)
+        index_url = SENATE_INDEX_URL.format(congress=congress, session=session)
 
         try:
             resp = req.get(index_url, timeout=30)

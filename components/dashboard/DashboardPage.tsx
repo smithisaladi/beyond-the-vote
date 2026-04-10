@@ -10,12 +10,13 @@ import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { useAuth } from '@/hooks/useAuth'
 import { useDashboard } from '@/hooks/useDashboard'
 
+
 function Initials({ name }: { name: string }) {
   const parts = name.trim().split(' ')
   const initials = parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : parts[0][0]
   return (
-    <div className="w-11 h-11 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0">
-      <span className="text-sm text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
+    <div className="w-9 h-9 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0">
+      <span className="text-xs text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
         {initials.toUpperCase()}
       </span>
     </div>
@@ -48,18 +49,11 @@ function BillProgress({ status }: { status: BillStatus }) {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 animate-pulse">
-      <div className="flex items-start gap-3 mb-4">
-        <div className="w-11 h-11 rounded-full bg-[#E8E3DA] flex-shrink-0" />
-        <div className="flex-1 space-y-2 pt-1">
-          <div className="h-3.5 bg-[#E8E3DA] rounded w-3/4" />
-          <div className="h-3 bg-[#E8E3DA] rounded w-1/2" />
-        </div>
-      </div>
-      <div className="h-3 bg-[#E8E3DA] rounded w-1/4 mb-4" />
-      <div className="border-t border-[rgba(28,28,26,0.06)] pt-3.5 space-y-2">
-        <div className="h-2.5 bg-[#E8E3DA] rounded w-1/3" />
-        <div className="h-3 bg-[#E8E3DA] rounded w-full" />
+    <div className="bg-white rounded-lg border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-4 py-3.5 flex items-center gap-3 animate-pulse">
+      <div className="w-9 h-9 rounded-full bg-[#E8E3DA] flex-shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3.5 bg-[#E8E3DA] rounded w-3/4" />
+        <div className="h-3 bg-[#E8E3DA] rounded w-1/2" />
       </div>
     </div>
   )
@@ -157,12 +151,12 @@ export default function DashboardPage() {
               <div className="flex items-baseline gap-2.5 mb-5">
                 <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Following</h2>
                 {!loadingPoliticians && (
-                  <span className="text-sm text-[#1C1C1A]/38">{politicians.length} politicians</span>
+                  <span className="text-sm text-[#1C1C1A]/38" style={{ fontFamily: 'var(--font-serif)' }}>{politicians.length} politicians</span>
                 )}
               </div>
 
               {loadingPoliticians ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <SkeletonCard />
                   <SkeletonCard />
                   <SkeletonCard />
@@ -174,16 +168,13 @@ export default function DashboardPage() {
                   linkLabel="Find your representatives →"
                 />
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {politicians.map((pol) => {
                     const badge = PARTY_STYLES[pol.party]
                     return (
                       <Link key={pol.id} href={`/representatives/${pol.id}`} className="group">
-                        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-4 hover:shadow-md transition-shadow h-full cursor-pointer">
-
-                          <div className="flex items-start gap-3">
-                            {/* Photo with initials fallback */}
-                            <div className="relative w-11 h-11 flex-shrink-0">
+                        <div className="bg-white rounded-lg border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-4 py-3.5 flex items-center gap-3 hover:shadow-md hover:border-[#9B7FA6]/20 transition-all cursor-pointer">
+                            <div className="relative w-9 h-9 flex-shrink-0">
                               <Initials name={pol.name} />
                               {pol.photo && !photoErrors.has(pol.id) && (
                                 <Image
@@ -196,23 +187,21 @@ export default function DashboardPage() {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p
-                                className="text-sm font-medium text-[#1C1C1A] truncate group-hover:text-[#9B7FA6] transition-colors"
-                                style={{ fontFamily: 'var(--font-serif)' }}
-                              >
-                                {pol.name}
-                              </p>
-                              <p className="text-xs text-[#1C1C1A]/50 truncate mt-0.5">{pol.title}</p>
-                              <p className="text-xs text-[#1C1C1A]/38">
-                                {pol.state}{pol.district ? ` · ${pol.district}` : ''}
+                              <div className="flex items-center gap-1.5">
+                                <p
+                                  className="text-sm font-medium text-[#1C1C1A] truncate group-hover:text-[#9B7FA6] transition-colors"
+                                  style={{ fontFamily: 'var(--font-serif)' }}
+                                >
+                                  {pol.name}
+                                </p>
+                                <span className={`text-[10px] font-semibold flex-shrink-0 ${badge.text}`}>
+                                  ({pol.party[0]})
+                                </span>
+                              </div>
+                              <p className="text-xs text-[#1C1C1A]/50 truncate">
+                                {pol.title} · {pol.state}{pol.district ? ` · ${pol.district}` : ''}
                               </p>
                             </div>
-                          </div>
-
-                          <span className={`self-start text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
-                            {pol.party}
-                          </span>
-
                         </div>
                       </Link>
                     )
@@ -229,7 +218,7 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-5">
                   <div className="flex items-baseline gap-2.5">
                     <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Activity</h2>
-                    <span className="text-sm text-[#1C1C1A]/38">Recent updates</span>
+                    <span className="text-sm text-[#1C1C1A]/38" style={{ fontFamily: 'var(--font-serif)' }}>Recent updates</span>
                   </div>
                   <div className="flex items-center gap-1">
                     {(['all', 'bills', 'votes'] as const).map(tab => (
@@ -271,19 +260,21 @@ export default function DashboardPage() {
                 ) : (
                   <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
                     {filteredActivity.map((item, idx) => {
-                      const rowClass = `flex items-start gap-4 px-6 py-5 transition-colors ${
+                      const rowClass = `flex items-start gap-4 px-6 py-4 transition-colors ${
                         idx < filteredActivity.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
                       } ${item.href ? 'hover:bg-[#F5F0E8]/60 cursor-pointer' : ''}`
                       const inner = (
                         <>
                           <div className={`w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0 ${item.isAlert ? 'bg-[#B85C38]' : 'bg-[#9B7FA6]/50'}`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-[#1C1C1A]/70 leading-snug">
+                            <p className="text-sm leading-snug">
                               {item.politician && (
                                 <span className="text-[#1C1C1A] font-medium">{item.politician} </span>
                               )}
-                              <span className="text-[#1C1C1A]/45">{item.action} </span>
-                              <span className="text-[#1C1C1A]/80">{item.subject}</span>
+                              <span className="text-[#1C1C1A]/45">{item.action}</span>
+                            </p>
+                            <p className="text-sm text-[#1C1C1A]/80 leading-snug truncate mt-0.5">
+                              {item.subject}
                             </p>
                           </div>
                           <span className="text-[11px] text-[#1C1C1A]/32 flex-shrink-0 mt-0.5 whitespace-nowrap">{item.date}</span>
@@ -308,7 +299,7 @@ export default function DashboardPage() {
                 <div className="flex items-baseline justify-between mb-5">
                   <div className="flex items-baseline gap-2.5">
                     <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Tracked Bills</h2>
-                    {!loadingBills && <span className="text-sm text-[#1C1C1A]/38">{trackedBills.length}</span>}
+                    {!loadingBills && <span className="text-sm text-[#1C1C1A]/38" style={{ fontFamily: 'var(--font-serif)' }}>{trackedBills.length}</span>}
                   </div>
                   <Link href="/bills" className="text-xs text-[#9B7FA6] hover:underline underline-offset-2">View all</Link>
                 </div>
