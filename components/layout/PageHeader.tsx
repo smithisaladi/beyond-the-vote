@@ -10,12 +10,12 @@ import { SignInModal } from '@/components/auth/SignInModal'
 import { SignUpModal } from '@/components/auth/SignUpModal'
 
 export function PageHeader({ title }: { title: string }) {
-  const { user, signOut } = useAuth()
+  const { user, loading, signOut } = useAuth()
   const pathname = usePathname()
   const [showSignIn, setShowSignIn] = useState(false)
   const [showSignUp, setShowSignUp] = useState(false)
 
-  if (!user) {
+  if (!user && !loading) {
     return (
       <>
         <header className="sticky top-0 z-20 bg-[#F5F0E8]/95 backdrop-blur-sm border-b border-[rgba(28,28,26,0.1)]">
@@ -93,25 +93,29 @@ export function PageHeader({ title }: { title: string }) {
           <Bell size={19} />
         </button>
 
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#9B7FA6]/20 border border-[#9B7FA6]/30 flex items-center justify-center">
-            <span className="text-xs font-semibold text-[#9B7FA6]" style={{ fontFamily: 'var(--font-serif)' }}>
-              {getUserInitials(user)}
-            </span>
-          </div>
-          <span className="text-sm text-[#1C1C1A]/60 hidden sm:inline">
-            {user.user_metadata?.full_name ?? user.email}
-          </span>
-        </div>
+        {user && (
+          <>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-[#9B7FA6]/20 border border-[#9B7FA6]/30 flex items-center justify-center">
+                <span className="text-xs font-semibold text-[#9B7FA6]" style={{ fontFamily: 'var(--font-serif)' }}>
+                  {getUserInitials(user)}
+                </span>
+              </div>
+              <span className="text-sm text-[#1C1C1A]/60 hidden sm:inline">
+                {user.user_metadata?.full_name ?? user.email}
+              </span>
+            </div>
 
-        <button
-          onClick={signOut}
-          aria-label="Sign out"
-          className="flex items-center gap-2 text-sm text-[#1C1C1A]/45 hover:text-[#1C1C1A]/75 transition-colors"
-        >
-          <span className="hidden sm:inline">Sign out</span>
-          <LogOut size={16} />
-        </button>
+            <button
+              onClick={signOut}
+              aria-label="Sign out"
+              className="flex items-center gap-2 text-sm text-[#1C1C1A]/45 hover:text-[#1C1C1A]/75 transition-colors"
+            >
+              <span className="hidden sm:inline">Sign out</span>
+              <LogOut size={16} />
+            </button>
+          </>
+        )}
       </div>
     </header>
   )

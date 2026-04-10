@@ -213,22 +213,6 @@ export default function DashboardPage() {
                             {pol.party}
                           </span>
 
-                          {pol.latestVote && (
-                            <div className="border-t border-[rgba(28,28,26,0.06)] pt-3.5">
-                              <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-2">Latest vote</p>
-                              <div className="flex items-start gap-2">
-                                <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 leading-tight ${
-                                  pol.latestVote.vote === 'Yea'
-                                    ? 'bg-[#9B7FA6]/[0.12] text-[#9B7FA6]'
-                                    : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
-                                }`}>
-                                  {pol.latestVote.vote}
-                                </span>
-                                <p className="text-xs text-[#1C1C1A]/65 leading-snug">{pol.latestVote.bill}</p>
-                              </div>
-                              <p className="text-[11px] text-[#1C1C1A]/32 mt-2">{pol.latestVote.date}</p>
-                            </div>
-                          )}
                         </div>
                       </Link>
                     )
@@ -286,26 +270,35 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
-                    {filteredActivity.map((item, idx) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-start gap-4 px-6 py-5 ${
-                          idx < filteredActivity.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
-                        }`}
-                      >
-                        <div className={`w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0 ${item.isAlert ? 'bg-[#B85C38]' : 'bg-[#9B7FA6]/50'}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-[#1C1C1A]/70 leading-snug">
-                            {item.politician && (
-                              <span className="text-[#1C1C1A] font-medium">{item.politician} </span>
-                            )}
-                            <span className="text-[#1C1C1A]/45">{item.action} </span>
-                            <span className="text-[#1C1C1A]/80">{item.subject}</span>
-                          </p>
+                    {filteredActivity.map((item, idx) => {
+                      const rowClass = `flex items-start gap-4 px-6 py-5 transition-colors ${
+                        idx < filteredActivity.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
+                      } ${item.href ? 'hover:bg-[#F5F0E8]/60 cursor-pointer' : ''}`
+                      const inner = (
+                        <>
+                          <div className={`w-1.5 h-1.5 rounded-full mt-[7px] flex-shrink-0 ${item.isAlert ? 'bg-[#B85C38]' : 'bg-[#9B7FA6]/50'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-[#1C1C1A]/70 leading-snug">
+                              {item.politician && (
+                                <span className="text-[#1C1C1A] font-medium">{item.politician} </span>
+                              )}
+                              <span className="text-[#1C1C1A]/45">{item.action} </span>
+                              <span className="text-[#1C1C1A]/80">{item.subject}</span>
+                            </p>
+                          </div>
+                          <span className="text-[11px] text-[#1C1C1A]/32 flex-shrink-0 mt-0.5 whitespace-nowrap">{item.date}</span>
+                        </>
+                      )
+                      return item.href ? (
+                        <Link key={item.id} href={item.href} className={`block ${rowClass}`}>
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div key={item.id} className={rowClass}>
+                          {inner}
                         </div>
-                        <span className="text-[11px] text-[#1C1C1A]/32 flex-shrink-0 mt-0.5 whitespace-nowrap">{item.date}</span>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </section>

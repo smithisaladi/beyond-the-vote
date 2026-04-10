@@ -3,8 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import { getIdeologyLabel } from '@/lib/ideology'
 import { mapStatus as mapBillStatusFull } from '@/lib/bills'
 
-const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
-const CONGRESS_BASE    = 'https://api.congress.gov/v3'
+const CONGRESS_API_KEY  = process.env.CONGRESS_API_KEY ?? ''
+const CONGRESS_BASE     = 'https://api.congress.gov/v3'
+const SENATE_VOTE_BASE  = 'https://www.senate.gov/legislative/LIS/roll_call_votes'
+const SENATE_INDEX_BASE = 'https://www.senate.gov/legislative/LIS/roll_call_lists'
 
 function formatBillNumber(type: string, number: number): string {
   const types: Record<string, string> = {
@@ -29,6 +31,185 @@ function sourceStatus(r: SettledResult<unknown>): 'ok' | 'error' {
 function isDonorDataStale(finishedAt: string | null | undefined): boolean {
   if (!finishedAt) return true
   return Date.now() - new Date(finishedAt).getTime() > 30 * 24 * 60 * 60 * 1000
+}
+
+// ── Senate vote sessions to probe (most-recent first) ─────────────────────
+function senateSessions(): { congress: number; session: number }[] {
+  const year = new Date().getFullYear()
+  if (year >= 2026) return [{ congress: 119, session: 2 }, { congress: 119, session: 1 }]
+  if (year === 2025) return [{ congress: 119, session: 1 }]
+  if (year === 2024) return [{ congress: 118, session: 2 }, { congress: 118, session: 1 }]
+  return [{ congress: 119, session: 1 }]
+}
+
+// Try the senate.gov index XML first; fall back to parallel probing.
+// NOTE: senate.gov returns HTTP 200 with an HTML error page for missing votes,
+// so we must validate the response body contains XML, not just check r.ok.
+async function maxSenateVoteNumber(congress: number, session: number): Promise<number> {
+  try {
+    const r = await fetch(
+      `${SENATE_INDEX_BASE}/vote_menu_${congress}_${session}.xml`,
+      { next: { revalidate: 3600 }, signal: AbortSignal.timeout(5000) }
+    )
+    if (r.ok) {
+      const xml = await r.text()
+      // Index uses <vote_number> tags (5-digit zero-padded strings like "00074")
+      const nums = [...xml.matchAll(/<vote_number>(\d+)<\/vote_number>/g)]
+        .map(m => parseInt(m[1]))
+      if (nums.length) return Math.max(...nums)
+    }
+  } catch { /* fall through to probe */ }
+
+  // Fallback: probe round numbers, but validate body is real XML (senate.gov
+  // returns 200+HTML for non-existent votes, so r.ok alone is not enough).
+  const probes = [300, 200, 150, 100, 75, 50, 25, 10]
+  const pad = (n: number) => String(n).padStart(5, '0')
+  const results = await Promise.allSettled(
+    probes.map(n =>
+      fetch(
+        `${SENATE_VOTE_BASE}/vote${congress}${session}/vote_${congress}_${session}_${pad(n)}.xml`,
+        { next: { revalidate: 3600 }, signal: AbortSignal.timeout(4000) }
+      )
+        .then(async r => {
+          if (!r.ok) return { n, ok: false }
+          const text = await r.text()
+          // Real vote XML always contains <vote_title>; error HTML does not
+          return { n, ok: text.includes('<vote_title>') }
+        })
+        .catch(() => ({ n, ok: false }))
+    )
+  )
+  let max = 0
+  for (const r of results)
+    if (r.status === 'fulfilled' && r.value.ok) max = Math.max(max, r.value.n)
+  return max
+}
+
+type PoliticianVote = { id: string; bill: string; billId: string | null; date: string; vote: 'Yea' | 'Nay'; donorAlignments: any[] }
+type SenateMemberKey = { lisId: string } | { lastName: string; state: string }
+
+// Extract this member's block from a senate vote XML, return vote or null.
+// Matches by lis_member_id (most reliable) or last_name+state (fallback).
+function parseSenateVoteXml(xml: string, key: SenateMemberKey, voteId: string): PoliticianVote | null {
+  // Find the <member> block matching this senator
+  const memberBlockRe = /<member>([\s\S]*?)<\/member>/g
+  let m: RegExpExecArray | null
+  let memberBlock: string | null = null
+  while ((m = memberBlockRe.exec(xml)) !== null) {
+    const block = m[1]
+    const match = 'lisId' in key
+      ? block.includes(`<lis_member_id>${key.lisId}</lis_member_id>`)
+      : block.includes(`<last_name>${key.lastName}</last_name>`) &&
+        block.includes(`<state>${key.state}</state>`)
+    if (match) { memberBlock = block; break }
+  }
+  if (!memberBlock) return null
+
+  const rawPos = (memberBlock.match(/<vote_cast>([^<]+)<\/vote_cast>/)?.[1] ?? '').trim().toLowerCase()
+  // Skip non-yea/nay positions (Not Voting, Present, Paired, etc.)
+  if (rawPos !== 'yea' && rawPos !== 'aye' && rawPos !== 'yes' && rawPos !== 'nay' && rawPos !== 'no') return null
+
+  const title   = xml.match(/<vote_title>([^<]+)<\/vote_title>/)?.[1]?.trim() ?? ''
+  const dateStr = xml.match(/<vote_date>([^<]+)<\/vote_date>/)?.[1]?.trim() ?? ''
+  let dateFormatted = ''
+  if (dateStr) {
+    try {
+      // senate.gov date format: "March 10, 2026,  02:16 PM" — extract just the date part
+      const datePart = dateStr.match(/([A-Za-z]+ \d+, \d{4})/)?.[1] ?? dateStr
+      dateFormatted = new Date(datePart).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    } catch { /**/ }
+  }
+
+  return {
+    id:              voteId,
+    bill:            title || voteId,
+    billId:          null,
+    date:            dateFormatted,
+    vote:            (rawPos === 'nay' || rawPos === 'no') ? 'Nay' : 'Yea',
+    donorAlignments: [],
+  }
+}
+
+async function fetchRecentVotesForSenator(key: SenateMemberKey): Promise<PoliticianVote[] | null> {
+  const sessions = senateSessions()
+  const votes: PoliticianVote[] = []
+  const pad = (n: number) => String(n).padStart(5, '0')
+
+  for (const { congress, session } of sessions) {
+    if (votes.length >= 20) break
+    const max = await maxSenateVoteNumber(congress, session)
+    if (max === 0) continue
+
+    let current = max
+    const base  = `${SENATE_VOTE_BASE}/vote${congress}${session}`
+
+    while (current > 0 && votes.length < 20) {
+      const batchNums = Array.from({ length: Math.min(15, current) }, (_, i) => current - i)
+      current -= batchNums.length
+
+      const xmlResults = await Promise.allSettled(
+        batchNums.map(n =>
+          fetch(
+            `${base}/vote_${congress}_${session}_${pad(n)}.xml`,
+            { next: { revalidate: 86400 }, signal: AbortSignal.timeout(6000) }
+          )
+            .then(async r => {
+              if (!r.ok) return null
+              const text = await r.text()
+              // senate.gov returns 200+HTML for missing votes; real XML has <vote_title>
+              return text.includes('<vote_title>') ? text : null
+            })
+            .catch(() => null)
+        )
+      )
+
+      for (let i = 0; i < batchNums.length; i++) {
+        if (votes.length >= 20) break
+        const r   = xmlResults[i]
+        const xml = r.status === 'fulfilled' ? r.value : null
+        if (!xml) continue
+        const v = parseSenateVoteXml(xml, key, `senate-${congress}-${session}-${batchNums[i]}`)
+        if (v) votes.push(v)
+      }
+    }
+  }
+
+  return votes.length > 0 ? votes : null
+}
+
+async function fetchRecentVotesFromDB(
+  bioguideId: string,
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<PoliticianVote[]> {
+  const { data } = await supabase
+    .from('bill_vote_positions')
+    .select(`
+      position,
+      bill_vote_summaries (
+        id, bill_id, chamber, date, title, question, result,
+        yea_total, nay_total, yea_democrat, nay_democrat,
+        yea_republican, nay_republican
+      )
+    `)
+    .eq('bioguide_id', bioguideId)
+    .order('bill_vote_summaries(date)', { ascending: false })
+    .limit(20)
+  return (data ?? [])
+    .map((row: any) => {
+      const summary = row.bill_vote_summaries
+      if (!summary) return null
+      return {
+        id:              summary.id,
+        bill:            summary.title || summary.question,
+        billId:          summary.bill_id ?? null,
+        date:            summary.date
+          ? new Date(summary.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          : '',
+        vote:            row.position as 'Yea' | 'Nay',
+        donorAlignments: [] as any[],
+      }
+    })
+    .filter(Boolean) as PoliticianVote[]
 }
 
 async function fetchSponsoredBills(bioguideId: string) {
@@ -226,8 +407,8 @@ export async function GET(
   const { id: bioguideId } = await params
   const supabase = await createClient()
 
-  // ── Tier 1: Local DB (fast, reliable) ─────────────────────────────────────
-  const [legislatorRes, scoresRes, billVotesRes, committeesRes, lastDonorRunRes] = await Promise.allSettled([
+  // ── Tier 1: Local DB (fast) ────────────────────────────────────────────────
+  const [legislatorRes, scoresRes, committeesRes, lastDonorRunRes] = await Promise.allSettled([
     supabase
       .from('legislators')
       .select('*')
@@ -241,20 +422,6 @@ export async function GET(
       .order('congress', { ascending: false })
       .limit(1)
       .maybeSingle(),
-
-    supabase
-      .from('bill_vote_positions')
-      .select(`
-        position,
-        bill_vote_summaries (
-          id, bill_id, chamber, date, title, question, result,
-          yea_total, nay_total, yea_democrat, nay_democrat,
-          yea_republican, nay_republican
-        )
-      `)
-      .eq('bioguide_id', bioguideId)
-      .order('bill_vote_summaries(date)', { ascending: false })
-      .limit(20),
 
     supabase
       .from('committee_memberships')
@@ -272,17 +439,32 @@ export async function GET(
       .maybeSingle(),
   ])
 
-  const legislator      = extract(legislatorRes)?.data
-  const scores          = extract(scoresRes)?.data
-  const voteRows        = extract(billVotesRes)?.data ?? []
-  const commRows        = extract(committeesRes)?.data ?? []
-  const lastDonorRun    = extract(lastDonorRunRes)?.data
+  const legislator   = extract(legislatorRes)?.data
+  const scores       = extract(scoresRes)?.data
+  const commRows     = extract(committeesRes)?.data ?? []
+  const lastDonorRun = extract(lastDonorRunRes)?.data
 
-  // ── Tier 2: External APIs ──────────────────────────────────────────────────
-  const [sponsoredRes, donorsRes] = await Promise.allSettled([
+  // ── Tier 2: External APIs + votes (all in parallel) ───────────────────────
+  const isSenate = (legislator as any)?.chamber === 'senate'
+  const lisId    = (legislator as any)?.lis_id as string | null | undefined
+
+  // Build senate member key: prefer lis_id (exact); fall back to last_name+state
+  const senateMemberKey: SenateMemberKey | null = isSenate
+    ? (lisId
+        ? { lisId }
+        : { lastName: (legislator as any)?.last_name ?? '', state: (legislator as any)?.state ?? '' })
+    : null
+
+  const [sponsoredRes, donorsRes, votesRes] = await Promise.allSettled([
     fetchSponsoredBills(bioguideId),
     fetchDonors({ bioguideId, fecIds: (legislator as any)?.fec_ids ?? null, supabase }),
+    // Senators → senate.gov XML; House members → DB
+    senateMemberKey
+      ? fetchRecentVotesForSenator(senateMemberKey)
+      : fetchRecentVotesFromDB(bioguideId, supabase),
   ])
+
+  const recentVotesApiRes = votesRes
 
   // If not in DB yet, fall back to Congress.gov
   if (!legislator && CONGRESS_API_KEY) {
@@ -329,7 +511,7 @@ export async function GET(
         phone: member.addressInformation?.phoneNumber ?? null,
         fecUrl,
         stats: { yearsInOffice, attendance: null, ideologyScore: null, ideologyLabel: null, billVotesCast: 0, votedWithParty: null },
-        nextElectionYear, votes: [], billVotes: [], bills, donors, pacDonors, topContributors, fundingBreakdown, committees: [],
+        nextElectionYear, votes: extract(votesRes) ?? [], bills, donors, pacDonors, topContributors, fundingBreakdown, committees: [],
         donorAlignmentSyncedAt:  (lastDonorRun as any)?.finished_at ?? null,
         donorAlignmentIsStale:   isDonorDataStale((lastDonorRun as any)?.finished_at),
         _sources: {
@@ -345,35 +527,8 @@ export async function GET(
     return NextResponse.json({ error: 'Politician not found' }, { status: 404 })
   }
 
-  // ── Build billVotes with withParty ─────────────────────────────────────────
-  const party = legislator.party
-
-  const billVotes = (voteRows as any[])
-    .map((row: any) => {
-      const summary = row.bill_vote_summaries
-      if (!summary) return null
-      const position: string = row.position
-      const partyKey = party.toLowerCase()
-      const partyYeas = summary[`yea_${partyKey}`] ?? 0
-      const partyNays = summary[`nay_${partyKey}`] ?? 0
-      const partyMajority = partyYeas >= partyNays ? 'Yea' : 'Nay'
-      return {
-        billId:    summary.bill_id,
-        date:      summary.date,
-        position,
-        result:    `${summary.result} (${summary.yea_total}-${summary.nay_total})`,
-        withParty: position === partyMajority,
-        question:  summary.title || summary.question,
-        chamber:   summary.chamber,
-        voteId:    summary.id,
-      }
-    })
-    .filter(Boolean)
-
-  const billVotesCast  = billVotes.length
-  const votedWithParty = billVotesCast > 0
-    ? Math.round((billVotes.filter((v: any) => v.withParty).length / billVotesCast) * 1000) / 10
-    : null
+  const billVotesCast  = 0
+  const votedWithParty = null
 
   const committees = (commRows as any[]).map((r: any) => ({
     name:    r.committees?.name ?? '',
@@ -382,13 +537,13 @@ export async function GET(
     title:   r.title ?? null,
   }))
 
-  const isSenate = legislator.chamber === 'senate'
+  const isSenateMember = legislator.chamber === 'senate'
   const rawTerms: any[] = legislator.raw_json?.terms ?? []
   const firstTermStart = rawTerms[0]?.start ?? legislator.term_start
   const yearsInOffice = firstTermStart
     ? new Date().getFullYear() - new Date(firstTermStart).getFullYear()
     : 0
-  const termLength = isSenate ? 6 : 2
+  const termLength = isSenateMember ? 6 : 2
   const nextElectionYear = legislator.next_election
     ?? (legislator.term_end ? new Date(legislator.term_end).getFullYear() : null)
     ?? (legislator.term_start
@@ -398,14 +553,7 @@ export async function GET(
   const bills  = extract(sponsoredRes) ?? []
   const { donors, pacDonors, topContributors, fecUrl, fundingBreakdown } = extract(donorsRes) ?? { donors: [], pacDonors: [], topContributors: [], fecUrl: null, fundingBreakdown: null }
 
-  const votes = billVotes.map((v: any) => ({
-    id:             v.voteId,
-    bill:           v.question,
-    billId:         v.billId ?? null,
-    date:           v.date,
-    vote:           v.position as 'Yea' | 'Nay',
-    donorAlignments: [],
-  }))
+  const votes = extract(votesRes) ?? []
 
   return NextResponse.json({
     politician: {
@@ -435,7 +583,6 @@ export async function GET(
       },
       nextElectionYear,
       votes,
-      billVotes,
       bills,
       donors,
       pacDonors,
@@ -447,7 +594,7 @@ export async function GET(
       _sources: {
         profile:     sourceStatus(legislatorRes),
         ideology:    sourceStatus(scoresRes),
-        votes:       sourceStatus(billVotesRes),
+        votes:       sourceStatus(recentVotesApiRes),
         committees:  sourceStatus(committeesRes),
         legislation: sourceStatus(sponsoredRes),
         donors:      sourceStatus(donorsRes),

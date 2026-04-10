@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { BillStatus as Status } from '@/lib/bills'
+import { mapStatus } from '@/lib/bills'
 
 type Category =
   | 'Environment'
@@ -70,7 +71,7 @@ function mapRowToBill(row: any): Bill {
     title:              row.title,
     sponsor:            row.sponsor_name ?? 'Unknown',
     party:              normalizeParty(row.sponsor_party),
-    status:             (row.status as Status) ?? 'Active',
+    status:             mapStatus(row.last_action_text, row.introduced_date),
     category:           mapCategory(row.policy_area),
     lastAction:         row.last_action_date
                           ? new Date(row.last_action_date).toLocaleDateString('en-US', {

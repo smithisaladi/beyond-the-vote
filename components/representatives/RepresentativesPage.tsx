@@ -116,7 +116,7 @@ function RepresentativesContent() {
   return (
     <div className="relative flex flex-col flex-1 overflow-hidden">
       <TopoBackground />
-      <PageHeader title="My Politicians" />
+      <PageHeader title="Politicians" />
       <main className="relative z-10 flex-1 px-6 py-12">
           {/* Search */}
           <div className="max-w-2xl mx-auto mb-12">
@@ -176,7 +176,8 @@ function RepresentativesContent() {
             {searchMode === 'address' && (
               <div className="relative" ref={containerRef}>
                 <form onSubmit={handleSubmit}>
-                  <div className="flex gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] p-2 shadow-sm">
+                  <div className="flex items-center bg-white rounded-lg border border-[rgba(28,28,26,0.15)] px-4 py-3 shadow-sm gap-3">
+                    <Search size={16} className="text-[#1C1C1A]/30 flex-shrink-0" />
                     <input
                       type="text"
                       value={inputDisplayValue}
@@ -184,15 +185,9 @@ function RepresentativesContent() {
                       onFocus={() => { setInputFocused(true); suggestions.length > 0 && setShowSuggestions(true) }}
                       onBlur={() => { setInputFocused(false); setTimeout(() => setShowSuggestions(false), 200) }}
                       placeholder="Enter your address"
-                      className="flex-1 px-4 py-3 bg-transparent outline-none text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+                      className="flex-1 bg-transparent outline-none text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
                       autoComplete="off"
                     />
-                    <button
-                      type="submit"
-                      className="px-6 py-3 bg-[#9B7FA6] text-white rounded-md hover:bg-[#8a6e95] transition-colors whitespace-nowrap text-sm"
-                    >
-                      Find Representatives
-                    </button>
                   </div>
                 </form>
 

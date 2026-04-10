@@ -102,8 +102,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
 
       {/* ── Funding Split ── */}
       {bd && (
-        <div className="grid grid-cols-3 gap-3 mb-7">
-          {/* Top row — primary sources */}
+        <div className="grid grid-cols-4 gap-3 mb-7">
           <div className="bg-[#9B7FA6]/5 rounded-lg p-4 border border-[#9B7FA6]/10">
             <div
               className="text-[#9B7FA6] mb-0.5"
@@ -134,35 +133,14 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             <div className="text-[#1C1C1A]/60 text-xs">Small Donors (&lt;$200)</div>
           </div>
 
-          {/* Bottom row — secondary sources */}
-          <div className="bg-[#E8E3DA]/40 rounded-lg p-3 border border-[rgba(28,28,26,0.08)]">
+          <div className="bg-[#E8E3DA]/40 rounded-lg p-4 border border-[rgba(28,28,26,0.08)]">
             <div
-              className="text-[#1C1C1A]/55 mb-0.5"
-              style={{ fontSize: '1.5rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
-            >
-              {Math.round(bd.partyContributionsPct)}%
-            </div>
-            <div className="text-[#1C1C1A]/45 text-xs">Party</div>
-          </div>
-
-          <div className="bg-[#E8E3DA]/40 rounded-lg p-3 border border-[rgba(28,28,26,0.08)]">
-            <div
-              className="text-[#1C1C1A]/55 mb-0.5"
-              style={{ fontSize: '1.5rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
-            >
-              {Math.round(bd.selfFundedPct)}%
-            </div>
-            <div className="text-[#1C1C1A]/45 text-xs">Self-Funded</div>
-          </div>
-
-          <div className="bg-[#E8E3DA]/40 rounded-lg p-3 border border-[rgba(28,28,26,0.08)]">
-            <div
-              className="text-[#1C1C1A]/55 mb-0.5"
-              style={{ fontSize: '1.5rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
+              className="text-[#1C1C1A]/70 mb-0.5"
+              style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
             >
               {Math.round(bd.otherPct)}%
             </div>
-            <div className="text-[#1C1C1A]/45 text-xs">Other</div>
+            <div className="text-[#1C1C1A]/60 text-xs">Other</div>
           </div>
         </div>
       )}
@@ -181,7 +159,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
       )}
 
       {/* ── Top Contributors (OpenSecrets-style: individuals + PACs combined) ── */}
-      {hasContributors ? (
+      {hasContributors && (
         <div className="mb-6">
           <div className="mb-3">
             <p
@@ -222,50 +200,6 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
                     }}
                   >
                     {c.total}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : cleanPacDonors.length > 0 && (
-        <div className="mb-6">
-          <div className="mb-3">
-            <p
-              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5"
-              style={{ fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.08em' }}
-            >
-              Top PAC &amp; Interest Group Donors
-            </p>
-            <p className="text-[#1C1C1A]/40 text-xs">Political action committees &amp; corporate funds</p>
-          </div>
-
-          <div className="space-y-1.5">
-            {cleanPacDonors.map((d, i) => (
-              <div
-                key={i}
-                className={`rounded-lg px-3 py-2.5 border ${
-                  i === 0
-                    ? 'bg-[#F5F0E8] border-[rgba(28,28,26,0.06)]'
-                    : 'bg-white border-[rgba(28,28,26,0.04)]'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span
-                    className="text-[#1C1C1A] text-sm truncate"
-                    style={{ fontWeight: i === 0 ? 500 : 400 }}
-                  >
-                    {d.name}
-                  </span>
-                  <span
-                    className={`flex-shrink-0 ${i === 0 ? 'text-[#9B7FA6]' : 'text-[#1C1C1A]/70'}`}
-                    style={{
-                      fontSize: i === 0 ? '1rem' : '0.875rem',
-                      fontWeight: 600,
-                      fontFamily: i === 0 ? 'var(--font-serif)' : undefined,
-                    }}
-                  >
-                    {d.amount}
                   </span>
                 </div>
               </div>

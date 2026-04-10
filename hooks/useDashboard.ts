@@ -36,6 +36,7 @@ export type ActivityItem = {
   subject: string
   date: string
   isAlert: boolean
+  href: string | null
 }
 
 function mergeActivity(prev: ActivityItem[], next: ActivityItem[]): ActivityItem[] {
@@ -123,6 +124,7 @@ export function useDashboard(user: User | null): {
             subject: latestVote.bill,
             date: latestVote.date,
             isAlert: false,
+            href: `/representatives/${p.id}`,
           })
         }
       })
@@ -186,6 +188,7 @@ export function useDashboard(user: User | null): {
             subject: b.title,
             date: lastActionDate,
             isAlert: b.status === 'Stalled' || b.status === 'Failed',
+            href: `/bills/${b.id}`,
           })
         }
       })

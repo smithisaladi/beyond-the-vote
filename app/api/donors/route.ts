@@ -10,27 +10,23 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient()
 
-    const { data, error } = await supabase.rpc('contributor_leaderboard', {
-      search_text: q,
-      result_limit: limit,
-      offset_count: offset,
-    })
+    let query = supabase
+      .from('contributor_leaderboard_cache')
+      .select('*', { count: 'exact' })
+      .order('total_contributions', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (q) {
+      query = query.ilike('cmte_name', `%${q}%`)
+    }
+
+    const { data, error, count } = await query
 
     if (error) throw error
 
     const rows = data ?? []
-    const totalCount = rows.length > 0 ? Number(rows[0].total_count) : 0
 
-    const contributors = rows.map((row: {
-      cmte_id: string
-      cmte_name: string
-      direct_total: number
-      ie_for_total: number
-      ie_against_total: number
-      total_contributions: number
-      recipient_count: number
-      top_recipients: { bioguide_id: string; name: string; party: string; state: string; chamber: string; amount: number }[]
-    }) => ({
+    const contributors = rows.map((row) => ({
       cmteId: row.cmte_id,
       cmteName: row.cmte_name,
       directTotal: Number(row.direct_total),
@@ -38,7 +34,9 @@ export async function GET(req: NextRequest) {
       ieAgainstTotal: Number(row.ie_against_total),
       totalContributions: Number(row.total_contributions),
       recipientCount: Number(row.recipient_count),
-      topRecipients: (row.top_recipients ?? []).map((r) => ({
+      topRecipients: (row.top_recipients ?? []).map((r: {
+        bioguide_id: string; name: string; party: string; state: string; chamber: string; amount: number
+      }) => ({
         bioguideId: r.bioguide_id,
         name: r.name,
         party: r.party,
@@ -50,7 +48,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       contributors,
-      pagination: { total: totalCount, limit, offset },
+      pagination: { total: count ?? 0, limit, offset },
     })
   } catch (err) {
     console.error('Donors API error:', err)
