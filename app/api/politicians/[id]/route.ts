@@ -194,13 +194,34 @@ async function fetchRecentVotesFromDB(
     .eq('bioguide_id', bioguideId)
     .order('bill_vote_summaries(date)', { ascending: false })
     .limit(20)
+  // Collect bill_ids so we can look up real bill titles
+  const billIds = [...new Set(
+    (data ?? [])
+      .map((row: any) => row.bill_vote_summaries?.bill_id)
+      .filter(Boolean) as string[]
+  )]
+
+  // Fetch actual bill titles from bills table
+  const billTitleMap: Record<string, string> = {}
+  if (billIds.length > 0) {
+    const { data: billRows } = await supabase
+      .from('bills')
+      .select('bill_id, title')
+      .in('bill_id', billIds)
+    for (const row of billRows ?? []) {
+      if (row.title) billTitleMap[row.bill_id] = row.title
+    }
+  }
+
   return (data ?? [])
     .map((row: any) => {
       const summary = row.bill_vote_summaries
       if (!summary) return null
+      // Prefer the actual bill title from bills table over the vote question
+      const billTitle = billTitleMap[summary.bill_id]
       return {
         id:              summary.id,
-        bill:            summary.title || summary.question,
+        bill:            billTitle || summary.title || summary.question,
         billId:          summary.bill_id ?? null,
         date:            summary.date
           ? new Date(summary.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })

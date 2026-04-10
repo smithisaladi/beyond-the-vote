@@ -38,7 +38,7 @@ API_RATE_LIMIT = 950      # req/hour safe threshold (limit is 1000)
 # ── API base URLs ──────────────────────────────────────────────────────────────
 
 CONGRESS_API_BASE = "https://api.congress.gov/v3"
-SENATE_VOTE_INDEX = "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_{year}_{session}.xml"
+SENATE_VOTE_INDEX = "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_{congress}_{session}.xml"
 SENATE_VOTE_URL   = "https://www.senate.gov/legislative/LIS/roll_call_votes/vote{congress}{session}/vote_{congress}_{session}_{number:05d}.xml"
 
 LEGISLATORS_CURRENT_URL  = "https://unitedstates.github.io/congress-legislators/legislators-current.yaml"

@@ -37,7 +37,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger(__name__)
 
 SCRIPT = "sync_votes"
-SENATE_INDEX_URL = "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_{year}_{session}.xml"
+SENATE_INDEX_URL = "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_menu_{congress}_{session}.xml"
 SENATE_VOTE_URL = "https://www.senate.gov/legislative/LIS/roll_call_votes/vote{congress}{session}/vote_{congress}_{session}_{number:05d}.xml"
 
 
@@ -169,8 +169,18 @@ def load_existing_vote_ids(congress: int, chamber: str) -> set[str]:
 # ── House votes ──────────────────────────────────────────────────────────────
 
 
+def _load_known_bioguide_ids() -> set[str]:
+    """Load all bioguide_ids from the legislators table."""
+    db = get_supabase()
+    rows = db.table("legislators").select("bioguide_id").execute().data or []
+    ids = {r["bioguide_id"] for r in rows}
+    log.info("Loaded %d known bioguide_ids from legislators", len(ids))
+    return ids
+
+
 def sync_house_votes(congress: int, api_key: str) -> tuple[list[str], int]:
     """Sync new House votes. Returns (new_vote_ids, position_count)."""
+    known_ids = _load_known_bioguide_ids()
     new_vote_ids: list[str] = []
     position_count = 0
 
@@ -255,7 +265,14 @@ def sync_house_votes(congress: int, api_key: str) -> tuple[list[str], int]:
                 for chunk in batch(summaries, UPSERT_BATCH):
                     upsert("bill_vote_summaries", chunk)
             if all_positions:
-                for chunk in batch(all_positions, UPSERT_BATCH):
+                # Filter out positions for legislators not in the DB to avoid FK violations
+                filtered = [p for p in all_positions if p["bioguide_id"] in known_ids]
+                skipped = len(all_positions) - len(filtered)
+                if skipped:
+                    unknown = {p["bioguide_id"] for p in all_positions} - known_ids
+                    log.warning("Skipped %d positions for %d unknown bioguide_ids: %s",
+                                skipped, len(unknown), sorted(unknown))
+                for chunk in batch(filtered, UPSERT_BATCH):
                     upsert("bill_vote_positions", chunk)
 
             offset += 250
@@ -285,7 +302,7 @@ def sync_senate_votes(congress: int, lis_map: dict, name_state_map: dict) -> tup
             continue
 
         log.info("Senate congress=%d session=%d (year=%d)", congress, session, year)
-        index_url = SENATE_INDEX_URL.format(year=year, session=session)
+        index_url = SENATE_INDEX_URL.format(congress=congress, session=session)
 
         try:
             resp = req.get(index_url, timeout=30)

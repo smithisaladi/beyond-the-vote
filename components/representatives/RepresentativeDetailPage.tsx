@@ -361,8 +361,8 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                               )}
                               <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
                             </div>
-                            <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${
-                              v.vote === 'Yea' ? 'bg-[#6BAE7A]/10 text-[#6BAE7A]' : 'bg-[#B85C38]/10 text-[#B85C38]'
+                            <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
+                              v.vote === 'Yea' ? 'bg-[#6A9B7B]/[0.12] text-[#6A9B7B]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
                             }`}>
                               {v.vote}
                             </span>

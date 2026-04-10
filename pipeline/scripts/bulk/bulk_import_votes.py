@@ -61,6 +61,15 @@ SENATE_INDEX_URL = "https://www.senate.gov/legislative/LIS/roll_call_lists/vote_
 SENATE_VOTE_URL  = "https://www.senate.gov/legislative/LIS/roll_call_votes/vote{congress}{session}/vote_{congress}_{session}_{number:05d}.xml"
 
 
+def load_known_bioguide_ids() -> set[str]:
+    """Load all bioguide_ids from the legislators table."""
+    db = get_supabase()
+    rows = db.table("legislators").select("bioguide_id").execute().data or []
+    ids = {r["bioguide_id"] for r in rows}
+    log.info("Loaded %d known bioguide_ids from legislators", len(ids))
+    return ids
+
+
 def get_api_key() -> str:
     return os.environ.get("CONGRESS_API_KEY", "")
 
@@ -155,6 +164,7 @@ def update_party_breakdowns(vote_ids: list[str]) -> None:
 
 def import_house_votes(congress: int, api_key: str) -> tuple[list[str], int]:
     """Returns (vote_ids_loaded, position_count)."""
+    known_ids = load_known_bioguide_ids()
     vote_ids: list[str] = []
     position_count = 0
 
@@ -248,7 +258,14 @@ def import_house_votes(congress: int, api_key: str) -> tuple[list[str], int]:
                 for chunk in batch(summaries, UPSERT_BATCH):
                     upsert("bill_vote_summaries", chunk)
             if all_positions:
-                for chunk in batch(all_positions, UPSERT_BATCH):
+                # Filter out positions for legislators not in the DB to avoid FK violations
+                filtered = [p for p in all_positions if p["bioguide_id"] in known_ids]
+                skipped = len(all_positions) - len(filtered)
+                if skipped:
+                    unknown = {p["bioguide_id"] for p in all_positions} - known_ids
+                    log.warning("Skipped %d positions for %d unknown bioguide_ids: %s",
+                                skipped, len(unknown), sorted(unknown))
+                for chunk in batch(filtered, UPSERT_BATCH):
                     upsert("bill_vote_positions", chunk)
 
             offset += 250
