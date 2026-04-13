@@ -1,3 +1,11 @@
+/**
+ * Skeleton for the `/representatives` index.
+ *
+ * Rendered during the initial segment load. Matches the final layout's
+ * search bar + 3-column card grid so the content fades in rather than
+ * shifts.
+ */
+
 export default function RepresentativesLoading() {
   return (
     <div className="min-h-screen bg-[#F5F0E8]">
@@ -6,18 +14,18 @@ export default function RepresentativesLoading() {
 
         <main className="flex-1 px-6 py-14">
           <div className="max-w-5xl mx-auto animate-pulse">
-            {/* Title */}
+            {/* Page title */}
             <div className="text-center mb-10">
               <div className="h-10 w-72 bg-[#E8E3DA] rounded mx-auto mb-3" />
               <div className="h-4 w-96 bg-[#E8E3DA] rounded mx-auto" />
             </div>
 
-            {/* Search bar */}
+            {/* Address search bar */}
             <div className="max-w-xl mx-auto mb-12">
-              <div className="h-12 bg-white rounded-xl border border-[#D6CFC4]" />
+              <div className="h-12 bg-white rounded-xl border border-[rgba(28,28,26,0.08)]" />
             </div>
 
-            {/* Rep card skeletons */}
+            {/* Three representative cards (typical: 2 senators + 1 house rep). */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div

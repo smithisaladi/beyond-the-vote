@@ -1,4 +1,21 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
+import { siteConfig } from '@/lib/site-config'
+
+/**
+ * Global 404 page — rendered whenever `notFound()` is called or when a
+ * user navigates to a route that doesn't exist.
+ *
+ * This is a *server component*, which lets Next.js return the response
+ * with a proper `404` status code (a client-rendered 404 would respond
+ * with `200` and confuse crawlers).
+ */
+
+export const metadata: Metadata = {
+  title: 'Page not found',
+  // Don't let 404s show up in search results.
+  robots: { index: false, follow: false },
+}
 
 export default function NotFound() {
   return (
@@ -17,7 +34,7 @@ export default function NotFound() {
           Page not found
         </h1>
         <p className="text-sm text-[#1C1C1A]/55 mb-8 leading-relaxed">
-          The page you're looking for doesn't exist or may have been moved.
+          The page you&apos;re looking for doesn&apos;t exist or may have been moved.
         </p>
         <Link
           href="/"
@@ -31,7 +48,7 @@ export default function NotFound() {
         className="absolute bottom-8 text-xs text-[#1C1C1A]/30"
         style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
       >
-        Beyond the Vote
+        {siteConfig.name}
       </p>
     </div>
   )
