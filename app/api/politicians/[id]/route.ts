@@ -274,6 +274,10 @@ interface FundingBreakdown {
   total: number
   superPacFor: number
   superPacAgainst: number
+  inStateTotal: number
+  outOfStateTotal: number
+  inStatePct: number
+  outOfStatePct: number
   cycle: number
   minCycle?: number
 }
@@ -313,7 +317,7 @@ async function fetchDonors(opts: {
 
     supabase
       .from('legislator_funding_summary')
-      .select('total_receipts, pac_direct_total, pac_direct_pct, large_donor_total, large_donor_pct, small_donor_total, small_donor_pct, pol_pty_total, pol_pty_pct, self_funded_total, self_funded_pct, other_total, other_pct, superpac_ie_for, superpac_ie_against, cycle')
+      .select('total_receipts, pac_direct_total, pac_direct_pct, large_donor_total, large_donor_pct, small_donor_total, small_donor_pct, pol_pty_total, pol_pty_pct, self_funded_total, self_funded_pct, other_total, other_pct, superpac_ie_for, superpac_ie_against, in_state_total, out_of_state_total, dc_donor_total, cycle')
       .eq('bioguide_id', bioguideId)
       .order('cycle', { ascending: false })
       .limit(2),
@@ -397,6 +401,14 @@ async function fetchDonors(opts: {
     const selfFunded = sum('self_funded_total')
     const other = sum('other_total')
 
+    // Geographic breakdown of individual donations only (PAC money has no geo).
+    // DC is folded into out-of-state per product decision.
+    const inStateTotal = sum('in_state_total')
+    const outOfStateTotal = sum('out_of_state_total') + sum('dc_donor_total')
+    const geoTotal = inStateTotal + outOfStateTotal
+    const inStatePct = geoTotal > 0 ? (inStateTotal / geoTotal) * 100 : 0
+    const outOfStatePct = geoTotal > 0 ? (outOfStateTotal / geoTotal) * 100 : 0
+
     fundingBreakdown = {
       pac,
       pacPct: pct(pac),
@@ -413,6 +425,10 @@ async function fetchDonors(opts: {
       total,
       superPacFor: sum('superpac_ie_for'),
       superPacAgainst: sum('superpac_ie_against'),
+      inStateTotal,
+      outOfStateTotal,
+      inStatePct,
+      outOfStatePct,
       cycle: maxCycle,
       minCycle,
     }

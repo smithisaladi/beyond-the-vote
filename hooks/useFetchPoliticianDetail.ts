@@ -64,7 +64,12 @@ interface FundingBreakdown {
   total: number
   superPacFor: number
   superPacAgainst: number
+  inStateTotal: number
+  outOfStateTotal: number
+  inStatePct: number
+  outOfStatePct: number
   cycle: number
+  minCycle?: number
 }
 
 export interface Politician {

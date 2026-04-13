@@ -24,6 +24,10 @@ interface FundingBreakdown {
   total: number
   superPacFor: number
   superPacAgainst: number
+  inStateTotal: number
+  outOfStateTotal: number
+  inStatePct: number
+  outOfStatePct: number
   cycle: number
   minCycle?: number
 }
@@ -54,19 +58,6 @@ function formatTotal(n: number): string {
   return `$${n.toLocaleString()}`
 }
 
-function fundingVerdict(bd: FundingBreakdown): { label: string; description: string } {
-  if (bd.total <= 0) return { label: '', description: '' }
-  const pacPct  = Math.round(bd.pacPct)
-  const smallPct = Math.round(bd.individualSmallPct)
-  const selfPct = Math.round(bd.selfFundedPct)
-  const individualPct = Math.round(bd.individualLargePct + bd.individualSmallPct)
-
-  if (pacPct >= 60)   return { label: 'Corporate-backed', description: `${pacPct}% of funding comes from PACs and corporate donors.` }
-  if (smallPct >= 40) return { label: 'Grassroots-funded', description: `Primarily small-donor funded — ${smallPct}% from donations under $200.` }
-  if (selfPct >= 25)  return { label: 'Self-funded', description: `Significantly self-funded — ${selfPct}% from the candidate's own money.` }
-  return { label: 'Mixed funding', description: `${pacPct}% PAC money, ${individualPct}% from individual donors.` }
-}
-
 const UNINFORMATIVE = new Set(['Other', 'N/A', 'None', 'Various', 'Unknown', 'Na'])
 
 function cleanList(list: Donor[]): Donor[] {
@@ -95,7 +86,8 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
     )
   }
 
-  const verdict = bd ? fundingVerdict(bd) : null
+  const geoTotal = bd ? bd.inStateTotal + bd.outOfStateTotal : 0
+  const hasGeo = bd !== null && geoTotal > 0
 
   return (
     <div className="p-5">
@@ -145,16 +137,52 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
         </div>
       )}
 
-      {/* ── Summary ── */}
-      {bd && verdict && (
+      {/* ── Geographic Breakdown (individual donations only) ── */}
+      {hasGeo && bd && (
         <div className="mb-6 pb-6 border-b border-[rgba(28,28,26,0.06)]">
-          <p className="text-[#1C1C1A]/80 leading-relaxed text-sm">
-            <span className="font-medium text-[#1C1C1A]">{verdict.label}.</span>{' '}
-            {verdict.description}
-          </p>
-          <p className="text-[#1C1C1A]/50 text-xs mt-1">
-            {formatTotal(bd.total)} raised · {(bd.minCycle ?? bd.cycle) - 1}–{bd.cycle} cycle
-          </p>
+          <div className="mb-3">
+            <p
+              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5"
+              style={{ fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.08em' }}
+            >
+              Where individual dollars come from
+            </p>
+            <p className="text-[#1C1C1A]/40 text-xs">
+              Based on itemized individual contributions · PAC money excluded
+            </p>
+          </div>
+
+          <div className="flex h-2 rounded-full overflow-hidden bg-[#E8E3DA] mb-2.5">
+            {bd.inStatePct > 0 && (
+              <div
+                className="bg-[#9B7FA6]/60"
+                style={{ width: `${bd.inStatePct}%`, minWidth: bd.inStatePct > 0 ? 2 : 0 }}
+              />
+            )}
+            {bd.outOfStatePct > 0 && (
+              <div
+                className="bg-[#E8E3DA]"
+                style={{ width: `${bd.outOfStatePct}%`, minWidth: bd.outOfStatePct > 0 ? 2 : 0 }}
+              />
+            )}
+          </div>
+
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#9B7FA6]/60" />
+              <span className="text-[#9B7FA6] font-medium">In-state</span>
+              <span className="text-[#1C1C1A]/60">
+                {Math.round(bd.inStatePct)}% · {formatTotal(bd.inStateTotal)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#E8E3DA] border border-[rgba(28,28,26,0.08)]" />
+              <span className="text-[#1C1C1A]/70 font-medium">Out-of-state</span>
+              <span className="text-[#1C1C1A]/60">
+                {Math.round(bd.outOfStatePct)}% · {formatTotal(bd.outOfStateTotal)}
+              </span>
+            </div>
+          </div>
         </div>
       )}
 
@@ -170,12 +198,11 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             </p>
             <p className="text-[#1C1C1A]/40 text-xs">
               Employee donations &amp; PAC contributions by organization
-              {bd ? ` · ${(bd.minCycle ?? bd.cycle) - 1}–${bd.cycle}` : ''}
             </p>
           </div>
 
           <div className="space-y-1.5">
-            {topContributors.map((c, i) => (
+            {topContributors.slice(0, 5).map((c, i) => (
               <div
                 key={i}
                 className={`rounded-lg px-3 py-2.5 border ${
