@@ -2,8 +2,9 @@
 sync_fec.py — Sync FEC campaign finance data via the OpenFEC REST API.
 
 Queries api.open.fec.gov for PAC contributions, independent expenditures,
-and candidate financial totals, then derives legislator_funding_summary
-and legislator_top_pacs.
+individual contributions (Schedule A), and candidate financial totals,
+then derives legislator_funding_summary, legislator_top_pacs, and
+legislator_top_contributors.
 
 No local file I/O — designed to run as a cron job on ephemeral CI runners.
 
@@ -15,6 +16,7 @@ Usage:
 import argparse
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -30,6 +32,16 @@ log = logging.getLogger(__name__)
 SCRIPT = "sync_fec"
 FEC_API_BASE = "https://api.open.fec.gov/v1"
 PAGE_SIZE = 100
+TOP_CONTRIBUTORS_LIMIT = 20
+
+# Non-employer values to exclude when grouping by employer (matches compute_funding_summaries)
+NON_EMPLOYERS = {
+    'SELF-EMPLOYED', 'SELF EMPLOYED', 'SELF', 'NONE', 'N/A', 'NA',
+    'NOT EMPLOYED', 'RETIRED', 'INFORMATION REQUESTED',
+    'INFORMATION REQUESTED PER BEST EFFORTS', 'REFUSED',
+    'NOT APPLICABLE', 'HOMEMAKER', 'STUDENT', 'UNEMPLOYED',
+    'NOT AVAILABLE', 'REQUESTED', 'BEST EFFORTS', 'DISABLED',
+}
 
 
 def get_fec_api_key() -> str:
@@ -107,6 +119,235 @@ def load_legislators() -> dict[str, dict]:
         offset += 1000
     log.info("Loaded %d legislators with FEC IDs", len(result))
     return result
+
+
+# ── Resolve candidate → committee IDs ──────────────────────────────────────
+
+
+def resolve_principal_committees(
+    legislators: dict[str, dict], api_key: str
+) -> dict[str, list[str]]:
+    """Return {bioguide_id: [committee_ids]} for principal campaign committees."""
+    all_fec_ids: dict[str, str] = {}  # fec_id → bioguide_id
+    for bioguide_id, leg in legislators.items():
+        for fec_id in leg.get("fec_ids", []):
+            all_fec_ids[fec_id] = bioguide_id
+
+    result: dict[str, list[str]] = {}
+    fec_id_list = list(all_fec_ids.keys())
+
+    for chunk in batch(fec_id_list, 20):
+        results = fec_paginate(
+            "/candidates/",
+            {"candidate_id": chunk, "sort": "-election_year"},
+            api_key,
+        )
+        for r in results:
+            cand_id = r.get("candidate_id", "")
+            bioguide_id = all_fec_ids.get(cand_id)
+            if not bioguide_id:
+                continue
+            pcc = r.get("principal_committees") or []
+            cmte_ids = [c["committee_id"] for c in pcc if c.get("committee_id")]
+            if cmte_ids:
+                existing = result.get(bioguide_id, [])
+                result[bioguide_id] = list(set(existing + cmte_ids))
+
+    log.info("Resolved principal committees for %d legislators", len(result))
+    return result
+
+
+# ── Sync individual contributions (Schedule A) ────────────────────────────
+
+
+def _normalize_employer(employer: str) -> str:
+    """Normalize employer name: upper-case, collapse whitespace."""
+    return re.sub(r"\s+", " ", employer.strip().upper())
+
+
+def _to_title_case(s: str) -> str:
+    """Convert ALL-CAPS org name to Title Case, preserving short words."""
+    if not s:
+        return s
+    words = s.lower().split()
+    small = {"of", "the", "and", "for", "in", "on", "at", "to", "a", "an"}
+    return " ".join(w if (i > 0 and w in small) else w.capitalize() for i, w in enumerate(words))
+
+
+def sync_individual_contributions(
+    legislators: dict[str, dict],
+    cmte_map: dict[str, list[str]],
+    cycle: int,
+    api_key: str,
+) -> tuple[dict[str, dict], dict[str, dict[str, float]]]:
+    """Fetch Schedule A (itemized individual contributions) and aggregate in-memory.
+
+    Returns:
+        geo_by_leg:   {bioguide_id: {in_state_total, out_of_state_total, dc_donor_total}}
+        emp_by_leg:   {bioguide_id: {employer_upper: total_amount}}
+    """
+    geo_by_leg: dict[str, dict] = {}
+    emp_by_leg: dict[str, dict[str, float]] = {}
+    total_fetched = 0
+
+    for bioguide_id, leg in legislators.items():
+        cmte_ids = cmte_map.get(bioguide_id, [])
+        if not cmte_ids:
+            continue
+
+        state = (leg.get("state") or "").upper()
+        in_state = 0.0
+        out_of_state = 0.0
+        dc_total = 0.0
+        employer_totals: dict[str, float] = {}
+
+        for cmte_id in cmte_ids:
+            results = fec_paginate(
+                "/schedules/schedule_a/",
+                {
+                    "committee_id": cmte_id,
+                    "two_year_transaction_period": cycle,
+                    "min_amount": 200,
+                    "sort": "-contribution_receipt_date",
+                    "is_individual": "true",
+                },
+                api_key,
+            )
+
+            for r in results:
+                amt = r.get("contribution_receipt_amount", 0) or 0
+                contributor_state = (r.get("contributor_state") or "").upper()
+                employer = (r.get("contributor_employer") or "").strip()
+
+                # Geographic aggregation
+                if contributor_state == "DC":
+                    dc_total += amt
+                    out_of_state += amt
+                elif contributor_state and contributor_state == state:
+                    in_state += amt
+                elif contributor_state:
+                    out_of_state += amt
+
+                # Employer aggregation
+                if employer:
+                    norm = _normalize_employer(employer)
+                    if norm and norm not in NON_EMPLOYERS:
+                        employer_totals[norm] = employer_totals.get(norm, 0) + amt
+
+            total_fetched += len(results)
+
+        geo_by_leg[bioguide_id] = {
+            "in_state_total": round(in_state, 2),
+            "out_of_state_total": round(out_of_state, 2),
+            "dc_donor_total": round(dc_total, 2),
+        }
+        emp_by_leg[bioguide_id] = employer_totals
+
+    log.info("Individual contributions cycle=%d: %d records aggregated for %d legislators",
+             cycle, total_fetched, len(geo_by_leg))
+    return geo_by_leg, emp_by_leg
+
+
+# ── Build top contributors rows from in-memory employer + PAC data ─────────
+
+
+def build_top_contributors(
+    emp_by_leg: dict[str, dict[str, float]],
+    legislators: dict[str, dict],
+    cycle: int,
+) -> list[dict]:
+    """Build legislator_top_contributors rows from Schedule A employer aggregations
+    combined with PAC contributions from Supabase (grouped by connected org)."""
+    db = get_supabase()
+    all_rows: list[dict] = []
+
+    for bioguide_id, employer_totals in emp_by_leg.items():
+        leg = legislators.get(bioguide_id, {})
+        fec_ids = leg.get("fec_ids", [])
+
+        # Load PAC contributions grouped by connected org from Supabase
+        pac_by_org: dict[str, dict] = {}  # org_upper → {total, cmte_id}
+        for fec_id in fec_ids:
+            offset = 0
+            while True:
+                res = (
+                    db.table("pac_to_candidate")
+                    .select("cmte_id,transaction_amt")
+                    .eq("cand_id", fec_id)
+                    .eq("cycle", cycle)
+                    .range(offset, offset + 999)
+                    .execute()
+                )
+                if not res.data:
+                    break
+                for row in res.data:
+                    cmte_id = row.get("cmte_id", "")
+                    amt = float(row.get("transaction_amt", 0) or 0)
+                    # We don't have connected_org in pac_to_candidate — use cmte_id as key
+                    # The top_pacs table may have enriched names, but for now group by cmte_id
+                    if cmte_id:
+                        existing = pac_by_org.get(cmte_id, {"total": 0, "cmte_id": cmte_id})
+                        existing["total"] += amt
+                        pac_by_org[cmte_id] = existing
+                if len(res.data) < 1000:
+                    break
+                offset += 1000
+
+        # Try to get org names for PAC cmte_ids from legislator_top_pacs
+        pac_org_by_cmte: dict[str, str] = {}
+        if pac_by_org:
+            for fec_id in fec_ids:
+                res = (
+                    db.table("legislator_top_pacs")
+                    .select("cmte_id,cmte_name,connected_org")
+                    .eq("bioguide_id", bioguide_id)
+                    .eq("cycle", cycle)
+                    .execute()
+                )
+                for row in res.data:
+                    org = (row.get("connected_org") or row.get("cmte_name") or "").strip()
+                    if org:
+                        pac_org_by_cmte[row["cmte_id"]] = _normalize_employer(org)
+                break  # only need one query per legislator
+
+        # Merge PAC data by org name
+        pac_by_org_name: dict[str, dict] = {}  # org_upper → {pac_total, cmte_id}
+        for cmte_id, info in pac_by_org.items():
+            org = pac_org_by_cmte.get(cmte_id, cmte_id)
+            if org in pac_by_org_name:
+                pac_by_org_name[org]["pac_total"] += info["total"]
+            else:
+                pac_by_org_name[org] = {"pac_total": info["total"], "cmte_id": cmte_id}
+
+        # Combine individual (employer) + PAC (connected org)
+        all_orgs = set(employer_totals.keys()) | set(pac_by_org_name.keys())
+        combined: list[dict] = []
+        for org in all_orgs:
+            if not org or org in NON_EMPLOYERS:
+                continue
+            indiv = employer_totals.get(org, 0)
+            pac_info = pac_by_org_name.get(org, {"pac_total": 0, "cmte_id": None})
+            grand = indiv + pac_info["pac_total"]
+            if grand <= 0:
+                continue
+            combined.append({
+                "bioguide_id": bioguide_id,
+                "cycle": cycle,
+                "org_name": _to_title_case(org),
+                "individual_total": round(indiv, 2),
+                "pac_total": round(pac_info["pac_total"], 2),
+                "grand_total": round(grand, 2),
+                "cmte_id": pac_info.get("cmte_id"),
+                "rank": 0,
+            })
+
+        combined.sort(key=lambda x: x["grand_total"], reverse=True)
+        for i, row in enumerate(combined[:TOP_CONTRIBUTORS_LIMIT]):
+            row["rank"] = i + 1
+            all_rows.append(row)
+
+    log.info("Computed %d top contributor rows for cycle %d", len(all_rows), cycle)
+    return all_rows
 
 
 # ── Sync PAC contributions (Schedule B, 24K/24Z) ────────────────────────────
@@ -426,6 +667,22 @@ def enrich_with_ie_totals(rows: list[dict], legislators: dict[str, dict], cycle:
         row["superpac_ie_against"] = round(ie_against, 2)
 
 
+def enrich_with_geo(rows: list[dict], geo_by_leg: dict[str, dict]) -> None:
+    """Fill in geographic fields on funding summary rows from Schedule A aggregations."""
+    for row in rows:
+        geo = geo_by_leg.get(row["bioguide_id"])
+        if not geo:
+            continue
+        row["in_state_total"] = geo["in_state_total"]
+        row["out_of_state_total"] = geo["out_of_state_total"]
+        row["dc_donor_total"] = geo["dc_donor_total"]
+        total_individual = geo["in_state_total"] + geo["out_of_state_total"]
+        row["out_of_state_pct"] = (
+            round(geo["out_of_state_total"] / total_individual * 100, 1)
+            if total_individual > 0 else 0
+        )
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 
@@ -442,6 +699,9 @@ def run(cycles: list[int] | None = None) -> None:
     try:
         legislators = load_legislators()
 
+        # Resolve candidate → principal campaign committee IDs (needed for Schedule A)
+        cmte_map = resolve_principal_committees(legislators, api_key)
+
         for cycle in cycles:
             log.info("=== Syncing FEC data for cycle %d ===", cycle)
 
@@ -453,24 +713,40 @@ def run(cycles: list[int] | None = None) -> None:
             ie_n = sync_independent_expenditures(legislators, cycle, api_key)
             results[f"independent_expenditures_{cycle}"] = ie_n
 
-            # Step 3: Fetch candidate financial totals
+            # Step 3: Sync individual contributions (Schedule A) — aggregated in-memory
+            geo_by_leg, emp_by_leg = sync_individual_contributions(
+                legislators, cmte_map, cycle, api_key,
+            )
+            results[f"individual_contributions_{cycle}"] = sum(
+                len(v) for v in emp_by_leg.values()
+            )
+
+            # Step 4: Fetch candidate financial totals
             cand_totals = fetch_candidate_totals(legislators, cycle, api_key)
 
-            # Step 4: Build and enrich funding summary
+            # Step 5: Build and enrich funding summary
             summary_rows = build_funding_summary_rows(legislators, cand_totals, cycle)
             enrich_with_ie_totals(summary_rows, legislators, cycle)
+            enrich_with_geo(summary_rows, geo_by_leg)
 
             log.info("Upserting %d funding summary rows for cycle %d…", len(summary_rows), cycle)
             for chunk in batch(summary_rows, UPSERT_BATCH):
                 upsert("legislator_funding_summary", chunk)
             results[f"funding_summary_{cycle}"] = len(summary_rows)
 
-            # Step 5: Compute and upsert top PACs
+            # Step 6: Compute and upsert top PACs
             top_pacs = compute_top_pacs_from_supabase(legislators, cycle)
             log.info("Upserting %d top PAC rows for cycle %d…", len(top_pacs), cycle)
             for chunk in batch(top_pacs, UPSERT_BATCH):
                 upsert("legislator_top_pacs", chunk)
             results[f"top_pacs_{cycle}"] = len(top_pacs)
+
+            # Step 7: Compute and upsert top contributors
+            top_contribs = build_top_contributors(emp_by_leg, legislators, cycle)
+            log.info("Upserting %d top contributor rows for cycle %d…", len(top_contribs), cycle)
+            for chunk in batch(top_contribs, UPSERT_BATCH):
+                upsert("legislator_top_contributors", chunk)
+            results[f"top_contributors_{cycle}"] = len(top_contribs)
 
         log.info("All FEC sync complete: %s", results)
         log_run_end(run_id, "success", results)
