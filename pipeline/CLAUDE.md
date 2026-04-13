@@ -17,12 +17,12 @@ cross-referenced with voting records and ideology scores.
 - GitHub Actions for scheduling
 
 ## Architecture
-- Raw FEC and congressional data is processed entirely on the local machine
-- Supabase receives only derived, frontend-ready tables (~55MB of 500MB budget)
-- `individual_contributions`, `candidates`, `fec_committees` NEVER load to Supabase — too large or only needed for local aggregation
-- All donor aggregation happens locally via DuckDB in `compute_funding_summaries.py`
-- DuckDB queries pipe-delimited CSVs in `data/processed/fec/` directly — no persistent database file
-- `legislator_funding_summary` and `legislator_top_pacs` are the only FEC-derived tables in Supabase
+- Supabase is the single source of truth for all frontend-queryable data (~55MB of 500MB budget)
+- Raw bulk FEC files (`individual_contributions`, FEC `candidates`, FEC `committees`) are too large for Supabase — never loaded there
+- Ongoing FEC refresh uses the OpenFEC API (`scripts/sync/sync_fec.py`) — no local files, runs on ephemeral CI runners
+- `sync_fec.py` refreshes `pac_to_candidate`, `independent_expenditures`, `legislator_funding_summary`, `legislator_top_pacs`, `legislator_top_contributors` in one job
+- `scripts/compute_leaderboard_cache.py` aggregates `pac_to_candidate` + `independent_expenditures` from Supabase (no local I/O) into `contributor_leaderboard_cache`
+- Legacy: `compute_funding_summaries.py` + `bulk_import_fec.py` were the one-time DuckDB/local-CSV bootstrap path — kept for historical backfills, not run on schedule
 
 ## Supabase Storage Budget (~55MB of 500MB used)
 | Table                        | Estimated Size |
@@ -37,6 +37,7 @@ cross-referenced with voting records and ideology scores.
 | legislator_funding_summary   | <1MB          |
 | legislator_top_pacs          | ~2MB          |
 | legislator_top_contributors  | ~2MB          |
+| contributor_leaderboard_cache| ~1-2MB        |
 | pipeline_runs + checkpoints  | <1MB          |
 
 ## Scoping Rules (enforced in load scripts)
@@ -151,7 +152,9 @@ pipeline/
 - Bulk checkpoints live in `bulk_import_checkpoints` table
 - 2026 is the active FEC cycle — treated as partial load, not historical
 - `legislator_funding_summary` and `legislator_top_pacs` are always derived, never loaded from source
-- FEC source tables (`individual_contributions`, `candidates`, `fec_committees`) live only as local CSVs — dropped from Supabase
+- FEC source tables (`individual_contributions`, FEC `candidates`, FEC `committees` master) live only as local CSVs — never in Supabase
+- The `committees` table in Supabase is **congressional** committees (thomas_id), not FEC committees — don't confuse the two
+- Ongoing FEC refresh uses the OpenFEC API (`sync_fec.py`), not bulk file downloads — nothing is cached locally on CI runners
 
 ## Database Tables (Supabase)
 - `legislators`                   — bioguide anchor, fec_ids[], social links
@@ -164,6 +167,13 @@ pipeline/
 - `legislator_funding_summary`    — pre-computed funding metrics per legislator per cycle
 - `legislator_top_pacs`           — top 20 PACs per legislator per cycle (derived)
 - `legislator_top_contributors`   — top 20 contributors per legislator per cycle (individuals + PACs by org, derived)
+- `contributor_leaderboard_cache` — cross-legislator PAC leaderboard (derived from pac_to_candidate + IE)
+- `committees`                    — congressional committees (thomas_id, chamber, parent) — distinct from FEC committees
+- `committee_memberships`         — legislator ↔ congressional committee assignments
+- `fec_cmte_names`                — FEC cmte_id → cmte_name / connected_org lookup (used by RPCs and leaderboard cache)
+- `followed_politicians`          — per-user follow list (frontend)
+- `tracked_bills`                 — per-user bill tracking (frontend)
+- `topic_preferences`             — per-user topic follow list (frontend)
 - `pipeline_runs`                 — watermarks and job status
 - `bulk_import_checkpoints`       — chunk-level progress for bulk jobs
 
@@ -277,8 +287,17 @@ CREATE TABLE legislator_top_contributors (
 - Top contributors PAC-to-org mapping: uses `connected_org_nm` from committee master file
 - Large donor threshold: itemized individual contributions >= $200 (FEC disclosure line)
 
-## Run Order (Critical)
-Always run in this order — FK dependencies will break if violated:
+## Run Order
+
+### Ongoing (scheduled via GitHub Actions)
+- **Daily** (`.github/workflows/sync-daily.yml`): `sync_legislators` + `sync_member_scores`
+- **Weekly — Sunday 07:00 UTC** (`.github/workflows/sync-weekly.yml`):
+  1. `scripts.sync.sync_fec` — refreshes `pac_to_candidate`, `independent_expenditures`, `legislator_funding_summary`, `legislator_top_pacs`, `legislator_top_contributors` via OpenFEC API
+  2. `scripts.compute_leaderboard_cache` — rebuilds `contributor_leaderboard_cache` from Supabase data
+- **Bills / votes**: `sync-bills.yml`, `sync-bill-votes.yml`
+
+### One-time bootstrap (legacy, not scheduled)
+Only needed for fresh DB or historical backfill. FK dependencies must be respected:
 1.  legislators                        → Supabase
 2.  member_scores                      → Supabase
 3.  bills (all)                        → Supabase
@@ -286,17 +305,8 @@ Always run in this order — FK dependencies will break if violated:
 5.  bill_vote_positions                → Supabase
 6.  bill_vote_summaries (update pass)  → Supabase (compute party breakdown)
 7.  bills --voted-only                 → prune unvoted bills from Supabase
-8.  FEC bulk_import_fec.py             → local CSVs + Supabase (pac/ie only)
-    - candidates                       → local CSV only
-    - committees                       → local CSV only
-    - candidate_summaries (webl)       → local CSV only
-    - pac_to_candidate                 → Supabase + local CSV
-    - independent_expenditures         → Supabase + local CSV
-    - individual_contributions         → local CSV only
-9.  compute_funding_summaries          → reads local CSVs via DuckDB → Supabase
-    - legislator_funding_summary       → Supabase
-    - legislator_top_pacs              → Supabase
-    - legislator_top_contributors      → Supabase
+8.  FEC bulk_import_fec.py (optional)  → local CSVs + Supabase (pac/ie only) — skip if running sync_fec.py instead
+9.  compute_funding_summaries (optional, legacy DuckDB path)
 10. refresh_views
 
 ## FEC Cycles
@@ -377,8 +387,12 @@ python scripts/bulk/bulk_import_member_scores.py   # one-time scores load
 python scripts/bulk/bulk_import_bills.py --congress 118 119
 python scripts/bulk/bulk_import_bills.py --congress 118 119 --voted-only  # prune unvoted bills
 python scripts/bulk/bulk_import_votes.py --congress 118 119
-python scripts/bulk/bulk_import_fec.py             # FEC load → local CSVs + Supabase (pac/ie)
-python scripts/compute_funding_summaries.py        # DuckDB aggregation → funding_summary + top_pacs
+python scripts/bulk/bulk_import_fec.py             # (legacy) bulk FEC load → local CSVs + Supabase
+python scripts/compute_funding_summaries.py        # (legacy) DuckDB aggregation → funding_summary + top_pacs
+
+# Ongoing (run weekly via GitHub Actions; also runnable locally):
+python -m scripts.sync.sync_fec                    # OpenFEC API → Supabase (pac/ie + derived tables)
+python -m scripts.compute_leaderboard_cache        # rebuild contributor_leaderboard_cache from Supabase
 ```
 
 ## Custom Claude Code Commands

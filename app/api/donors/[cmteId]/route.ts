@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { pacDetail } from '@/lib/queries/pac-detail'
 
 function toTitleCase(str: string): string {
   return str
@@ -92,14 +92,8 @@ export async function GET(
   const { cmteId } = await params
 
   try {
-    const supabase = await createClient()
-
-    const { data, error } = await supabase.rpc('pac_detail', {
-      target_cmte_id: cmteId,
-    })
-
-    if (error) throw error
-    if (!data || data.length === 0) {
+    const data = await pacDetail(cmteId)
+    if (data.length === 0) {
       return NextResponse.json({ error: 'PAC not found' }, { status: 404 })
     }
 

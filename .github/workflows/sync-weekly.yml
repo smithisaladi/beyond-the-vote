@@ -1,0 +1,51 @@
+name: Weekly Sync (FEC + Leaderboard Cache)
+
+on:
+  schedule:
+    - cron: "0 7 * * 0"  # Sundays at 07:00 UTC
+  workflow_dispatch:
+
+jobs:
+  sync-fec:
+    name: Sync FEC (funding summary, top PACs, top contributors)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run sync_fec
+        run: uv run python -m scripts.sync.sync_fec
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FEC_API_KEY: ${{ secrets.FEC_API_KEY }}
+
+  refresh-leaderboard-cache:
+    name: Refresh contributor leaderboard cache
+    needs: sync-fec
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run compute_leaderboard_cache
+        run: uv run python -m scripts.compute_leaderboard_cache
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

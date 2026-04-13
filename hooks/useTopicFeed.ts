@@ -1,12 +1,20 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { topicToSlug, type Topic } from '@/lib/topics'
 
 export interface FeedItem {
   topic: Topic
   bill: { number: string; title: string; status: string }
+}
+
+type ByTopicBill = {
+  id: string
+  number: string
+  title: string
+  status: string
+  topics: string[]
+  summary: string | null
 }
 
 export function useTopicFeed(topics: Topic[]): { feedItems: FeedItem[]; loading: boolean; error: string | null } {
@@ -24,7 +32,7 @@ export function useTopicFeed(topics: Topic[]): { feedItems: FeedItem[]; loading:
     }
 
     let cancelled = false
-    const supabase = createClient()
+    const controller = new AbortController()
     setLoading(true)
     setError(null)
 
@@ -36,15 +44,16 @@ export function useTopicFeed(topics: Topic[]): { feedItems: FeedItem[]; loading:
         for (const topic of topics) {
           if (results.length >= 4) break
           const slug = topicToSlug(topic)
-          const { data, error: rpcError } = await supabase.rpc('get_bills_by_topic', {
-            topic_slug: slug,
-            match_count: 4,
-          })
+          const resp = await fetch(
+            `/api/bills/by-topic?slug=${encodeURIComponent(slug)}&limit=4`,
+            { signal: controller.signal },
+          )
           if (cancelled) return
-          if (rpcError) throw rpcError
-          for (const row of data ?? []) {
+          if (!resp.ok) throw new Error(`by-topic fetch failed: ${resp.status}`)
+          const { bills } = (await resp.json()) as { bills: ByTopicBill[] }
+          for (const row of bills) {
             if (results.length >= 4) break
-            const num = row.bill_number ?? row.bill_id
+            const num = row.number
             if (!seen.has(num)) {
               seen.add(num)
               results.push({
@@ -57,14 +66,19 @@ export function useTopicFeed(topics: Topic[]): { feedItems: FeedItem[]; loading:
 
         setFeedItems(results)
       } catch (err: unknown) {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load feed')
+        if (cancelled) return
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setError(err instanceof Error ? err.message : 'Failed to load feed')
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
     load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicKey])
 

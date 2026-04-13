@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { BillStatus as Status } from '@/lib/bills'
 import { mapStatus } from '@/lib/bills'
+import { hybridBillSearch } from '@/lib/queries/hybrid-bill-search'
 
 type Category =
   | 'Environment'
@@ -97,23 +98,17 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
 
-    // Text search mode: use hybrid_bill_search RPC (FTS + trigram RRF)
+    // Text search mode: hybrid FTS + trigram RRF via direct Postgres query
     if (q) {
       const policyAreas = category ? (CATEGORY_TO_POLICY_AREAS[category] ?? []) : null
 
-      const { data, error } = await supabase.rpc('hybrid_bill_search', {
-        query_text:      q,
-        result_limit:    limit,
-        offset_count:    offset,
-        status_filter:   status || null,
-        topic_filter:    null,
-        policy_areas:    policyAreas,
-        congress_filter: null,
-      })
-
-      if (error) throw new Error(error.message)
-
-      const results = (data ?? []) as any[]
+      const results = await hybridBillSearch({
+        queryText:    q,
+        resultLimit:  limit,
+        offsetCount:  offset,
+        statusFilter: status || null,
+        policyAreas,
+      }) as any[]
 
       // Enrich missing sponsor fields from legislators table
       const missingIds1 = [...new Set(

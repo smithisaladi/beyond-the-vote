@@ -184,9 +184,7 @@ DW-NOMINATE ideology scores from VoteView. PK: `(bioguide_id, congress)`.
 
 **Indexes:** `congress`, `search_vector` (GIN), `title` (GIN trigram), `topics` (GIN), `referenced_agencies` (GIN), `referenced_laws` (GIN), `introduced_date DESC`, `policy_area`, `status`
 
-**Trigger:** `bill_embeddings_search_vector_update()` — computes weighted tsvector: title (A), summary (B), sponsor/policy/topics (C), bill_number (D).
-
-**View:** `bill_embeddings` → SELECT * FROM bills (backward compatibility).
+**Trigger:** `bill_embeddings_search_vector_update()` — computes weighted tsvector: title (A), summary (B), sponsor/policy/topics (C), bill_number (D). Name is historical; the function lives on `bills`.
 
 #### `bill_vote_summaries`
 

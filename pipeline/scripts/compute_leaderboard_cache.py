@@ -1,30 +1,35 @@
 """
-compute_leaderboard_cache.py — Pre-compute the contributor leaderboard from
-local FEC CSVs via DuckDB and store it in contributor_leaderboard_cache for
-fast API queries.
+compute_leaderboard_cache.py — Build the contributor leaderboard cache by
+aggregating pac_to_candidate + independent_expenditures directly from Supabase.
 
-Must be run AFTER bulk_import_fec.py has written the local FEC CSVs.
-Re-running is safe — rows are fully replaced (upserted) each time.
+No local file I/O, no DuckDB — designed to run on ephemeral CI runners as a
+weekly cron job after sync_fec.py has refreshed the PAC/IE tables.
+
+Rows in contributor_leaderboard_cache are fully replaced each run.
 
 Usage:
-    python scripts/compute_leaderboard_cache.py
+    python -m scripts.compute_leaderboard_cache
 """
 
 import logging
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import DATA_PROCESSED_FEC, FEC_CYCLES, UPSERT_BATCH
+from config import FEC_CYCLES, UPSERT_BATCH
 from load import log_run_end, log_run_start
-from utils import batch, duckdb_connect, get_supabase
+from utils import batch, get_supabase
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
 
 SCRIPT = "compute_leaderboard_cache"
+PAGE = 1000
+TOP_RECIPIENTS = 5
 
+# Pass-through / party committees — excluded from the leaderboard
 SKIP_NAMES = {
     "ACTBLUE", "WINRED",
     "DEMOCRATIC SENATORIAL CAMPAIGN COMMITTEE", "DSCC",
@@ -40,218 +45,173 @@ SKIP_NAMES = {
 }
 
 
-def _csv_path(name: str, cycle: int | None = None) -> Path:
-    if cycle:
-        return DATA_PROCESSED_FEC / f"{name}_{cycle}.csv"
-    return DATA_PROCESSED_FEC / f"{name}.csv"
+# ── Supabase pagination ───────────────────────────────────────────────────────
 
 
-def _register_csvs(conn, cycle: int) -> None:
-    """Register per-cycle CSVs as views named pac_{cycle} and ie_{cycle}."""
-    pac_path = _csv_path("pac_to_candidate", cycle)
-    ie_path  = _csv_path("independent_expenditures", cycle)
+def _fetch_all(table: str, columns: str, filters: dict | None = None) -> list[dict]:
+    """Paginate a Supabase table fully into memory."""
+    db = get_supabase()
+    rows: list[dict] = []
+    offset = 0
+    while True:
+        q = db.table(table).select(columns)
+        for col, val in (filters or {}).items():
+            if isinstance(val, (list, tuple, set)):
+                q = q.in_(col, list(val))
+            else:
+                q = q.eq(col, val)
+        res = q.range(offset, offset + PAGE - 1).execute()
+        rows.extend(res.data)
+        if len(res.data) < PAGE:
+            break
+        offset += PAGE
+    return rows
 
-    if pac_path.exists():
-        conn.execute(f"CREATE VIEW pac_{cycle} AS SELECT * FROM read_csv('{pac_path}', delim='|', header=true, ignore_errors=true)")
-    else:
-        log.warning("CSV not found: %s — empty view", pac_path)
-        conn.execute(f"CREATE VIEW pac_{cycle} AS SELECT '' as cmte_id, '' as cand_id, 0.0 as transaction_amt WHERE false")
 
-    if ie_path.exists():
-        conn.execute(f"CREATE VIEW ie_{cycle} AS SELECT * FROM read_csv('{ie_path}', delim='|', header=true, ignore_errors=true)")
-    else:
-        log.warning("CSV not found: %s — empty view", ie_path)
-        conn.execute(f"CREATE VIEW ie_{cycle} AS SELECT '' as cmte_id, '' as cand_id, '' as sup_opp, 0.0 as transaction_amt WHERE false")
+def _load_legislators() -> dict[str, dict]:
+    rows = _fetch_all(
+        "legislators",
+        "bioguide_id,full_name,party,state,chamber,fec_ids",
+    )
+    return {r["bioguide_id"]: r for r in rows}
 
 
-def _build_fec_map(conn, legislators: dict) -> None:
-    """Create fec_map table mapping fec_id → bioguide_id."""
-    fec_rows = [
-        (bioguide_id, fec_id)
-        for bioguide_id, leg in legislators.items()
-        for fec_id in (leg.get("fec_ids") or [])
-    ]
-    conn.execute("CREATE TABLE fec_map (bioguide_id TEXT, fec_id TEXT)")
-    if fec_rows:
-        conn.executemany("INSERT INTO fec_map VALUES (?, ?)", fec_rows)
-    log.info("fec_map: %d entries", len(fec_rows))
+def _load_cmte_names() -> dict[str, str]:
+    """cmte_id → cmte_name. fec_cmte_names is small."""
+    rows = _fetch_all("fec_cmte_names", "cmte_id,cmte_name")
+    return {r["cmte_id"]: r["cmte_name"] for r in rows if r.get("cmte_name")}
+
+
+# ── Aggregation ──────────────────────────────────────────────────────────────
 
 
 def compute_leaderboard(cycles: list[int]) -> list[dict]:
-    """
-    Aggregate PAC direct contributions and independent expenditures by committee,
-    scoped to committees that funded known legislators.
-    Returns a list of row dicts ready to upsert.
-    """
-    db = get_supabase()
-
-    # Load legislators (small table — fetch all at once)
-    legislators: dict[str, dict] = {}
-    offset = 0
-    while True:
-        res = db.table("legislators").select("bioguide_id,full_name,party,state,chamber,fec_ids").range(offset, offset + 999).execute()
-        for row in res.data:
-            legislators[row["bioguide_id"]] = row
-        if len(res.data) < 1000:
-            break
-        offset += 1000
+    legislators = _load_legislators()
     log.info("Loaded %d legislators", len(legislators))
 
-    with duckdb_connect() as conn:
-        for cycle in cycles:
-            _register_csvs(conn, cycle)
+    # fec_id → bioguide_id
+    fec_to_bio: dict[str, str] = {}
+    for bid, leg in legislators.items():
+        for fec_id in (leg.get("fec_ids") or []):
+            fec_to_bio[fec_id] = bid
 
-        # Register committees CSV once (shared across cycles)
-        cmte_path = _csv_path("committees")
-        if cmte_path.exists():
-            conn.execute(f"CREATE VIEW committees AS SELECT * FROM read_csv('{cmte_path}', delim='|', header=true, ignore_errors=true)")
-        else:
-            conn.execute("CREATE VIEW committees AS SELECT '' as cmte_id, '' as cmte_nm WHERE false")
+    known_cands = set(fec_to_bio.keys())
+    if not known_cands:
+        log.warning("No fec_ids found on legislators — nothing to aggregate")
+        return []
 
-        _build_fec_map(conn, legislators)
+    cmte_names = _load_cmte_names()
+    log.info("Loaded %d committee name mappings", len(cmte_names))
 
-        known_sql = "SELECT DISTINCT fec_id AS cand_id FROM fec_map"
-        conn.execute(f"CREATE TABLE known_cands AS {known_sql}")
+    # (cmte_id, cand_id) → {direct, ie_for, ie_against}
+    per_pair: dict[tuple[str, str], dict[str, float]] = defaultdict(
+        lambda: {"direct": 0.0, "ie_for": 0.0, "ie_against": 0.0}
+    )
 
-        union_pac = " UNION ALL ".join(
-            f"SELECT cmte_id, cand_id, CAST(transaction_amt AS DOUBLE) AS amt FROM pac_{c}"
-            for c in cycles
-        )
-        union_ie = " UNION ALL ".join(
-            f"SELECT cmte_id, cand_id, sup_opp, CAST(transaction_amt AS DOUBLE) AS amt FROM ie_{c}"
-            for c in cycles
-        )
+    # PAC direct contributions
+    pac_rows = _fetch_all(
+        "pac_to_candidate",
+        "cmte_id,cand_id,transaction_amt",
+        filters={"cycle": cycles},
+    )
+    log.info("Fetched %d pac_to_candidate rows", len(pac_rows))
+    for r in pac_rows:
+        cand = r.get("cand_id")
+        cmte = r.get("cmte_id")
+        if not cand or not cmte or cand not in known_cands:
+            continue
+        per_pair[(cmte, cand)]["direct"] += float(r.get("transaction_amt") or 0)
 
-        conn.execute(f"""
-            CREATE TABLE direct AS
-            SELECT cmte_id, cand_id, SUM(amt) AS direct_amt
-            FROM ({union_pac})
-            WHERE cand_id IN (SELECT cand_id FROM known_cands)
-            GROUP BY cmte_id, cand_id
-        """)
+    # Independent expenditures
+    ie_rows = _fetch_all(
+        "independent_expenditures",
+        "cmte_id,cand_id,sup_opp,transaction_amt",
+        filters={"cycle": cycles},
+    )
+    log.info("Fetched %d independent_expenditures rows", len(ie_rows))
+    for r in ie_rows:
+        cand = r.get("cand_id")
+        cmte = r.get("cmte_id")
+        if not cand or not cmte or cand not in known_cands:
+            continue
+        amt = float(r.get("transaction_amt") or 0)
+        if (r.get("sup_opp") or "").upper() == "S":
+            per_pair[(cmte, cand)]["ie_for"] += amt
+        elif (r.get("sup_opp") or "").upper() == "O":
+            per_pair[(cmte, cand)]["ie_against"] += amt
 
-        conn.execute(f"""
-            CREATE TABLE ies AS
-            SELECT cmte_id, cand_id,
-                   SUM(CASE WHEN UPPER(sup_opp) = 'S' THEN amt ELSE 0 END) AS ie_for,
-                   SUM(CASE WHEN UPPER(sup_opp) = 'O' THEN amt ELSE 0 END) AS ie_against
-            FROM ({union_ie})
-            WHERE cand_id IN (SELECT cand_id FROM known_cands)
-            GROUP BY cmte_id, cand_id
-        """)
+    # Aggregate per committee + collect recipients
+    per_cmte: dict[str, dict[str, float]] = defaultdict(
+        lambda: {
+            "direct_total": 0.0,
+            "ie_for_total": 0.0,
+            "ie_against_total": 0.0,
+            "recipients": [],  # list of dicts
+        }
+    )
 
-        conn.execute("""
-            CREATE TABLE combined AS
-            SELECT
-                COALESCE(d.cmte_id, i.cmte_id) AS cmte_id,
-                COALESCE(d.cand_id, i.cand_id) AS cand_id,
-                COALESCE(d.direct_amt, 0)       AS direct_amt,
-                COALESCE(i.ie_for, 0)           AS ie_for,
-                COALESCE(i.ie_against, 0)       AS ie_against,
-                COALESCE(d.direct_amt, 0) + COALESCE(i.ie_for, 0) AS total_support
-            FROM direct d
-            FULL OUTER JOIN ies i ON d.cmte_id = i.cmte_id AND d.cand_id = i.cand_id
-        """)
+    for (cmte, cand), sums in per_pair.items():
+        direct = sums["direct"]
+        ie_for = sums["ie_for"]
+        ie_against = sums["ie_against"]
+        total_support = direct + ie_for
 
-        conn.execute("""
-            CREATE TABLE agg AS
-            SELECT
-                cmte_id,
-                SUM(direct_amt)    AS direct_total,
-                SUM(ie_for)        AS ie_for_total,
-                SUM(ie_against)    AS ie_against_total,
-                SUM(total_support) AS total_contributions,
-                COUNT(DISTINCT cand_id) FILTER (WHERE total_support > 0) AS recipient_count
-            FROM combined
-            GROUP BY cmte_id
-        """)
+        agg = per_cmte[cmte]
+        agg["direct_total"] += direct
+        agg["ie_for_total"] += ie_for
+        agg["ie_against_total"] += ie_against
 
-        # Resolve committee names from the committees CSV
-        conn.execute("""
-            CREATE TABLE named AS
-            SELECT
-                a.cmte_id,
-                COALESCE(NULLIF(TRIM(c.cmte_nm), ''), a.cmte_id) AS cmte_name,
-                a.direct_total,
-                a.ie_for_total,
-                a.ie_against_total,
-                a.total_contributions,
-                a.recipient_count
-            FROM agg a
-            LEFT JOIN committees c ON a.cmte_id = c.cmte_id
-        """)
-
-        agg_rows = conn.execute("""
-            SELECT cmte_id, cmte_name, direct_total, ie_for_total,
-                   ie_against_total, total_contributions, recipient_count
-            FROM named
-            WHERE total_contributions > 0
-            ORDER BY total_contributions DESC
-        """).fetchall()
-
-        log.info("Aggregated %d committees", len(agg_rows))
-
-        # Per-committee: top 5 recipient legislators
-        top_recipients_map: dict[str, list] = {}
-        per_cand = conn.execute("""
-            SELECT c.cmte_id, m.bioguide_id, c.direct_amt, c.ie_for, c.total_support
-            FROM combined c
-            JOIN fec_map m ON c.cand_id = m.fec_id
-            WHERE c.total_support > 0
-        """).fetchall()
-
-        for cmte_id, bioguide_id, direct_amt, ie_for, total_support in per_cand:
-            top_recipients_map.setdefault(cmte_id, []).append({
-                "bioguide_id": bioguide_id,
-                "direct":      float(direct_amt or 0),
-                "ie_for":      float(ie_for or 0),
-                "amount":      float(total_support or 0),
+        if total_support > 0:
+            agg["recipients"].append({
+                "bioguide_id": fec_to_bio[cand],
+                "direct": direct,
+                "ie_for": ie_for,
+                "amount": total_support,
             })
 
-        # Enrich with legislator name/party/state/chamber
-        leg_info = {bid: leg for bid, leg in legislators.items()}
+    # Build output rows
+    result: list[dict] = []
+    for cmte_id, agg in per_cmte.items():
+        name = cmte_names.get(cmte_id, cmte_id)
+        if name.upper().strip() in SKIP_NAMES:
+            continue
 
-        result = []
-        for row in agg_rows:
-            cmte_id, cmte_name, direct_total, ie_for_total, ie_against_total, total_contributions, recipient_count = row
+        total_contributions = agg["direct_total"] + agg["ie_for_total"]
+        if total_contributions <= 0:
+            continue
 
-            # Skip pass-through committees
-            if cmte_name.upper().strip() in SKIP_NAMES:
-                continue
-
-            recipients = sorted(
-                top_recipients_map.get(cmte_id, []),
-                key=lambda x: x["amount"],
-                reverse=True,
-            )[:5]
-
-            enriched = []
-            for r in recipients:
-                leg = leg_info.get(r["bioguide_id"], {})
-                enriched.append({
-                    "bioguide_id": r["bioguide_id"],
-                    "name":        leg.get("full_name", r["bioguide_id"]),
-                    "party":       leg.get("party", ""),
-                    "state":       leg.get("state", ""),
-                    "chamber":     leg.get("chamber", ""),
-                    "amount":      r["amount"],
-                    "direct":      r["direct"],
-                    "ie_for":      r["ie_for"],
-                })
-
-            result.append({
-                "cmte_id":             cmte_id,
-                "cmte_name":           cmte_name,
-                "direct_total":        float(direct_total or 0),
-                "ie_for_total":        float(ie_for_total or 0),
-                "ie_against_total":    float(ie_against_total or 0),
-                "total_contributions": float(total_contributions or 0),
-                "recipient_count":     int(recipient_count or 0),
-                "top_recipients":      enriched,
+        recipients = sorted(agg["recipients"], key=lambda r: r["amount"], reverse=True)
+        enriched = []
+        for r in recipients[:TOP_RECIPIENTS]:
+            leg = legislators.get(r["bioguide_id"], {})
+            enriched.append({
+                "bioguide_id": r["bioguide_id"],
+                "name":        leg.get("full_name", r["bioguide_id"]),
+                "party":       leg.get("party", ""),
+                "state":       leg.get("state", ""),
+                "chamber":     leg.get("chamber", ""),
+                "amount":      r["amount"],
+                "direct":      r["direct"],
+                "ie_for":      r["ie_for"],
             })
 
+        result.append({
+            "cmte_id":             cmte_id,
+            "cmte_name":           name,
+            "direct_total":        agg["direct_total"],
+            "ie_for_total":        agg["ie_for_total"],
+            "ie_against_total":    agg["ie_against_total"],
+            "total_contributions": total_contributions,
+            "recipient_count":     len(agg["recipients"]),
+            "top_recipients":      enriched,
+        })
+
+    result.sort(key=lambda r: r["total_contributions"], reverse=True)
     log.info("Leaderboard: %d committees after filtering", len(result))
     return result
+
+
+# ── Entrypoint ───────────────────────────────────────────────────────────────
 
 
 def main() -> None:
@@ -261,7 +221,7 @@ def main() -> None:
 
         db = get_supabase()
 
-        # Clear existing cache then insert fresh
+        # Clear existing cache, then insert fresh
         db.table("contributor_leaderboard_cache").delete().neq("cmte_id", "").execute()
         log.info("Cleared existing cache rows")
 

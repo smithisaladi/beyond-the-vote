@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { getBillsByTopic } from '@/lib/queries/get-bills-by-topic'
 
 export const revalidate = 300
 
@@ -13,26 +13,21 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'slug is required' }, { status: 400 })
   }
 
-  const supabase = await createClient()
-  const { data, error } = await supabase.rpc('get_bills_by_topic', {
-    topic_slug:    slug,
-    match_count:   limit,
-    status_filter: status,
-  })
+  try {
+    const rows = await getBillsByTopic(slug, limit, status)
 
-  if (error) {
-    console.error('[api/bills/by-topic]', error)
+    const bills = rows.map(b => ({
+      id:      b.bill_id,
+      number:  b.bill_number ?? b.bill_id,
+      title:   b.title,
+      status:  b.status ?? 'Active',
+      topics:  b.topics ?? [],
+      summary: b.summary,
+    }))
+
+    return NextResponse.json({ slug, bills, count: bills.length })
+  } catch (err) {
+    console.error('[api/bills/by-topic]', err)
     return NextResponse.json({ error: 'Failed to fetch bills' }, { status: 500 })
   }
-
-  const bills = (data ?? []).map((b: any) => ({
-    id:      b.bill_id,
-    number:  b.bill_number ?? b.bill_id,
-    title:   b.title,
-    status:  b.status ?? 'Active',
-    topics:  b.topics ?? [],
-    summary: b.summary,
-  }))
-
-  return NextResponse.json({ slug, bills, count: bills.length })
 }
