@@ -11,26 +11,10 @@ import { useFollowPolitician } from '@/hooks/useFollowPolitician'
 import { useFetchPoliticianDetail } from '@/hooks/useFetchPoliticianDetail'
 import type { DonorAlignment } from '@/hooks/useFetchPoliticianDetail'
 import { DonorTab } from '@/components/representatives/DonorTab'
-import type { Party } from '@/lib/types'
+import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab = 'votes' | 'bills' | 'donors'
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const PARTY_STYLES: Record<Party, { bg: string; text: string }> = {
-  Democrat:    { bg: 'bg-[#7B8FA8]/[0.12]', text: 'text-[#7B8FA8]' },
-  Republican:  { bg: 'bg-[#A87B7B]/[0.12]', text: 'text-[#A87B7B]' },
-  Independent: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' },
-}
-
-const BILL_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
-  Active:    { bg: 'bg-[#9B7FA6]/[0.12]', text: 'text-[#9B7FA6]' },
-  Committee: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' },
-  Stalled:   { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
-  Passed:    { bg: 'bg-[#6A9B7B]/[0.12]', text: 'text-[#6A9B7B]' },
-  Failed:    { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -387,7 +371,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                             <p className="text-sm text-[#1C1C1A] hover:text-[#9B7FA6] transition-colors line-clamp-2" title={b.name}>{b.name}</p>
                             <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{b.number} · {b.date}</p>
                           </div>
-                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${(BILL_STATUS_STYLES[b.status] ?? BILL_STATUS_STYLES.Committee).bg} ${(BILL_STATUS_STYLES[b.status] ?? BILL_STATUS_STYLES.Committee).text}`}>
+                          <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${(STATUS_STYLES[b.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Committee).bg} ${(STATUS_STYLES[b.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Committee).text}`}>
                             {b.status}
                           </span>
                         </Link>

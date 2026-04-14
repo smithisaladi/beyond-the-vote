@@ -8,27 +8,7 @@ import { SignUpModal } from '@/components/auth/SignUpModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTrackedBills } from '@/hooks/useTrackedBills'
 import { useFetchBillDetail } from '@/hooks/useFetchBillDetail'
-import type { BillDetailStatus } from '@/hooks/useFetchBillDetail'
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type Status = BillDetailStatus
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<Status, { bg: string; text: string }> = {
-  Active:    { bg: 'bg-[#9B7FA6]/[0.12]', text: 'text-[#9B7FA6]' },
-  Committee: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' },
-  Stalled:   { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
-  Passed:    { bg: 'bg-[#6A9B7B]/[0.12]', text: 'text-[#6A9B7B]' },
-  Failed:    { bg: 'bg-[#B85C38]/[0.15]', text: 'text-[#B85C38]' },
-}
-
-const PARTY_COLORS: Record<string, string> = {
-  D: 'text-[#7B8FA8]',
-  R: 'text-[#A87B7B]',
-  I: 'text-[#8A8A7A]',
-}
+import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -103,17 +83,12 @@ function DetailSkeleton() {
 }
 
 function PartyTag({ party }: { party: string }) {
-  const labels: Record<string, string> = { D: 'Democrat', R: 'Republican', I: 'Independent' }
-  const colors: Record<string, { bg: string; text: string }> = {
-    D: { bg: 'bg-[#7B8FA8]/[0.12]', text: 'text-[#7B8FA8]' },
-    R: { bg: 'bg-[#A87B7B]/[0.12]', text: 'text-[#A87B7B]' },
-    I: { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' },
-  }
-  const style = colors[party] ?? colors['I']
-  const label = labels[party] ?? party
+  const partyMap: Record<string, keyof typeof PARTY_STYLES> = { D: 'Democrat', R: 'Republican', I: 'Independent' }
+  const partyKey = partyMap[party] ?? 'Independent'
+  const style = PARTY_STYLES[partyKey]
   return (
     <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${style.bg} ${style.text}`}>
-      {label}
+      {style.label}
     </span>
   )
 }
@@ -342,9 +317,11 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                             <div>
                               <p className="text-sm text-[#1C1C1A]">{c.name}</p>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <span className={`text-xs ${PARTY_COLORS[c.party] ?? 'text-[#8A8A7A]'}`}>
-                                  {c.party === 'D' ? 'Democrat' : c.party === 'R' ? 'Republican' : 'Independent'}
-                                </span>
+                                {(() => {
+                                  const pm: Record<string, keyof typeof PARTY_STYLES> = { D: 'Democrat', R: 'Republican', I: 'Independent' }
+                                  const pk = pm[c.party] ?? 'Independent'
+                                  return <span className={`text-xs ${PARTY_STYLES[pk].text}`}>{PARTY_STYLES[pk].label}</span>
+                                })()}
                                 <span className="text-xs text-[#1C1C1A]/30">·</span>
                                 <span className="text-xs text-[#1C1C1A]/45">{c.state}</span>
                               </div>

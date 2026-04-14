@@ -76,7 +76,8 @@ describe('BillVoteBreakdown', () => {
     const vote = makeVote({ yeas: 0, nays: 0, partyBreakdown: null })
     const { container } = render(<BillVoteBreakdown votes={[vote]} />)
     // VoteBar returns null when total is 0
-    expect(container.querySelector('.bg-emerald-500')).not.toBeInTheDocument()
+    // VoteBar returns null when total is 0, so no bar segments should exist
+    expect(container.querySelector('[title*="Yea"]')).not.toBeInTheDocument()
   })
 
   it('renders multiple votes', () => {
