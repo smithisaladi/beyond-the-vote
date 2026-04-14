@@ -39,3 +39,9 @@ pipeline/.python-version
 # FEC bulk data files (large, downloaded from fec.gov)
 pipeline/data/raw/
 pipeline/data/processed/
+
+# Testing
+coverage/
+playwright-report/
+test-results/
+blob-report/
