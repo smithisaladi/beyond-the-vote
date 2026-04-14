@@ -275,15 +275,18 @@ function BillsContent() {
         <main className="flex-1 px-6 py-10">
           <div className="max-w-2xl mx-auto">
 
-            {/* Page header + unified search */}
-            <div className="mb-8">
+            {/* Page header — landing-scale, centered */}
+            <div className="text-center mb-8">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-5 tracking-[0.08em] uppercase">
+                Bills Tracker
+              </span>
               <h1
-                className="text-4xl text-[#1C1C1A] mb-1.5 tracking-tight text-center"
-                style={{ fontFamily: 'var(--font-serif)' }}
+                className="text-5xl sm:text-6xl text-[#1C1C1A] mb-4 leading-[1.08] tracking-[-0.02em]"
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
               >
                 Legislation
               </h1>
-              <p className="text-sm text-[#1C1C1A]/50 mb-6 text-center">
+              <p className="text-base sm:text-lg text-[#1C1C1A]/55 leading-relaxed max-w-md mx-auto mb-8">
                 Follow legislation that matters to you.
               </p>
 

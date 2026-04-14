@@ -1,31 +1,16 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useFetchDonors, type ContributorEntry, type ContributorRecipient } from '@/hooks/useFetchDonors'
 import { useDebounce } from '@/hooks/useDebounce'
 import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
+import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { PARTY_STYLES } from '@/lib/ui'
 import { FEC_DISPLAY_CYCLES } from '@/lib/fec'
-import type { Party } from '@/lib/types'
-
-function formatTotal(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
-  return `$${n.toLocaleString()}`
-}
-
-function formatAmount(n: number): string {
-  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-}
-
-function partyAbbrev(party: Party): string {
-  if (party === 'Democrat') return 'D'
-  if (party === 'Republican') return 'R'
-  return 'I'
-}
+import { formatTotal, toTitleCase } from '@/lib/format'
+import { partyAbbrev, toParty } from '@/lib/party'
 
 function TopoBackground() {
   return (
@@ -33,7 +18,7 @@ function TopoBackground() {
       aria-hidden="true"
       className="absolute inset-0 w-full h-full"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ opacity: 0.04 }}
+      style={{ opacity: 0.025 }}
     >
       <defs>
         <pattern id="topo-donors" x="0" y="0" width="800" height="600" patternUnits="userSpaceOnUse">
@@ -66,17 +51,22 @@ function SearchIcon() {
 
 function CardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 animate-pulse">
-      <div className="flex items-start justify-between mb-3">
-        <div className="h-4 w-6 bg-[#E8E3DA] rounded" />
-        <div className="h-5 w-16 bg-[#E8E3DA] rounded" />
+    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden animate-pulse">
+      <div className="p-6 pb-5">
+        <div className="flex items-baseline justify-between mb-3">
+          <div className="h-7 w-6 bg-[#E8E3DA] rounded" />
+          <div className="h-7 w-20 bg-[#E8E3DA] rounded" />
+        </div>
+        <div className="h-4 bg-[#E8E3DA] rounded w-3/4 mb-2.5" />
+        <div className="h-3 bg-[#E8E3DA] rounded w-1/3" />
       </div>
-      <div className="h-5 bg-[#E8E3DA] rounded w-3/4 mb-2" />
-      <div className="h-3.5 bg-[#E8E3DA] rounded w-1/3 mb-5" />
-      <div className="space-y-2.5">
-        <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
-        <div className="h-3.5 bg-[#E8E3DA] rounded w-5/6" />
-        <div className="h-3.5 bg-[#E8E3DA] rounded w-4/6" />
+      <div className="bg-[#F5F0E8]/40 px-6 py-5 border-t border-[rgba(28,28,26,0.06)]">
+        <div className="h-2.5 bg-[#E8E3DA] rounded w-20 mb-3" />
+        <div className="space-y-2.5">
+          <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
+          <div className="h-3.5 bg-[#E8E3DA] rounded w-5/6" />
+          <div className="h-3.5 bg-[#E8E3DA] rounded w-4/6" />
+        </div>
       </div>
     </div>
   )
@@ -84,69 +74,65 @@ function CardSkeleton() {
 
 function ContributorCard({ contributor, rank }: { contributor: ContributorEntry; rank: number }) {
   const router = useRouter()
-  const party = (p: string): Party => {
-    if (p === 'Democrat' || p === 'Republican' || p === 'Independent') return p
-    return 'Independent'
-  }
 
   return (
     <article
-      className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 hover:shadow-md transition-shadow cursor-pointer group"
+      className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden hover:border-[#9B7FA6]/30 hover:shadow-md transition-all cursor-pointer group"
       onClick={() => router.push(`/donors/${contributor.cmteId}`)}
     >
-      {/* Top row: rank + total */}
-      <div className="flex items-start justify-between mb-2">
-        <span className="font-mono text-sm text-[#1C1C1A]/30">#{rank}</span>
-        <span
-          className="text-base text-[#1C1C1A]/80 font-medium tabular-nums"
+      {/* Header zone */}
+      <div className="p-6 pb-5">
+        <div className="flex items-baseline justify-between gap-4 mb-2">
+          <span
+            className="text-2xl text-[#1C1C1A]/30 tabular-nums flex-shrink-0"
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            {rank}
+          </span>
+          <span
+            className="text-2xl text-[#1C1C1A] font-medium tabular-nums flex-shrink-0"
+            style={{ fontFamily: 'var(--font-serif)' }}
+          >
+            {formatTotal(contributor.totalContributions)}
+          </span>
+        </div>
+
+        <h2
+          className="text-[15px] text-[#1C1C1A] leading-snug mb-2.5 group-hover:text-[#9B7FA6] transition-colors"
           style={{ fontFamily: 'var(--font-serif)' }}
         >
-          {formatTotal(contributor.totalContributions)}
-        </span>
+          {toTitleCase(contributor.cmteName)}
+        </h2>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-[13px] text-[#1C1C1A]/50">
+            {contributor.recipientCount} candidate{contributor.recipientCount !== 1 ? 's' : ''}
+          </span>
+        </div>
       </div>
 
-      {/* PAC name */}
-      <h2
-        className="text-base text-[#1C1C1A] leading-snug mb-1 group-hover:text-[#9B7FA6] transition-colors"
-        style={{ fontFamily: 'var(--font-serif)' }}
-      >
-        {contributor.cmteName}
-      </h2>
-
-      {/* Recipient count + spending breakdown */}
-      <p className="text-sm text-[#1C1C1A]/50 mb-4">
-        Supporting {contributor.recipientCount} candidate{contributor.recipientCount !== 1 ? 's' : ''}
-        {(contributor.directTotal > 0 || contributor.ieForTotal > 0) && (
-          <span className="text-[#1C1C1A]/35">
-            {' '}·{contributor.directTotal > 0 ? ` ${formatTotal(contributor.directTotal)} direct` : ''}
-            {contributor.directTotal > 0 && contributor.ieForTotal > 0 ? ',' : ''}
-            {contributor.ieForTotal > 0 ? ` ${formatTotal(contributor.ieForTotal)} IE` : ''}
-          </span>
-        )}
-      </p>
-
-      {/* Top recipients */}
+      {/* Recipients zone */}
       {contributor.topRecipients.length > 0 && (
-        <div className="border-t border-[rgba(28,28,26,0.06)] pt-3.5">
-          <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-2.5">Top Recipients</p>
-          <div className="space-y-2">
+        <div className="bg-[#F5F0E8]/40 px-6 py-5 border-t border-[rgba(28,28,26,0.06)]">
+          <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-3">Top Recipients</p>
+          <div className="grid gap-1.5">
             {contributor.topRecipients.map((r: ContributorRecipient, idx: number) => {
-              const p = party(r.party)
+              const p = toParty(r.party)
               const ps = PARTY_STYLES[p]
               return (
                 <button
                   key={`${r.bioguideId}-${idx}`}
                   onClick={e => { e.stopPropagation(); router.push(`/representatives/${r.bioguideId}`) }}
-                  className="w-full flex items-center justify-between gap-3 hover:bg-[#F5F0E8]/60 -mx-1.5 px-1.5 py-0.5 rounded transition-colors text-left"
+                  className="w-full grid grid-cols-[1fr_auto] items-center gap-3 hover:bg-white -mx-2 px-2 py-1 rounded-md transition-colors text-left"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm text-[#1C1C1A]/70 truncate">{r.name}</span>
-                    <span className={`text-[11px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${ps.bg} ${ps.text}`}>
+                    <span className="text-sm text-[#1C1C1A]/75 truncate">{r.name}</span>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${ps.bg} ${ps.text}`}>
                       {partyAbbrev(p)}-{r.state}
                     </span>
                   </div>
-                  <span className="text-sm text-[#1C1C1A]/50 tabular-nums flex-shrink-0">
-                    {formatAmount(r.amount)}
+                  <span className="text-sm text-[#1C1C1A]/60 tabular-nums flex-shrink-0 min-w-[56px] text-right">
+                    {formatTotal(r.amount)}
                   </span>
                 </button>
               )
@@ -178,20 +164,24 @@ function DonorsContent() {
         <main className="flex-1 px-6 py-10">
           <div className="max-w-2xl mx-auto">
 
-            {/* Page header */}
-            <div className="mb-8">
+            {/* Page header — landing-scale, centered */}
+            <div className="text-center mb-8">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-5 tracking-[0.08em] uppercase">
+                FEC · {FEC_DISPLAY_CYCLES}
+                <InfoTooltip term="fecCycle" />
+              </span>
               <h1
-                className="text-4xl text-[#1C1C1A] mb-1.5 tracking-tight text-center"
-                style={{ fontFamily: 'var(--font-serif)' }}
+                className="text-5xl sm:text-6xl text-[#1C1C1A] mb-4 leading-[1.08] tracking-[-0.02em]"
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
               >
                 Top Contributors
               </h1>
-              <p className="text-sm text-[#1C1C1A]/50 mb-6 text-center">
-                PACs that spend the most supporting candidates across Congress.
+              <p className="text-base sm:text-lg text-[#1C1C1A]/55 leading-relaxed max-w-md mx-auto mb-8">
+                <em className="not-italic">PACs</em> that spend the most supporting candidates across Congress.
               </p>
 
               {/* Search input */}
-              <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.15)] px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.12)] px-4 py-3 focus-within:border-[#9B7FA6]/40 transition-colors">
                 <span className="text-[#1C1C1A]/35 flex-shrink-0">
                   <SearchIcon />
                 </span>
@@ -216,7 +206,7 @@ function DonorsContent() {
             <div>
               {!loading && !error && (
                 <p className="text-xs text-[#1C1C1A]/40 mb-4">
-                  {contributors.length} organization{contributors.length !== 1 ? 's' : ''} · FEC {FEC_DISPLAY_CYCLES}
+                  {contributors.length} organization{contributors.length !== 1 ? 's' : ''}
                 </p>
               )}
 
@@ -257,15 +247,13 @@ function DonorsContent() {
                   </div>
 
                   {hasMore && (
-                    <div className="mt-6 text-center">
-                      <button
-                        onClick={loadMore}
-                        disabled={loadingMore}
-                        className="text-sm text-[#9B7FA6] hover:text-[#8a6e95] disabled:opacity-50 border border-[#9B7FA6]/30 rounded-lg px-5 py-2.5 hover:bg-[#9B7FA6]/5 transition-colors"
-                      >
-                        {loadingMore ? 'Loading…' : 'Load more'}
-                      </button>
-                    </div>
+                    <button
+                      onClick={loadMore}
+                      disabled={loadingMore}
+                      className="mt-4 w-full text-sm font-medium text-[#9B7FA6] hover:text-[#8a6e95] disabled:opacity-50 bg-white border border-[#9B7FA6]/30 rounded-xl px-5 py-3 hover:bg-[#9B7FA6]/5 hover:border-[#9B7FA6]/50 transition-colors"
+                    >
+                      {loadingMore ? 'Loading…' : 'Load more'}
+                    </button>
                   )}
                 </>
               )}

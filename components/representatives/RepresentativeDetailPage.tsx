@@ -238,10 +238,13 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                   }
 
                   <div className="flex-1 text-center sm:text-left">
-                    <h1 className="text-3xl text-[#1C1C1A] mb-1" style={{ fontFamily: 'var(--font-serif)' }}>
+                    <h1
+                      className="text-4xl text-[#1C1C1A] mb-1 leading-[1.1] tracking-tight"
+                      style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
+                    >
                       {politician.name}
                     </h1>
-                    <p className="text-sm text-[#1C1C1A]/60 mb-3">{politician.title}</p>
+                    <p className="text-base text-[#1C1C1A]/60 mb-3">{politician.title}</p>
 
                     {/* Badges */}
                     <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start mb-4">

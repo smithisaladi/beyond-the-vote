@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Inter } from 'next/font/google'
 import { siteConfig } from '@/lib/site-config'
+import { TooltipProvider } from '@/components/shared/TooltipProvider'
 import './globals.css'
 
 /**
@@ -97,7 +98,9 @@ export default function RootLayout({
     // <html> element on the client. If a theme toggle is added later that
     // sets `class="dark"` pre-hydration, add it then.
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
-      <body>{children}</body>
+      <body>
+        <TooltipProvider>{children}</TooltipProvider>
+      </body>
     </html>
   )
 }

@@ -122,13 +122,16 @@ function RepresentativesContent() {
           <div className="max-w-2xl mx-auto mb-12">
             {!hasResults && searchMode === 'address' && (
               <div className="text-center mb-8">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-5 tracking-[0.08em] uppercase">
+                  Address Lookup
+                </span>
                 <h1
-                  className="text-4xl mb-3 tracking-tight leading-[1.15]"
-                  style={{ fontFamily: 'var(--font-serif)' }}
+                  className="text-5xl sm:text-6xl text-[#1C1C1A] mb-4 leading-[1.08] tracking-[-0.02em]"
+                  style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
                 >
                   Find Your Representatives
                 </h1>
-                <p className="text-[#1C1C1A]/60">
+                <p className="text-base sm:text-lg text-[#1C1C1A]/55 leading-relaxed max-w-md mx-auto">
                   Enter your home address to see your federal representatives.
                 </p>
               </div>
@@ -136,13 +139,16 @@ function RepresentativesContent() {
 
             {searchMode === 'name' && (
               <div className="text-center mb-8">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-5 tracking-[0.08em] uppercase">
+                  Name Search
+                </span>
                 <h1
-                  className="text-4xl mb-3 tracking-tight leading-[1.15]"
-                  style={{ fontFamily: 'var(--font-serif)' }}
+                  className="text-5xl sm:text-6xl text-[#1C1C1A] mb-4 leading-[1.08] tracking-[-0.02em]"
+                  style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
                 >
                   Search by Name
                 </h1>
-                <p className="text-[#1C1C1A]/60">
+                <p className="text-base sm:text-lg text-[#1C1C1A]/55 leading-relaxed max-w-md mx-auto">
                   Find any U.S. Senator or House Representative by name.
                 </p>
               </div>

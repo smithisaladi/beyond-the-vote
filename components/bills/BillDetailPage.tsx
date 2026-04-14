@@ -237,15 +237,17 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                       {bill.policyArea && (
                         <>
                           <span className="text-xs text-[#1C1C1A]/20">·</span>
-                          <span className="text-xs text-[#1C1C1A]/40">{bill.policyArea}</span>
+                          <span className="text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-2.5 py-0.5 rounded-full">
+                            {bill.policyArea}
+                          </span>
                         </>
                       )}
                     </div>
 
                     {/* Title */}
                     <h1
-                      className="text-2xl sm:text-3xl text-[#1C1C1A] leading-snug mb-3 tracking-tight"
-                      style={{ fontFamily: 'var(--font-serif)' }}
+                      className="text-2xl sm:text-3xl text-[#1C1C1A] leading-[1.2] mb-3 tracking-tight"
+                      style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
                     >
                       {bill.title}
                     </h1>

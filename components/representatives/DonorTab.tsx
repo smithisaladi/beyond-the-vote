@@ -1,5 +1,7 @@
 'use client'
 
+import { InfoTooltip } from '@/components/shared/InfoTooltip'
+
 interface Donor {
   rank: number
   name: string
@@ -102,7 +104,10 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             >
               {Math.round(bd.pacPct)}%
             </div>
-            <div className="text-[#1C1C1A]/70 text-xs">PAC &amp; Corporate</div>
+            <div className="text-[#1C1C1A]/70 text-xs inline-flex items-center gap-1">
+              PAC &amp; Corporate
+              <InfoTooltip term="pacAndCorporate" />
+            </div>
           </div>
 
           <div className="bg-[#E8E3DA]/40 rounded-lg p-4 border border-[rgba(28,28,26,0.08)]">
@@ -112,7 +117,10 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             >
               {Math.round(bd.individualLargePct)}%
             </div>
-            <div className="text-[#1C1C1A]/60 text-xs">Large Individual</div>
+            <div className="text-[#1C1C1A]/60 text-xs inline-flex items-center gap-1">
+              Large Individual
+              <InfoTooltip term="largeIndividual" />
+            </div>
           </div>
 
           <div className="bg-[#E8E3DA]/40 rounded-lg p-4 border border-[rgba(28,28,26,0.08)]">
@@ -122,7 +130,10 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             >
               {Math.round(bd.individualSmallPct)}%
             </div>
-            <div className="text-[#1C1C1A]/60 text-xs">Small Donors (&lt;$200)</div>
+            <div className="text-[#1C1C1A]/60 text-xs inline-flex items-center gap-1">
+              Small Donors (&lt;$200)
+              <InfoTooltip term="smallDonors" />
+            </div>
           </div>
 
           <div className="bg-[#E8E3DA]/40 rounded-lg p-4 border border-[rgba(28,28,26,0.08)]">
@@ -132,7 +143,10 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             >
               {Math.round(bd.otherPct)}%
             </div>
-            <div className="text-[#1C1C1A]/60 text-xs">Other</div>
+            <div className="text-[#1C1C1A]/60 text-xs inline-flex items-center gap-1">
+              Other
+              <InfoTooltip term="otherFunding" />
+            </div>
           </div>
         </div>
       )}
@@ -142,13 +156,19 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
         <div className="mb-6 pb-6 border-b border-[rgba(28,28,26,0.06)]">
           <div className="mb-3">
             <p
-              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5"
+              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5 inline-flex items-center gap-1"
               style={{ fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.08em' }}
             >
               Where individual dollars come from
+              <InfoTooltip term="inOutState" />
             </p>
-            <p className="text-[#1C1C1A]/40 text-xs">
-              Based on itemized individual contributions · PAC money excluded
+            <p className="text-[#1C1C1A]/40 text-xs inline-flex items-center gap-1">
+              <span>Based on</span>
+              <span className="inline-flex items-center gap-0.5">
+                itemized individual contributions
+                <InfoTooltip term="itemized" />
+              </span>
+              <span>· PAC money excluded</span>
             </p>
           </div>
 
@@ -191,10 +211,11 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
         <div className="mb-6">
           <div className="mb-3">
             <p
-              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5"
+              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5 inline-flex items-center gap-1"
               style={{ fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.08em' }}
             >
               Top Contributors
+              <InfoTooltip term="topContributors" />
             </p>
             <p className="text-[#1C1C1A]/40 text-xs">
               Employee donations &amp; PAC contributions by organization
