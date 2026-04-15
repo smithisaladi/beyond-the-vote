@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { SIDEBAR_EXPANDED_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '@/lib/constants'
 
 function IconHome() {
   return (
@@ -83,7 +84,7 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
   const pathname = usePathname()
-  const width = collapsed ? 60 : 228
+  const width = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH
 
   return (
     <aside
@@ -94,7 +95,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       <div className="border-b border-[#C4BCB0] flex items-center" style={{ minHeight: 64, padding: collapsed ? '0 12px' : '0 20px' }}>
         {collapsed ? (
           <span
-            className="text-sm font-semibold text-[#1C1C1A] tracking-tight select-none"
+            className="text-base font-semibold text-[#1C1C1A] tracking-tight select-none"
             style={{ fontFamily: 'var(--font-serif)' }}
           >
             B
@@ -102,10 +103,10 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         ) : (
           <Link href="/" className="flex items-center">
             <span
-              className="text-base font-semibold text-[#1C1C1A] tracking-tight whitespace-nowrap"
+              className="text-xl font-semibold text-[#1C1C1A] tracking-tight whitespace-nowrap"
               style={{ fontFamily: 'var(--font-serif)' }}
             >
-              Beyond the Vote
+              Beyond the <span className="text-[#7B5E8A]">Vote</span>
             </span>
           </Link>
         )}
@@ -123,7 +124,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 title={item.label}
                 className={`flex items-center justify-center py-2.5 mx-2 rounded-lg transition-colors ${
                   active
-                    ? 'bg-[#C8BED0]/40 text-[#9B7FA6]'
+                    ? 'bg-[#C8BED0]/40 text-[#7B5E8A]'
                     : 'text-[#1C1C1A]/40 hover:text-[#1C1C1A] hover:bg-[#BDB5A8]/40'
                 }`}
               >
@@ -137,11 +138,11 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
               href={item.href}
               className={`flex items-center gap-3 py-2.5 rounded-r-lg text-sm transition-colors ${
                 active
-                  ? 'border-l-2 border-[#9B7FA6] bg-[#C8BED0]/40 text-[#1C1C1A] font-medium pl-[14px] pr-3'
+                  ? 'border-l-2 border-[#7B5E8A] bg-[#C8BED0]/40 text-[#1C1C1A] font-medium pl-[14px] pr-3'
                   : 'border-l-2 border-transparent text-[#1C1C1A]/60 hover:text-[#1C1C1A] hover:bg-[#BDB5A8]/40 pl-[14px] pr-3'
               }`}
             >
-              <span className={active ? 'text-[#9B7FA6]' : 'text-[#1C1C1A]/40'}>{item.icon}</span>
+              <span className={active ? 'text-[#7B5E8A]' : 'text-[#1C1C1A]/40'}>{item.icon}</span>
               {item.label}
             </Link>
           )

@@ -48,7 +48,7 @@ export function Navigation() {
               className="text-2xl font-semibold text-[#1C1C1A] tracking-tight"
               style={{ fontFamily: 'var(--font-serif)' }}
             >
-              Beyond the Vote
+              Beyond the <span className="text-[#7B5E8A]">Vote</span>
             </span>
           </Link>
 
@@ -63,7 +63,7 @@ export function Navigation() {
                   className={`text-sm relative group transition-colors ${active ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/70 hover:text-[#1C1C1A]'}`}
                 >
                   {label}
-                  <span className={`absolute -bottom-[1px] left-0 h-[2px] bg-[#9B7FA6] transition-all duration-200 ${active ? 'w-full' : 'w-0 group-hover:w-full'}`} />
+                  <span className={`absolute -bottom-[1px] left-0 h-[2px] bg-[#7B5E8A] transition-all duration-200 ${active ? 'w-full' : 'w-0 group-hover:w-full'}`} />
                 </Link>
               )
             })}
@@ -80,7 +80,7 @@ export function Navigation() {
                   Dashboard
                 </Link>
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-[#9B7FA6] flex items-center justify-center text-white text-xs font-semibold select-none">
+                  <div className="w-8 h-8 rounded-full bg-[#7B5E8A] flex items-center justify-center text-white text-xs font-semibold select-none">
                     {getUserInitials(user)}
                   </div>
                   <button
@@ -104,7 +104,7 @@ export function Navigation() {
                 {/* Sign Up — filled mauve */}
                 <button
                   onClick={() => setShowSignUp(true)}
-                  className="px-4 py-1.5 rounded-lg bg-[#9B7FA6] text-white text-sm hover:bg-[#8a6e95] transition-colors"
+                  className="px-4 py-1.5 rounded-lg bg-[#7B5E8A] text-white text-sm hover:bg-[#6A4F78] transition-colors"
                 >
                   Sign Up
                 </button>

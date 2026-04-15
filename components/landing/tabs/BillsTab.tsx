@@ -1,4 +1,5 @@
 import { TopoBackground, MockBillCard, Feature, IconFilter, IconTrending, IconBookmark } from './Shared'
+import { ALL_TOPICS, topicToSlug } from '@/lib/topics'
 
 export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
   return (
@@ -9,7 +10,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
             <div>
-              <span className="inline-block text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
+              <span className="inline-block text-xs font-medium text-[#7B5E8A] bg-[#7B5E8A]/10 border border-[#7B5E8A]/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Bills Tracker
               </span>
               <h1
@@ -25,13 +26,13 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={onSignUp}
-                  className="px-6 py-3 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-[#7B5E8A] text-white rounded-xl text-sm font-medium hover:bg-[#6A4F78] transition-colors shadow-sm"
                 >
                   Start tracking bills
                 </button>
                 <a
                   href="/bills"
-                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors shadow-sm"
                 >
                   Browse legislation →
                 </a>
@@ -108,11 +109,11 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
             Explore by topic
           </h2>
           <div className="flex flex-wrap gap-2 justify-center">
-            {['Climate & Environment', 'Healthcare', 'Economy & Jobs', 'Education', 'Housing', 'Immigration', 'Defense', 'Tech & Privacy', 'Voting Rights', 'Gun Policy'].map(t => (
+            {ALL_TOPICS.map(t => (
               <a
                 key={t}
-                href="/bills"
-                className="text-sm font-medium text-[#1C1C1A]/60 bg-white border border-[rgba(28,28,26,0.1)] px-4 py-2 rounded-full hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors tracking-[0.01em]"
+                href={`/bills?topics=${topicToSlug(t)}`}
+                className="text-sm font-medium text-[#1C1C1A]/60 bg-white border border-[rgba(28,28,26,0.1)] px-4 py-2 rounded-full hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors tracking-[0.01em]"
               >
                 {t}
               </a>
@@ -122,7 +123,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6 bg-[#9B7FA6]/[0.07] border-t border-[#9B7FA6]/15" aria-labelledby="bills-cta-heading">
+      <section className="py-20 px-6 bg-[#7B5E8A]/[0.07] border-t border-[#7B5E8A]/15" aria-labelledby="bills-cta-heading">
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="bills-cta-heading"
@@ -137,7 +138,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
           </p>
           <button
             onClick={onSignUp}
-            className="px-10 py-3.5 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
+            className="px-10 py-3.5 bg-[#7B5E8A] text-white rounded-xl text-sm font-medium hover:bg-[#6A4F78] transition-colors shadow-sm"
           >
             Create your account
           </button>

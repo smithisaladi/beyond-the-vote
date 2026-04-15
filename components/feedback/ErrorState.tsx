@@ -80,7 +80,7 @@ export function ErrorState({
           <button
             type="button"
             onClick={reset}
-            className="px-4 py-2 bg-[#9B7FA6] text-white text-sm font-medium rounded-lg hover:bg-[#8a6e95] transition-colors"
+            className="px-4 py-2 bg-[#7B5E8A] text-white text-sm font-medium rounded-lg hover:bg-[#6A4F78] transition-colors"
           >
             Try again
           </button>

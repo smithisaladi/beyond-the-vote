@@ -65,7 +65,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Doe"
-              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
               required
             />
           </div>
@@ -78,7 +78,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
               required
             />
           </div>
@@ -91,7 +91,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
               required
             />
           </div>
@@ -104,25 +104,25 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
               required
             />
           </div>
 
-          <label className="flex items-start gap-2 text-sm text-[#1C1C1A]/70">
-            <input type="checkbox" className="mt-0.5 rounded border-[rgba(28,28,26,0.2)]" required />
+          <label htmlFor="agree-terms" className="flex items-start gap-2 text-sm text-[#1C1C1A]/70">
+            <input id="agree-terms" type="checkbox" className="mt-0.5 rounded border-[rgba(28,28,26,0.2)]" required />
             <span>
               I agree to the{' '}
-              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#9B7FA6] hover:text-[#8a6e95]">Terms of Service</a>
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#7B5E8A] hover:text-[#6A4F78]">Terms of Service</a>
               {' '}and{' '}
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#9B7FA6] hover:text-[#8a6e95]">Privacy Policy</a>
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#7B5E8A] hover:text-[#6A4F78]">Privacy Policy</a>
             </span>
           </label>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 bg-[#9B7FA6] text-white rounded-lg hover:bg-[#8a6e95] transition-colors disabled:opacity-60"
+            className="w-full px-6 py-3 bg-[#7B5E8A] text-white rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
           >
             {loading ? 'Creating account…' : 'Create Account'}
           </button>
@@ -130,7 +130,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
 
         <p className="text-center text-sm text-[#1C1C1A]/60 mt-6">
           Already have an account?{' '}
-          <button onClick={onSwitchToSignIn} className="text-[#9B7FA6] hover:text-[#8a6e95] font-medium">
+          <button onClick={onSwitchToSignIn} className="text-[#7B5E8A] hover:text-[#6A4F78] font-medium">
             Sign in
           </button>
         </p>

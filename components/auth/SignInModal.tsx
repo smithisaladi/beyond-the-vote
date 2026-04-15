@@ -68,7 +68,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+                  className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
                   required
                 />
               </div>
@@ -81,20 +81,20 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+                  className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
                   required
                 />
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 text-[#1C1C1A]/70">
-                  <input type="checkbox" className="rounded border-[rgba(28,28,26,0.2)]" />
+                <label htmlFor="remember-me" className="flex items-center gap-2 text-[#1C1C1A]/70">
+                  <input id="remember-me" type="checkbox" className="rounded border-[rgba(28,28,26,0.2)]" />
                   Remember me
                 </label>
                 <button
                   type="button"
                   onClick={() => { setError(''); setView('forgot-password') }}
-                  className="text-[#9B7FA6] hover:text-[#8a6e95]"
+                  className="text-[#7B5E8A] hover:text-[#6A4F78]"
                 >
                   Forgot password?
                 </button>
@@ -103,7 +103,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-6 py-3 bg-[#9B7FA6] text-white rounded-lg hover:bg-[#8a6e95] transition-colors disabled:opacity-60"
+                className="w-full px-6 py-3 bg-[#7B5E8A] text-white rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
               >
                 {loading ? 'Signing in…' : 'Sign In'}
               </button>
@@ -111,7 +111,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
 
             <p className="text-center text-sm text-[#1C1C1A]/60 mt-6">
               Don't have an account?{' '}
-              <button onClick={onSwitchToSignUp} className="text-[#9B7FA6] hover:text-[#8a6e95] font-medium">
+              <button onClick={onSwitchToSignUp} className="text-[#7B5E8A] hover:text-[#6A4F78] font-medium">
                 Sign up
               </button>
             </p>
@@ -146,7 +146,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+                  className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
                   required
                 />
               </div>
@@ -154,7 +154,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-6 py-3 bg-[#9B7FA6] text-white rounded-lg hover:bg-[#8a6e95] transition-colors disabled:opacity-60"
+                className="w-full px-6 py-3 bg-[#7B5E8A] text-white rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
               >
                 {loading ? 'Sending…' : 'Send Reset Link'}
               </button>
@@ -164,8 +164,8 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
 
         {view === 'check-email' && (
           <div className="text-center py-4">
-            <div className="w-16 h-16 bg-[#9B7FA6]/10 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9B7FA6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="w-16 h-16 bg-[#7B5E8A]/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="2" y="4" width="20" height="16" rx="2" />
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
@@ -176,7 +176,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
             </p>
             <button
               onClick={() => { setError(''); setView('sign-in') }}
-              className="text-sm text-[#9B7FA6] hover:text-[#8a6e95] font-medium"
+              className="text-sm text-[#7B5E8A] hover:text-[#6A4F78] font-medium"
             >
               Back to sign in
             </button>

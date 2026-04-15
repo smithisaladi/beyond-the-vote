@@ -5,8 +5,9 @@ import { SignInModal } from '../auth/SignInModal'
 import { SignUpModal } from '../auth/SignUpModal'
 import { RepresentativesTab } from './tabs/RepresentativesTab'
 import { BillsTab } from './tabs/BillsTab'
+import { DonorsTab } from './tabs/DonorsTab'
 
-type Tab = 'representatives' | 'bills'
+type Tab = 'representatives' | 'bills' | 'donors'
 
 export function LandingPage() {
   const [tab, setTab] = useState<Tab>('representatives')
@@ -36,6 +37,7 @@ export function LandingPage() {
             {([
               { id: 'representatives', label: 'Know Your Representative' },
               { id: 'bills', label: 'Bills' },
+              { id: 'donors', label: 'Donors' },
             ] as { id: Tab; label: string }[]).map(({ id, label }) => (
               <button
                 key={id}
@@ -62,7 +64,7 @@ export function LandingPage() {
             </button>
             <button
               onClick={() => setShowSignUp(true)}
-              className="text-sm bg-[#9B7FA6] text-white px-4 py-2 rounded-lg hover:bg-[#8a6e95] transition-colors shadow-sm font-medium"
+              className="text-sm bg-[#7B5E8A] text-white px-4 py-2 rounded-lg hover:bg-[#6A4F78] transition-colors shadow-sm font-medium"
             >
               Sign up
             </button>
@@ -74,7 +76,9 @@ export function LandingPage() {
       <main id="main-content">
         {tab === 'representatives'
           ? <RepresentativesTab onSignUp={() => setShowSignUp(true)} />
-          : <BillsTab onSignUp={() => setShowSignUp(true)} />
+          : tab === 'bills'
+          ? <BillsTab onSignUp={() => setShowSignUp(true)} />
+          : <DonorsTab onSignUp={() => setShowSignUp(true)} />
         }
       </main>
 

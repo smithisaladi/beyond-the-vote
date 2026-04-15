@@ -14,7 +14,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-        checked ? 'bg-[#9B7FA6]' : 'bg-[#D6CFC4]'
+        checked ? 'bg-[#7B5E8A]' : 'bg-[#D6CFC4]'
       }`}
     >
       <span
@@ -155,7 +155,7 @@ export default function SettingsPage() {
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Your name"
-                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/40 placeholder:text-[#1C1C1A]/35"
+                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/40 placeholder:text-[#1C1C1A]/35"
                     />
                   </div>
                   <div>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
                     <button
                       type="submit"
                       disabled={nameState.loading}
-                      className="px-4 py-2 bg-[#9B7FA6] text-white text-sm rounded-lg hover:bg-[#8a6e95] transition-colors disabled:opacity-60"
+                      className="px-4 py-2 bg-[#7B5E8A] text-white text-sm rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
                     >
                       {nameState.loading ? 'Saving…' : 'Save'}
                     </button>
@@ -194,7 +194,7 @@ export default function SettingsPage() {
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/40 placeholder:text-[#1C1C1A]/35"
+                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/40 placeholder:text-[#1C1C1A]/35"
                     />
                   </div>
                   <div>
@@ -205,7 +205,7 @@ export default function SettingsPage() {
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••"
                       minLength={8}
-                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/40 placeholder:text-[#1C1C1A]/35"
+                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/40 placeholder:text-[#1C1C1A]/35"
                     />
                   </div>
                   <div>
@@ -216,7 +216,7 @@ export default function SettingsPage() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       minLength={8}
-                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#9B7FA6]/40 placeholder:text-[#1C1C1A]/35"
+                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/40 placeholder:text-[#1C1C1A]/35"
                     />
                   </div>
                   {passwordState.error && <p className="text-sm text-[#B85C38]">{passwordState.error}</p>}
@@ -224,7 +224,7 @@ export default function SettingsPage() {
                     <button
                       type="submit"
                       disabled={passwordState.loading}
-                      className="px-4 py-2 bg-[#9B7FA6] text-white text-sm rounded-lg hover:bg-[#8a6e95] transition-colors disabled:opacity-60"
+                      className="px-4 py-2 bg-[#7B5E8A] text-white text-sm rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
                     >
                       {passwordState.loading ? 'Updating…' : 'Update password'}
                     </button>
@@ -284,7 +284,7 @@ export default function SettingsPage() {
                               onClick={() => setNotifPrefs(p => ({ ...p, frequency: f }))}
                               className={`px-3 py-1.5 rounded-lg text-sm border transition-colors capitalize ${
                                 notifPrefs.frequency === f
-                                  ? 'border-[#9B7FA6] bg-[#9B7FA6]/10 text-[#9B7FA6] font-medium'
+                                  ? 'border-[#7B5E8A] bg-[#7B5E8A]/10 text-[#7B5E8A] font-medium'
                                   : 'border-[#D6CFC4] text-[#1C1C1A]/60 hover:border-[#1C1C1A]/30'
                               }`}
                             >
@@ -331,7 +331,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={notifState.loading}
-                    className="px-4 py-2 bg-[#9B7FA6] text-white text-sm rounded-lg hover:bg-[#8a6e95] transition-colors disabled:opacity-60"
+                    className="px-4 py-2 bg-[#7B5E8A] text-white text-sm rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
                   >
                     {notifState.loading ? 'Saving…' : 'Save preferences'}
                   </button>

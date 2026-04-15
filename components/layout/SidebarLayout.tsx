@@ -1,14 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AppSidebar } from './AppSidebar'
-
-const EXPANDED_WIDTH = 228
-const COLLAPSED_WIDTH = 60
+import { SIDEBAR_EXPANDED_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '@/lib/constants'
 
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false)
-  const sidebarWidth = collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH
+  const [hydrated, setHydrated] = useState(false)
+  const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebar-collapsed') === 'true'
+    setCollapsed(stored)
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    if (hydrated) localStorage.setItem('sidebar-collapsed', String(collapsed))
+  }, [collapsed, hydrated])
 
   return (
     <div className="flex min-h-screen bg-[#F5F0E8]">

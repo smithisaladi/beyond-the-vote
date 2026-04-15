@@ -34,8 +34,8 @@ export function TopoBackground() {
 export function Feature({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
     <div className="flex gap-4">
-      <div className="w-10 h-10 rounded-lg bg-[#9B7FA6]/10 border border-[#9B7FA6]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <span className="text-[#9B7FA6]">{icon}</span>
+      <div className="w-10 h-10 rounded-lg bg-[#7B5E8A]/10 border border-[#7B5E8A]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <span className="text-[#7B5E8A]">{icon}</span>
       </div>
       <div>
         <h3 className="text-sm font-semibold text-[#1C1C1A] mb-1.5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 500 }}>{title}</h3>
@@ -94,6 +94,27 @@ export function IconTrending() {
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" />
+    </svg>
+  )
+}
+export function IconDollar() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+    </svg>
+  )
+}
+export function IconArrowsLeftRight() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="18 8 22 12 18 16" /><polyline points="6 8 2 12 6 16" /><line x1="2" y1="12" x2="22" y2="12" />
+    </svg>
+  )
+}
+export function IconSparkles() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5L12 3z" /><path d="M19 15l.5 2 2 .5-2 .5-.5 2-.5-2-2-.5 2-.5.5-2z" />
     </svg>
   )
 }
@@ -158,6 +179,28 @@ export function MockBillCard({ number, title, status, category }: {
       <span className="inline-block text-[11px] text-[#1C1C1A]/40 bg-[#F5F0E8] border border-[rgba(28,28,26,0.08)] px-2.5 py-1 rounded-full">
         {category}
       </span>
+    </div>
+  )
+}
+
+export function MockDonorCard({ rank, name, total, lean, recipients }: {
+  rank: number; name: string; total: string; lean: 'Democrat' | 'Republican' | 'Mixed'; recipients: number
+}) {
+  const leanStyle = lean === 'Mixed'
+    ? { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]', dot: 'bg-[#8A8A7A]' }
+    : { bg: PARTY_STYLES[lean].bg, text: PARTY_STYLES[lean].text, dot: lean === 'Democrat' ? 'bg-[#7B8FA8]' : 'bg-[#A87B7B]' }
+  return (
+    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+      <div className="flex items-start justify-between gap-3 mb-2">
+        <span className="text-xs font-mono text-[#1C1C1A]/30">#{rank}</span>
+        <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full ${leanStyle.bg} ${leanStyle.text}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${leanStyle.dot}`} />
+          {lean === 'Mixed' ? 'Mixed' : `Leans ${lean}`}
+        </span>
+      </div>
+      <p className="text-sm text-[#1C1C1A] mb-1.5" style={{ fontFamily: 'var(--font-serif)' }}>{name}</p>
+      <p className="text-lg font-semibold text-[#1C1C1A] mb-2" style={{ fontFamily: 'var(--font-serif)' }}>{total}</p>
+      <p className="text-xs text-[#1C1C1A]/38">{recipients} candidates supported</p>
     </div>
   )
 }

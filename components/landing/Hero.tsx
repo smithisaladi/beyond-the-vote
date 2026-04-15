@@ -39,7 +39,7 @@ export function Hero() {
           />
           <button
             type="submit"
-            className="px-8 py-3 bg-[#9B7FA6] text-white rounded-md hover:bg-[#8a6e95] transition-colors whitespace-nowrap"
+            className="px-8 py-3 bg-[#7B5E8A] text-white rounded-md hover:bg-[#6A4F78] transition-colors whitespace-nowrap"
           >
             Find My Representatives
           </button>
