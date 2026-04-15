@@ -1,25 +1,22 @@
 /**
  * Skeleton for `/representatives/[id]`.
  *
- * Mirrors the final profile layout — avatar + bio header, plus the two-column
- * content grid (main column + donor sidebar). Uses the standard `#E8E3DA`
- * skeleton fill on white cards.
+ * Matches the ProfileSkeleton in RepresentativeDetailPage.tsx — avatar,
+ * name/title, badges, and the two-column content grid.
  */
 
 export default function RepresentativeDetailLoading() {
   return (
-    <div className="min-h-screen bg-[#F5F0E8]">
-      <div className="relative z-10 flex flex-col">
-        <div className="h-16 border-b border-[rgba(28,28,26,0.06)] bg-[#F5F0E8]/80" />
-
-        <main className="flex-1 px-6 py-10">
-          <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
+    <div className="relative flex flex-col min-h-screen overflow-hidden">
+      <div className="relative z-10 flex flex-col flex-1">
+        <main className="flex-1 px-6 pt-10 pb-8">
+          <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
             {/* Back-link */}
             <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
 
             {/* Profile header card */}
             <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
-              <div className="flex gap-6">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                 <div className="w-24 h-24 rounded-full bg-[#E8E3DA] flex-shrink-0" />
                 <div className="flex-1 space-y-3 pt-2">
                   <div className="h-7 bg-[#E8E3DA] rounded w-56" />

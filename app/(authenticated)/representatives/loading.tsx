@@ -1,53 +1,47 @@
 /**
  * Skeleton for the `/representatives` index.
  *
- * Rendered during the initial segment load. Matches the final layout's
- * search bar + 3-column card grid so the content fades in rather than
- * shifts.
+ * Mirrors the page heading + tabbed search card layout. No results
+ * grid is shown since the page starts empty until the user searches.
  */
 
 export default function RepresentativesLoading() {
   return (
-    <div className="min-h-screen bg-[#F5F0E8]">
-      <div className="relative z-10 flex flex-col">
-        <div className="h-16 border-b border-[rgba(28,28,26,0.06)] bg-[#F5F0E8]/80" />
+    <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
+      {/* Header placeholder — matches PageHeader */}
+      <div className="sticky top-0 z-10 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] min-h-[64px] px-8 flex items-center justify-between">
+        <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
+        <div className="h-4 w-16 bg-[#E8E3DA] rounded" />
+      </div>
 
-        <main className="flex-1 px-6 py-14">
-          <div className="max-w-5xl mx-auto animate-pulse">
-            {/* Page title */}
-            <div className="text-center mb-10">
-              <div className="h-10 w-72 bg-[#E8E3DA] rounded mx-auto mb-3" />
-              <div className="h-4 w-96 bg-[#E8E3DA] rounded mx-auto" />
+      <main className="relative z-10 flex-1 px-6 pt-24 pb-8">
+        <div className="max-w-4xl mx-auto animate-pulse">
+          {/* Centered heading */}
+          <div className="mb-5 text-center">
+            <div className="h-8 w-56 bg-[#E8E3DA] rounded mx-auto mb-2" />
+            <div className="h-4 w-80 bg-[#E8E3DA] rounded mx-auto" />
+          </div>
+
+          {/* Tabbed search card */}
+          <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+            {/* Tab bar */}
+            <div className="flex border-b border-[rgba(28,28,26,0.06)]">
+              <div className="flex-1 flex justify-center py-3">
+                <div className="h-4 w-12 bg-[#E8E3DA] rounded" />
+              </div>
+              <div className="w-px bg-[rgba(28,28,26,0.06)]" />
+              <div className="flex-1 flex justify-center py-3">
+                <div className="h-4 w-16 bg-[#E8E3DA] rounded" />
+              </div>
             </div>
-
-            {/* Address search bar */}
-            <div className="max-w-xl mx-auto mb-12">
-              <div className="h-12 bg-white rounded-xl border border-[rgba(28,28,26,0.08)]" />
-            </div>
-
-            {/* Three representative cards (typical: 2 senators + 1 house rep). */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] p-6 flex flex-col items-center gap-4"
-                >
-                  <div className="w-20 h-20 rounded-full bg-[#E8E3DA]" />
-                  <div className="space-y-2 w-full text-center">
-                    <div className="h-5 bg-[#E8E3DA] rounded w-3/4 mx-auto" />
-                    <div className="h-3.5 bg-[#E8E3DA] rounded w-1/2 mx-auto" />
-                  </div>
-                  <div className="flex gap-2 justify-center">
-                    <div className="h-5 w-20 bg-[#E8E3DA] rounded-full" />
-                    <div className="h-5 w-10 bg-[#E8E3DA] rounded-full" />
-                  </div>
-                  <div className="w-full h-9 bg-[#E8E3DA] rounded-lg mt-1" />
-                </div>
-              ))}
+            {/* Search input area */}
+            <div className="flex items-center px-5 py-4 gap-3">
+              <div className="w-4 h-4 bg-[#E8E3DA] rounded flex-shrink-0" />
+              <div className="flex-1 h-5 bg-[#E8E3DA] rounded" />
             </div>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

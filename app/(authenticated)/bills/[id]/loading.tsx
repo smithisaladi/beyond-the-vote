@@ -1,20 +1,16 @@
 /**
  * Skeleton for `/bills/[id]`.
  *
- * Approximates the finished layout — header card, summary, main/side
- * content — so the transition from skeleton to real content is a fade in
- * place rather than a reflow. Colors follow the design system
- * (`#E8E3DA` on white cards).
+ * Matches the DetailSkeleton in BillDetailPage.tsx so the transition
+ * from loading to rendered content is a fade rather than a reflow.
  */
 
 export default function BillDetailLoading() {
   return (
-    <div className="min-h-screen bg-[#F5F0E8]">
-      <div className="relative z-10 flex flex-col">
-        <div className="h-16 border-b border-[rgba(28,28,26,0.06)] bg-[#F5F0E8]/80" />
-
-        <main className="flex-1 px-6 py-10">
-          <div className="max-w-5xl mx-auto space-y-6 animate-pulse">
+    <div className="relative flex flex-col min-h-screen overflow-hidden">
+      <div className="relative z-10 flex flex-col flex-1">
+        <main className="flex-1 px-6 pt-10 pb-8">
+          <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
             {/* Back-link placeholder */}
             <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
 

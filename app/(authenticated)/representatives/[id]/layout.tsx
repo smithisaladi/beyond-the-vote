@@ -14,7 +14,9 @@ import { createClient } from '@/lib/supabase/server'
  * keeps TTFB lower on social-card-bearing crawlers.
  */
 
-export const dynamic = 'force-dynamic'
+// Revalidate metadata every 5 minutes — no need for force-dynamic since
+// metadata only depends on the legislator row, not user-specific data.
+export const revalidate = 300
 
 interface LayoutProps {
   children: React.ReactNode

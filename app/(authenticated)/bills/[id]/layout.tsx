@@ -14,8 +14,9 @@ import { createClient } from '@/lib/supabase/server'
  * not-found state so it can include a friendly back-link.
  */
 
-// Dynamic metadata depends on request-time params; opt out of static rendering.
-export const dynamic = 'force-dynamic'
+// Revalidate metadata every 5 minutes — no need for force-dynamic since
+// metadata only depends on the bill row, not user-specific data.
+export const revalidate = 300
 
 interface LayoutProps {
   children: React.ReactNode
