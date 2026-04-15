@@ -155,7 +155,7 @@ export function useDashboard(user: User | null): {
       }
     }
 
-    load().catch(() => {})
+    load().catch(err => console.error('[dashboard] load failed:', err))
     return () => controller.abort()
   }, [user, trackedBills])
 

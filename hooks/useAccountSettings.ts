@@ -6,15 +6,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { MIN_PASSWORD_LENGTH } from '@/lib/constants'
 import type { UserMetadata } from '@/lib/supabase/types'
 
-type Frequency = 'immediate' | 'daily' | 'weekly'
-
-export type NotificationPreferences = {
-  emailEnabled: boolean
-  frequency: Frequency
-  notifyVote: boolean
-  notifyBillStatus: boolean
-}
-
 export function useAccountSettings() {
   const { user, signOut } = useAuth()
 
@@ -25,29 +16,11 @@ export function useAccountSettings() {
   // Password
   const [password, setPasswordState] = useState({ loading: false, success: false, error: '' })
 
-  // Notification preferences
-  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences>({
-    emailEnabled: true,
-    frequency: 'daily',
-    notifyVote: true,
-    notifyBillStatus: true,
-  })
-  const [notifications, setNotifications] = useState({ loading: false, success: false })
-
   // Initialise from user metadata when user loads
   useEffect(() => {
     if (!user) return
     const meta = user.user_metadata as UserMetadata | undefined
     setDisplayName(meta?.full_name ?? '')
-    const prefs = meta?.notification_preferences
-    if (prefs) {
-      setNotifPrefs({
-        emailEnabled:    prefs.email_enabled ?? true,
-        frequency:       prefs.frequency ?? 'daily',
-        notifyVote:      prefs.notify_vote ?? true,
-        notifyBillStatus: prefs.notify_bill_status ?? true,
-      })
-    }
   }, [user])
 
   const updateName = async (e: React.FormEvent) => {
@@ -83,39 +56,14 @@ export function useAccountSettings() {
     return true
   }
 
-  const updateNotificationPreferences = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setNotifications({ loading: true, success: false })
-    const { error } = await createClient().auth.updateUser({
-      data: {
-        notification_preferences: {
-          email_enabled:    notifPrefs.emailEnabled,
-          frequency:        notifPrefs.frequency,
-          notify_vote:      notifPrefs.notifyVote,
-          notify_bill_status: notifPrefs.notifyBillStatus,
-        },
-      },
-    })
-    if (!error) {
-      setNotifications({ loading: false, success: true })
-      setTimeout(() => setNotifications(s => ({ ...s, success: false })), 3000)
-    } else {
-      setNotifications({ loading: false, success: false })
-    }
-  }
-
   return {
     user,
     displayName,
     setDisplayName,
-    notifPrefs,
-    setNotifPrefs,
     updateName,
     changePassword,
-    updateNotificationPreferences,
     signOut,
     name,
     password,
-    notifications,
   }
 }

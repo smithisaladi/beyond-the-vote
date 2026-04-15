@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { Party } from '@/lib/types'
 import { parseSearchParams, PoliticianSearchParams } from '@/lib/api-validation'
-
-function normalizeParty(party?: string): Party {
-  const p = (party ?? '').toUpperCase()
-  if (p.includes('DEMOCRAT') || p === 'D') return 'Democrat'
-  if (p.includes('REPUBLICAN') || p === 'R') return 'Republican'
-  return 'Independent'
-}
+import { toParty } from '@/lib/party'
 
 export async function GET(request: NextRequest) {
   try {
@@ -48,7 +41,7 @@ export async function GET(request: NextRequest) {
       bioguideId: row.bioguide_id,
       name: row.full_name ?? '',
       title: (row.chamber ?? '').toLowerCase() === 'senate' ? 'U.S. Senator' : 'U.S. Representative',
-      party: normalizeParty(row.party),
+      party: toParty(row.party),
       state: row.state ?? '',
       district: row.district ? `${row.district}th District` : undefined,
       photo: row.photo_url ?? null,

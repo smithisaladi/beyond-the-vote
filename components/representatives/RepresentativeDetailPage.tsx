@@ -15,6 +15,8 @@ import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { isFinalPassageVote } from '@/lib/votes'
 import { formatBillId } from '@/lib/bills'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab = 'votes' | 'bills' | 'donors'
@@ -38,21 +40,21 @@ function Initials({ name }: { name: string }) {
 function ProfileSkeleton() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
-      <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
-      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
+      <Skeleton className="h-5 w-28" />
+      <Card padding="none" className="p-6 sm:p-8">
         <div className="flex gap-6">
-          <div className="w-24 h-24 rounded-full bg-[#E8E3DA] flex-shrink-0" />
+          <Skeleton className="w-24 h-24 rounded-full flex-shrink-0" />
           <div className="flex-1 space-y-3 pt-2">
-            <div className="h-7 bg-[#E8E3DA] rounded w-56" />
-            <div className="h-4 bg-[#E8E3DA] rounded w-36" />
-            <div className="h-4 bg-[#E8E3DA] rounded w-48" />
+            <Skeleton className="h-7 w-56" />
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-4 w-48" />
           </div>
-          <div className="w-24 h-9 bg-[#E8E3DA] rounded-lg flex-shrink-0" />
+          <Skeleton className="w-24 h-9 rounded-lg flex-shrink-0" />
         </div>
-      </div>
+      </Card>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] h-64" />
-        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] h-64" />
+        <Card padding="none" className="h-64" />
+        <Card padding="none" className="h-64" />
       </div>
     </div>
   )
@@ -184,7 +186,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
               </button>
 
               {/* Hero card */}
-              <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
+              <Card padding="none" className="p-6 sm:p-8">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                   {politician.photo && !photoError
                     ? <Image src={politician.photo} alt={politician.name} width={96} height={96} className="rounded-full object-cover flex-shrink-0" onError={() => setPhotoError(true)} />
@@ -273,13 +275,13 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
                     {following ? 'Following ✓' : 'Follow'}
                   </button>
                 </div>
-              </div>
+              </Card>
 
               {/* Two-column layout */}
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
 
                 {/* Tab panel */}
-                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+                <Card padding="none" className="overflow-hidden">
                   <div className="flex border-b border-[rgba(28,28,26,0.08)]" role="tablist">
                     {tabs.map(tab => (
                       <button
@@ -391,13 +393,13 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
                       />
                     )}
                   </div>
-                </div>
+                </Card>
 
                 {/* Sidebar */}
                 <div className="space-y-4">
 
                   {/* Stats */}
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-6">
+                  <Card className="flex flex-col gap-6">
                     <div>
                       <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide mb-1">Years in Office</p>
                       <p className="text-3xl font-medium text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>
@@ -441,11 +443,11 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
                         </p>
                       </div>
                     )}
-                  </div>
+                  </Card>
 
                   {/* Committees */}
                   {politician.committees.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
+                    <Card>
                       <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide mb-3">Committees</p>
                       <ul className="space-y-2">
                         {politician.committees.map((c, i) => (
@@ -468,7 +470,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
                           </li>
                         ))}
                       </ul>
-                    </div>
+                    </Card>
                   )}
                 </div>
 

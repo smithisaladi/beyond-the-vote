@@ -6,7 +6,9 @@ test.describe('Bills page', () => {
   })
 
   test('renders the page with heading', async ({ page }) => {
-    await expect(page.locator('h1, [data-testid="page-title"]')).toBeVisible()
+    // The Bills page has two <h1>s (sticky "Bills Tracker" in PageHeader,
+    // plus "Search Bills" in <main>). Scope to the main content h1.
+    await expect(page.locator('main h1, [data-testid="page-title"]').first()).toBeVisible()
   })
 
   test('search input is visible and functional', async ({ page }) => {

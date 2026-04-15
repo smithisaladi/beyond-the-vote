@@ -1,5 +1,6 @@
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import type { BillStatus } from '@/lib/types'
+import { Card } from '@/components/ui/Card'
 
 // ── Decorative background ─────────────────────────────────────────────────────
 
@@ -128,7 +129,7 @@ export function MockRepCard({ name, title, party, state, vote }: {
   const style = PARTY_STYLES[party as keyof typeof PARTY_STYLES] ?? PARTY_STYLES.Independent
   const initials = name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+    <Card>
       <div className="flex items-start gap-3 mb-4">
         <div className="w-11 h-11 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0">
           <span className="text-sm text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
@@ -157,7 +158,7 @@ export function MockRepCard({ name, title, party, state, vote }: {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -166,7 +167,7 @@ export function MockBillCard({ number, title, status, category }: {
 }) {
   const style = STATUS_STYLES[status as BillStatus] ?? STATUS_STYLES.Active
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] p-6 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+    <Card>
       <div className="flex items-start justify-between gap-3 mb-3">
         <span className="text-[11px] font-mono text-[#1C1C1A]/38">{number}</span>
         <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full flex-shrink-0 ${style.bg} ${style.text}`}>
@@ -179,7 +180,7 @@ export function MockBillCard({ number, title, status, category }: {
       <span className="inline-block text-[11px] text-[#1C1C1A]/40 bg-[#F5F0E8] border border-[rgba(28,28,26,0.08)] px-2.5 py-1 rounded-full">
         {category}
       </span>
-    </div>
+    </Card>
   )
 }
 
@@ -190,7 +191,7 @@ export function MockDonorCard({ rank, name, total, lean, recipients }: {
     ? { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]', dot: 'bg-[#8A8A7A]' }
     : { bg: PARTY_STYLES[lean].bg, text: PARTY_STYLES[lean].text, dot: lean === 'Democrat' ? 'bg-[#7B8FA8]' : 'bg-[#A87B7B]' }
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] p-5 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+    <Card padding="none" className="p-5">
       <div className="flex items-start justify-between gap-3 mb-2">
         <span className="text-xs font-mono text-[#1C1C1A]/30">#{rank}</span>
         <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full ${leanStyle.bg} ${leanStyle.text}`}>
@@ -201,6 +202,6 @@ export function MockDonorCard({ rank, name, total, lean, recipients }: {
       <p className="text-sm text-[#1C1C1A] mb-1.5" style={{ fontFamily: 'var(--font-serif)' }}>{name}</p>
       <p className="text-lg font-semibold text-[#1C1C1A] mb-2" style={{ fontFamily: 'var(--font-serif)' }}>{total}</p>
       <p className="text-xs text-[#1C1C1A]/38">{recipients} candidates supported</p>
-    </div>
+    </Card>
   )
 }

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { TopoBackground, MockBillCard, Feature, IconFilter, IconTrending, IconBookmark } from './Shared'
 import { ALL_TOPICS, topicToSlug } from '@/lib/topics'
 
@@ -20,7 +21,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
                 Follow legislation from introduction to law
               </h1>
               <p className="text-xl text-[#1C1C1A]/55 mb-9 leading-relaxed max-w-lg">
-                Track thousands of bills in real time. Understand what's being debated in Congress
+                Track thousands of bills in real time. Understand what&apos;s being debated in Congress
                 and how it could affect your community before it becomes law.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -30,12 +31,12 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
                 >
                   Start tracking bills
                 </button>
-                <a
+                <Link
                   href="/bills"
                   className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors shadow-sm"
                 >
                   Browse legislation →
-                </a>
+                </Link>
               </div>
             </div>
 

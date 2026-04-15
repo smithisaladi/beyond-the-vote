@@ -31,7 +31,9 @@ export function useTopicPreferences(user: User | null) {
       try {
         const raw = localStorage.getItem(LS_KEY)
         if (raw) setSelectedTopics(new Set(JSON.parse(raw) as Topic[]))
-      } catch {}
+      } catch (err) {
+        console.error('[topic-preferences] parse LS failed:', err)
+      }
       setLoaded(true)
     }
   }, [user])
@@ -52,16 +54,23 @@ export function useTopicPreferences(user: User | null) {
     } else {
       try {
         localStorage.setItem(LS_KEY, JSON.stringify([...next]))
-      } catch {}
+      } catch (err) {
+        console.error('[topic-preferences] setItem failed:', err)
+      }
     }
   }
 
-  const clearAll = () => {
+  const clearAll = async () => {
     setSelectedTopics(new Set())
     if (user) {
-      createClient().from('topic_preferences').delete().eq('user_id', user.id)
+      const { error } = await createClient().from('topic_preferences').delete().eq('user_id', user.id)
+      if (error) console.error('[topic-preferences] clearAll failed:', error)
     } else {
-      try { localStorage.removeItem(LS_KEY) } catch {}
+      try {
+        localStorage.removeItem(LS_KEY)
+      } catch (err) {
+        console.error('[topic-preferences] removeItem failed:', err)
+      }
     }
   }
 

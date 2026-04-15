@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { TopoBackground, MockDonorCard, Feature, IconDollar, IconArrowsLeftRight, IconSparkles } from './Shared'
 
 export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
@@ -30,12 +31,12 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
                 >
                   Start exploring donors
                 </button>
-                <a
+                <Link
                   href="/donors"
                   className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors shadow-sm"
                 >
                   Browse top PACs &rarr;
-                </a>
+                </Link>
               </div>
             </div>
 

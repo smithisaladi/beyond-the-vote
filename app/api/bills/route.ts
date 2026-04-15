@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { BillStatus as Status } from '@/lib/bills'
 import { hybridBillSearch } from '@/lib/queries/hybrid-bill-search'
 import { parseSearchParams, BillsParams } from '@/lib/api-validation'
+import { toParty } from '@/lib/party'
 
 async function enrichBillsWithSponsors(bills: any[], supabase: any) {
   const missingIds = [...new Set(
@@ -37,21 +38,13 @@ interface Bill {
   summary: string
 }
 
-function normalizeParty(party?: string | null): 'Democrat' | 'Republican' | 'Independent' {
-  if (!party) return 'Independent'
-  const p = party.trim().toUpperCase()
-  if (p === 'D' || p === 'DEMOCRAT' || p === 'DEMOCRATIC') return 'Democrat'
-  if (p === 'R' || p === 'REPUBLICAN') return 'Republican'
-  return 'Independent'
-}
-
 function mapRowToBill(row: any): Bill {
   return {
     id:                 row.bill_id,
     number:             row.bill_number ?? row.bill_id,
     title:              row.title,
     sponsor:            row.sponsor_name ?? 'Unknown',
-    party:              normalizeParty(row.sponsor_party),
+    party:              toParty(row.sponsor_party),
     status:             (row.status as Status) ?? 'Active',
     topics:             row.topics ?? [],
     lastAction:         row.last_action_date

@@ -25,7 +25,7 @@ export function Hero() {
 
       <p className="text-xl text-[#1C1C1A]/70 mb-12 max-w-2xl mx-auto">
         Uncover the votes, funding, and values behind your elected officials.
-        Democracy works best when it's transparent.
+        Democracy works best when it&apos;s transparent.
       </p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">

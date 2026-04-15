@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 
-export type BillDetailStatus = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
+type BillDetailStatus = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
 
 interface Sponsor {
   name: string
@@ -121,7 +121,10 @@ export function useFetchBillDetail(id: string, initialBill?: BillDetail | null):
           summary: data.bill.summary || prev.summary,
         } : prev)
       })
-      .catch(() => {})
+      .catch(err => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        console.error('[bill-detail] enrichment failed:', err)
+      })
     return () => controller.abort()
   }, [id, initialBill])
 

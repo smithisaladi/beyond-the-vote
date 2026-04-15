@@ -7,6 +7,7 @@ import { Check } from 'lucide-react'
 import { useFollowPolitician } from '@/hooks/useFollowPolitician'
 import type { Party } from '@/lib/types'
 import { PARTY_STYLES } from '@/lib/ui'
+import { Card } from '@/components/ui/Card'
 
 interface RepresentativeCardProps {
   id: string
@@ -46,7 +47,7 @@ export function RepresentativeCard({
 
   return (
     <Link href={`/representatives/${id}`} className="block group">
-      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-[#7B5E8A]/20 transition-all p-6 flex flex-col items-center text-center gap-4 h-full">
+      <Card hoverable className="flex flex-col items-center text-center gap-4 h-full">
         {photo && !photoError
           ? <Image src={photo} alt={name} width={80} height={80} className="rounded-full object-cover" onError={() => setPhotoError(true)} />
           : <Initials name={name} />
@@ -110,7 +111,7 @@ export function RepresentativeCard({
             : 'Follow'
           }
         </button>
-      </div>
+      </Card>
     </Link>
   )
 }

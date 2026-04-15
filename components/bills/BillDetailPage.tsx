@@ -12,6 +12,8 @@ import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { PartyBadge } from '@/components/shared/PartyBadge'
 import BillVoteTally from '@/components/bills/BillVoteTally'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -36,22 +38,22 @@ function ExternalLinkIcon() {
 function DetailSkeleton() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
-      <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
-      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8 space-y-4">
+      <Skeleton className="h-5 w-28" />
+      <Card padding="none" className="p-6 sm:p-8 space-y-4">
         <div className="flex gap-3">
-          <div className="h-5 w-20 bg-[#E8E3DA] rounded-full" />
-          <div className="h-5 w-16 bg-[#E8E3DA] rounded-full" />
+          <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-5 w-16 rounded-full" />
         </div>
-        <div className="h-8 bg-[#E8E3DA] rounded w-3/4" />
-        <div className="h-4 bg-[#E8E3DA] rounded w-1/4" />
-      </div>
-      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-32" />
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-1/4" />
+      </Card>
+      <Card className="h-32" />
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-40" />
-          <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-48" />
+          <Card className="h-40" />
+          <Card className="h-48" />
         </div>
-        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-64" />
+        <Card className="h-64" />
       </div>
     </div>
   )
@@ -153,7 +155,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
               </button>
 
               {/* Header card */}
-              <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
+              <Card padding="none" className="p-6 sm:p-8">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
                     {/* Meta row */}
@@ -215,14 +217,14 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                     </button>
                   </div>
                 </div>
-              </div>
+              </Card>
 
               {/* Summary */}
               {bill.summary && (
-                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
+                <Card padding="none" className="p-6 sm:p-8">
                   <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Summary</h2>
                   <p className="text-sm text-[#1C1C1A]/75 leading-relaxed">{bill.summary}</p>
-                </div>
+                </Card>
               )}
 
               {/* Main grid */}
@@ -233,7 +235,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
 
                   {/* Sponsor */}
                   {bill.sponsor && (
-                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
+                    <Card>
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Sponsor</h2>
                       <div className="flex items-center justify-between">
                         <div>
@@ -253,12 +255,12 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                           View profile →
                         </Link>
                       </div>
-                    </div>
+                    </Card>
                   )}
 
                   {/* Co-sponsors */}
                   {bill.cosponsors.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
+                    <Card>
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">
                         Co-sponsors
                         <span className="ml-1.5 text-[#1C1C1A]/30 normal-case tracking-normal font-normal">
@@ -293,12 +295,12 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                           {showAllCosponsors ? 'Show fewer' : `Show all ${bill.cosponsors.length}`}
                         </button>
                       )}
-                    </div>
+                    </Card>
                   )}
 
                   {/* Subjects */}
                   {bill.subjects.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
+                    <Card>
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Legislative Subjects</h2>
                       <div className="flex flex-wrap gap-2">
                         {bill.subjects.map(subject => (
@@ -310,7 +312,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                           </span>
                         ))}
                       </div>
-                    </div>
+                    </Card>
                   )}
                 </div>
 
@@ -319,15 +321,15 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
 
                   {/* Votes */}
                   {bill.votes.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
+                    <Card>
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
                       <BillVoteTally votes={bill.votes} billId={id} />
-                    </div>
+                    </Card>
                   )}
 
                   {/* Status timeline */}
                   {bill.actions.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
+                    <Card>
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Timeline</h2>
                       <div className="relative">
                         {/* Vertical line */}
@@ -345,7 +347,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                           ))}
                         </div>
                       </div>
-                    </div>
+                    </Card>
                   )}
                 </div>
               </div>

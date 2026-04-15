@@ -5,52 +5,52 @@
  * and contributor card list.
  */
 
+import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
+
 export default function DonorsLoading() {
   return (
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
       {/* Header placeholder — matches PageHeader */}
       <div className="sticky top-0 z-10 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] min-h-[64px] px-8 flex items-center justify-between">
-        <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
-        <div className="h-4 w-16 bg-[#E8E3DA] rounded" />
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-4 w-16" />
       </div>
 
       <main className="flex-1 px-6 pt-24 pb-8">
         <div className="max-w-4xl mx-auto animate-pulse">
           {/* Centered heading */}
           <div className="mb-5 text-center">
-            <div className="h-8 w-56 bg-[#E8E3DA] rounded mx-auto mb-2" />
-            <div className="h-4 w-80 bg-[#E8E3DA] rounded mx-auto" />
+            <Skeleton className="h-8 w-56 mx-auto mb-2" />
+            <Skeleton className="h-4 w-80 mx-auto" />
           </div>
 
           {/* Search card */}
-          <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+          <Card padding="none">
             <div className="flex items-center px-5 py-4 gap-3">
-              <div className="w-4 h-4 bg-[#E8E3DA] rounded flex-shrink-0" />
-              <div className="flex-1 h-5 bg-[#E8E3DA] rounded" />
+              <Skeleton className="w-4 h-4 flex-shrink-0" />
+              <Skeleton className="flex-1 h-5" />
             </div>
-          </div>
+          </Card>
 
           {/* Contributor card skeletons */}
           <div className="mt-8 space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5"
-              >
+              <Card key={i} padding="none" className="p-5">
                 <div className="flex items-baseline justify-between mb-1">
                   <div className="flex items-baseline gap-3">
-                    <div className="h-4 w-4 bg-[#E8E3DA] rounded" />
-                    <div className="h-4 w-48 bg-[#E8E3DA] rounded" />
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-4 w-48" />
                   </div>
-                  <div className="h-4 w-16 bg-[#E8E3DA] rounded" />
+                  <Skeleton className="h-4 w-16" />
                 </div>
-                <div className="h-3 bg-[#E8E3DA] rounded w-24 mb-3 ml-7" />
+                <Skeleton className="h-3 w-24 mb-3 ml-7" />
                 <div className="border-t border-[rgba(28,28,26,0.06)] pt-3 ml-7 space-y-2">
-                  <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
-                  <div className="h-3.5 bg-[#E8E3DA] rounded w-5/6" />
-                  <div className="h-3.5 bg-[#E8E3DA] rounded w-4/6" />
+                  <Skeleton className="h-3.5 w-full" />
+                  <Skeleton className="h-3.5 w-5/6" />
+                  <Skeleton className="h-3.5 w-4/6" />
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
