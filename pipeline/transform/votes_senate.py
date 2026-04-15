@@ -25,7 +25,7 @@ POSITION_MAP = {
 
 
 def make_vote_id(congress: int, roll_call: int | str) -> str:
-    return f"senate-{congress}-{roll_call}"
+    return f"senate-{congress}-{int(roll_call)}"
 
 
 def parse_vote_xml(xml_bytes: bytes, congress: int) -> tuple[dict | None, list[dict]]:
@@ -59,7 +59,7 @@ def parse_vote_xml(xml_bytes: bytes, congress: int) -> tuple[dict | None, list[d
 
     summary = {
         "id":              vote_id,
-        "bill_id":         bill_id or f"senate-{congress}-{roll_call}",
+        "bill_id":         bill_id,
         "congress":        congress,
         "chamber":         "Senate",
         "date":            _parse_date(date),
@@ -135,11 +135,32 @@ def _parse_positions(root: etree._Element, vote_id: str) -> list[dict]:
     return positions
 
 
+# Map document_type values from senate.gov XML to canonical bill_type slugs
+_DOC_TYPE_MAP: dict[str, str] = {
+    "s.":        "s",
+    "h.r.":      "hr",
+    "s.j.res.":  "sjres",
+    "h.j.res.":  "hjres",
+    "s.con.res.": "sconres",
+    "h.con.res.": "hconres",
+    "s.res.":    "sres",
+    "h.res.":    "hres",
+}
+
+
 def _extract_bill_id(root: etree._Element, congress: int) -> str | None:
+    # Primary path: <document>/<document_type> + <document>/<document_number>
+    doc_type = _text(root, ".//document/document_type")
+    doc_number = _text(root, ".//document/document_number")
+    if doc_type and doc_number:
+        bill_type = _DOC_TYPE_MAP.get(doc_type.lower().strip())
+        if bill_type and doc_number.isdigit():
+            return f"{congress}-{bill_type}-{doc_number}"
+
+    # Fallback: <bill_number> element (e.g. "S.123", "H.R.456")
     number = _text(root, ".//bill_number")
     if not number:
         return None
-    # Senate bill numbers look like "S.123" or "H.R.456"
     m = re.match(r"^(S|HR|H\.R|HJRES|SJRES|HCONRES|SCONRES|HRES|SRES)\.?\s*(\d+)", number, re.I)
     if m:
         btype = m.group(1).lower().replace(".", "").replace(" ", "")

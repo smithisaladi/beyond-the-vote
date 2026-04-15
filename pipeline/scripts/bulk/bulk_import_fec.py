@@ -357,22 +357,34 @@ def import_pas2(cycle: int, active: bool) -> tuple[int, int]:
         ie_done = checkpoint_exists(SCRIPT, ie_key, chunk_index)
 
         if not pac_done:
-            pac_rows = transform_pac_contributions_batch(chunk, cycle)
-            if pac_rows:
-                append_csv(pac_csv, pac_rows, PAC_CSV_COLS)
-                for b in batch(pac_rows, UPSERT_BATCH):
-                    upsert("pac_to_candidate", b)
-                pac_total += len(pac_rows)
-            mark_checkpoint(SCRIPT, pac_key, chunk_index, len(chunk), "success")
+            mark_checkpoint(SCRIPT, pac_key, chunk_index, len(chunk), "pending")
+            try:
+                pac_rows = transform_pac_contributions_batch(chunk, cycle)
+                if pac_rows:
+                    append_csv(pac_csv, pac_rows, PAC_CSV_COLS)
+                    for b in batch(pac_rows, UPSERT_BATCH):
+                        upsert("pac_to_candidate", b)
+                    pac_total += len(pac_rows)
+                mark_checkpoint(SCRIPT, pac_key, chunk_index, len(chunk), "success")
+            except Exception as e:
+                mark_checkpoint(SCRIPT, pac_key, chunk_index, len(chunk), "failed", str(e))
+                log.error("PAC chunk %d failed: %s", chunk_index, e)
+                raise
 
         if not ie_done:
-            ie_rows = transform_independent_expenditures_batch(chunk, cycle)
-            if ie_rows:
-                append_csv(ie_csv, ie_rows, IE_CSV_COLS)
-                for b in batch(ie_rows, UPSERT_BATCH):
-                    upsert("independent_expenditures", b)
-                ie_total += len(ie_rows)
-            mark_checkpoint(SCRIPT, ie_key, chunk_index, len(chunk), "success")
+            mark_checkpoint(SCRIPT, ie_key, chunk_index, len(chunk), "pending")
+            try:
+                ie_rows = transform_independent_expenditures_batch(chunk, cycle)
+                if ie_rows:
+                    append_csv(ie_csv, ie_rows, IE_CSV_COLS)
+                    for b in batch(ie_rows, UPSERT_BATCH):
+                        upsert("independent_expenditures", b)
+                    ie_total += len(ie_rows)
+                mark_checkpoint(SCRIPT, ie_key, chunk_index, len(chunk), "success")
+            except Exception as e:
+                mark_checkpoint(SCRIPT, ie_key, chunk_index, len(chunk), "failed", str(e))
+                log.error("IE chunk %d failed: %s", chunk_index, e)
+                raise
 
         if chunk_index % 10 == 0:
             log.info("  pas2 chunk %d: %d pac, %d ie so far", chunk_index, pac_total, ie_total)
@@ -397,9 +409,11 @@ def import_individual_contributions(cycle: int, active: bool, valid_cmte_ids: se
     _clear_csv_if_fresh(source_file, csv_path)
 
     total = 0
+    consecutive_failures = 0
 
     for chunk_index, chunk in stream_fec_file(txt_path, INDIV_COLS, CHUNK_SIZE):
         if checkpoint_exists(SCRIPT, source_file, chunk_index):
+            consecutive_failures = 0
             continue
 
         mark_checkpoint(SCRIPT, source_file, chunk_index, len(chunk), "pending")
@@ -409,10 +423,15 @@ def import_individual_contributions(cycle: int, active: bool, valid_cmte_ids: se
                 append_csv(csv_path, rows, INDIV_CSV_COLS)
                 total += len(rows)
             mark_checkpoint(SCRIPT, source_file, chunk_index, len(chunk), "success")
+            consecutive_failures = 0
         except Exception as e:
             mark_checkpoint(SCRIPT, source_file, chunk_index, len(chunk), "failed", str(e))
             log.error("Chunk %d failed: %s", chunk_index, e)
-            raise
+            consecutive_failures += 1
+            if consecutive_failures >= 5:
+                log.error("5 consecutive chunk failures — aborting")
+                raise
+            continue
 
         if chunk_index % 20 == 0:
             log.info("  indiv chunk %d: %d rows written so far", chunk_index, total)

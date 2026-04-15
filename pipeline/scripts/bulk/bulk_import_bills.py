@@ -117,9 +117,9 @@ def load_completed_pages(congress: int) -> set[int]:
             .range(offset, offset + 999)
             .execute()
         )
-        for row in res.data:
+        for row in (res.data or []):
             completed.add(row["chunk_index"])
-        if len(res.data) < 1000:
+        if len(res.data or []) < 1000:
             break
         offset += 1000
     log.info("Congress %d: %d pages already completed", congress, len(completed))
@@ -139,10 +139,10 @@ def load_voted_bill_ids() -> set[str]:
             .range(offset, offset + 999)
             .execute()
         )
-        for row in res.data:
+        for row in (res.data or []):
             if row.get("bill_id"):
                 result.add(row["bill_id"])
-        if len(res.data) < 1000:
+        if len(res.data or []) < 1000:
             break
         offset += 1000
     log.info("Loaded %d voted bill_ids", len(result))
@@ -158,9 +158,9 @@ def prune_unvoted_bills(voted_ids: set[str]) -> int:
     offset = 0
     while True:
         res = db.table("bills").select("bill_id").range(offset, offset + 999).execute()
-        for row in res.data:
+        for row in (res.data or []):
             all_ids.add(row["bill_id"])
-        if len(res.data) < 1000:
+        if len(res.data or []) < 1000:
             break
         offset += 1000
 

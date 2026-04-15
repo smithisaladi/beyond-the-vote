@@ -9,8 +9,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 import httpx
+from postgrest.exceptions import APIError
 
-from utils import get_supabase, reset_supabase
+from utils import get_supabase, log_timing, reset_supabase
 
 log = logging.getLogger(__name__)
 
@@ -22,10 +23,19 @@ _MAX_RETRIES = 3
 
 
 def _run(fn):
-    """Execute a postgrest builder lambda, retrying on HTTP/2 connection errors."""
+    """Execute a postgrest builder lambda, retrying on HTTP/2 connection and 429 errors."""
     for attempt in range(_MAX_RETRIES):
         try:
             return fn()
+        except APIError as e:
+            if e.code == "429" or "429" in str(e):
+                if attempt == _MAX_RETRIES - 1:
+                    raise
+                wait = 2 ** attempt * 5
+                log.warning("HTTP 429 rate limited. Retrying in %ds.", wait)
+                time.sleep(wait)
+            else:
+                raise
         except _RETRYABLE as e:
             if attempt == _MAX_RETRIES - 1:
                 raise
@@ -37,6 +47,7 @@ def _run(fn):
 
 # ── Upsert ────────────────────────────────────────────────────────────────────
 
+@log_timing
 def upsert(table: str, rows: list[dict], returning: str = "minimal") -> None:
     """
     Batch upsert rows into a Supabase table.
@@ -49,6 +60,7 @@ def upsert(table: str, rows: list[dict], returning: str = "minimal") -> None:
     log.debug("Upserted %d rows into %s", len(rows), table)
 
 
+@log_timing
 def delete_then_insert(table: str, rows: list[dict], match_cols: list[str]) -> None:
     """
     Delete existing rows by match_cols then insert fresh rows.

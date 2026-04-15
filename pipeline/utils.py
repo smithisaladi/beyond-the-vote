@@ -4,9 +4,11 @@ API request wrapper, date normalization.
 """
 
 import csv
+import functools
 import io
 import logging
 import os
+import threading
 import time
 import zipfile
 from contextlib import contextmanager
@@ -19,6 +21,26 @@ from supabase import Client, create_client
 
 load_dotenv()
 log = logging.getLogger(__name__)
+
+
+def log_timing(func):
+    """Decorator that logs function execution time."""
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.monotonic()
+        result = func(*args, **kwargs)
+        elapsed = time.monotonic() - start
+        if elapsed > 1.0:
+            log.info("%s took %.1fs", func.__name__, elapsed)
+        else:
+            log.debug("%s took %.3fs", func.__name__, elapsed)
+        return result
+    return wrapper
+
+
+class ApiResponseError(Exception):
+    """Raised when an API returns an unparseable or unexpected response."""
+    pass
 
 
 # ── Supabase ───────────────────────────────────────────────────────────────────
@@ -132,8 +154,10 @@ def stream_fec_file_rows(
 
 _request_count = 0
 _window_start = time.monotonic()
+_rate_lock = threading.Lock()
 
 
+@log_timing
 def api_get(
     url: str,
     params: dict | None = None,
@@ -152,25 +176,27 @@ def api_get(
         params["api_key"] = api_key
 
     # Rate limit: if we've hit the threshold in the current hour, sleep until reset
-    elapsed = time.monotonic() - _window_start
-    if _request_count >= rate_limit:
-        sleep_for = max(0, 3600 - elapsed)
-        log.info("Rate limit approached (%d req). Sleeping %.0fs.", _request_count, sleep_for)
-        time.sleep(sleep_for)
-        _request_count = 0
-        _window_start = time.monotonic()
+    with _rate_lock:
+        elapsed = time.monotonic() - _window_start
+        if _request_count >= rate_limit:
+            sleep_for = max(0, 3600 - elapsed)
+            log.info("Rate limit approached (%d req). Sleeping %.0fs.", _request_count, sleep_for)
+            time.sleep(sleep_for)
+            _request_count = 0
+            _window_start = time.monotonic()
 
     for attempt in range(max_retries):
         try:
             resp = requests.get(url, params=params, timeout=30)
-            _request_count += 1
+            with _rate_lock:
+                _request_count += 1
 
             if resp.status_code == 200:
                 try:
                     return resp.json()
                 except ValueError:
                     log.warning("Non-JSON response from %s (body: %r…)", url, resp.text[:200])
-                    return None
+                    raise ApiResponseError(f"Non-JSON response from {url}")
             elif resp.status_code == 429:
                 retry_after = int(resp.headers.get("Retry-After", 60))
                 log.warning("429 rate limited. Sleeping %ds.", retry_after)
@@ -191,6 +217,7 @@ def api_get(
     return None
 
 
+@log_timing
 def download_file(url: str, dest: Path) -> Path:
     """Download a file to dest, streaming to avoid loading into memory."""
     dest.parent.mkdir(parents=True, exist_ok=True)

@@ -23,7 +23,7 @@ POSITION_MAP = {
 
 
 def make_vote_id(congress: int, roll_call: int | str) -> str:
-    return f"house-{congress}-{roll_call}"
+    return f"house-{congress}-{int(roll_call)}"
 
 
 def transform_vote_summary(detail: dict, congress: int) -> dict | None:
@@ -84,7 +84,7 @@ def transform_vote_summary(detail: dict, congress: int) -> dict | None:
 
     return {
         "id":              vote_id,
-        "bill_id":         bill_id or f"house-{congress}-{roll_call}",
+        "bill_id":         bill_id,
         "congress":        congress,
         "chamber":         "House",
         "date":            date,

@@ -31,6 +31,7 @@ from transform.votes_senate import (
     parse_vote_xml,
     resolve_bioguide_ids,
 )
+from transform.votes_common import build_lis_map, build_name_state_map, update_party_breakdowns
 from utils import api_get, batch, get_supabase
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -55,90 +56,6 @@ def _normalize_api_response(data) -> dict:
         first = data[0] if data else {}
         return first if isinstance(first, dict) else {}
     return data if isinstance(data, dict) else {}
-
-
-# ── Bioguide resolution maps ────────────────────────────────────────────────
-
-
-def build_lis_map() -> dict[str, str]:
-    """lis_id → bioguide_id"""
-    db = get_supabase()
-    mapping: dict[str, str] = {}
-    offset = 0
-    while True:
-        res = (
-            db.table("legislators").select("bioguide_id,lis_id")
-            .not_.is_("lis_id", "null")
-            .range(offset, offset + 999)
-            .execute()
-        )
-        for row in res.data:
-            if row.get("lis_id"):
-                mapping[row["lis_id"]] = row["bioguide_id"]
-        if len(res.data) < 1000:
-            break
-        offset += 1000
-    log.info("LIS map: %d entries", len(mapping))
-    return mapping
-
-
-def build_name_state_map() -> dict[tuple[str, str], str]:
-    """(last_name_lower, state) → bioguide_id for senate fallback matching"""
-    db = get_supabase()
-    mapping: dict[tuple[str, str], str] = {}
-    offset = 0
-    while True:
-        res = (
-            db.table("legislators").select("bioguide_id,last_name,state")
-            .range(offset, offset + 999)
-            .execute()
-        )
-        for row in res.data:
-            key = (row.get("last_name", "").lower(), row.get("state", "").upper())
-            mapping[key] = row["bioguide_id"]
-        if len(res.data) < 1000:
-            break
-        offset += 1000
-    return mapping
-
-
-# ── Party breakdown update ───────────────────────────────────────────────────
-
-
-def update_party_breakdowns(vote_ids: list[str]) -> None:
-    """Compute and update party breakdown columns on bill_vote_summaries."""
-    if not vote_ids:
-        return
-
-    db = get_supabase()
-    log.info("Updating party breakdowns for %d votes…", len(vote_ids))
-
-    for vid in vote_ids:
-        res = (
-            db.table("bill_vote_positions")
-            .select("position, legislators(party)")
-            .eq("vote_id", vid)
-            .execute()
-        )
-        counts: dict[str, dict[str, int]] = {
-            "Democrat": {"Yea": 0, "Nay": 0},
-            "Republican": {"Yea": 0, "Nay": 0},
-            "Independent": {"Yea": 0, "Nay": 0},
-        }
-        for row in res.data:
-            party = (row.get("legislators") or {}).get("party", "Independent")
-            pos = row.get("position", "")
-            if party in counts and pos in ("Yea", "Nay"):
-                counts[party][pos] += 1
-
-        db.table("bill_vote_summaries").update({
-            "yea_democrat":    counts["Democrat"]["Yea"],
-            "nay_democrat":    counts["Democrat"]["Nay"],
-            "yea_republican":  counts["Republican"]["Yea"],
-            "nay_republican":  counts["Republican"]["Nay"],
-            "yea_independent": counts["Independent"]["Yea"],
-            "nay_independent": counts["Independent"]["Nay"],
-        }).eq("id", vid).execute()
 
 
 # ── Load existing vote IDs ───────────────────────────────────────────────────
@@ -243,10 +160,18 @@ def sync_house_votes(congress: int, api_key: str) -> tuple[list[str], int]:
                     raw = api_get(detail_url, params={"format": "json"}, api_key=api_key) or {}
                     detail_data = _normalize_api_response(raw)
                     summary_row = transform_vote_summary(detail_data, congress)
+                    if summary_row and not summary_row.get("bill_id"):
+                        log.debug("Skipping vote %s (no bill_id): %s", vote_id, summary_row.get("title"))
+                        summary_row = None
                     if summary_row:
+                        # Ensure summary id matches the vote_id we use for positions
+                        summary_row["id"] = vote_id
                         summaries.append(summary_row)
                 except Exception as e:
                     log.warning("House vote detail failed for %s: %s", vote_id, e)
+
+                if not summary_row:
+                    continue
 
                 try:
                     members_url = f"{CONGRESS_API_BASE}/house-vote/{congress}/{session}/{roll_call}/members"
@@ -258,8 +183,7 @@ def sync_house_votes(congress: int, api_key: str) -> tuple[list[str], int]:
                 except Exception as e:
                     log.warning("House vote members failed for %s: %s", vote_id, e)
 
-                if summary_row:
-                    new_vote_ids.append(vote_id)
+                new_vote_ids.append(vote_id)
 
             if summaries:
                 for chunk in batch(summaries, UPSERT_BATCH):
@@ -344,6 +268,9 @@ def sync_senate_votes(congress: int, lis_map: dict, name_state_map: dict) -> tup
 
             summary, raw_positions = parse_vote_xml(xml_bytes, congress)
             if not summary:
+                continue
+            if not summary.get("bill_id"):
+                log.debug("Skipping senate vote %d (no bill_id): %s", number, summary.get("title"))
                 continue
 
             resolved = resolve_bioguide_ids(raw_positions, lis_map, name_state_map)
