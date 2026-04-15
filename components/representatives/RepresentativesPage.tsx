@@ -9,23 +9,7 @@ import { useFetchRepresentatives } from '@/hooks/useFetchRepresentatives'
 import { useSearchPoliticians } from '@/hooks/useSearchPoliticians'
 import { useAuth } from '@/hooks/useAuth'
 import { PageHeader } from '@/components/layout/PageHeader'
-
-function DotGridBackground() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 w-full h-full"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <pattern id="dot-grid-reps" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="12" cy="12" r="1.2" fill="#1C1C1A" opacity="0.18" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#dot-grid-reps)" />
-    </svg>
-  )
-}
+import { DotGridBackground } from '@/components/shared/DotGridBackground'
 
 function RepresentativesContent() {
   const router = useRouter()
@@ -99,7 +83,7 @@ function RepresentativesContent() {
 
   return (
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
-      <DotGridBackground />
+      <DotGridBackground id="dot-grid-reps" />
       <PageHeader title="Politicians" />
       <main className="relative z-10 flex-1 px-6 pt-24 pb-8">
           {/* Search */}

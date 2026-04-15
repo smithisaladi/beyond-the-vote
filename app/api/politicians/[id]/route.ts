@@ -348,12 +348,6 @@ async function fetchRecentVotesFromDB(
     for (const row of billRows ?? []) {
       if (row.title) billTitleMap[row.bill_id] = row.title
     }
-    // Debug: log bill_ids that didn't match any bill in the bills table
-    const unmatchedIds = billIds.filter(id => !billTitleMap[id])
-    if (unmatchedIds.length > 0) {
-      console.log('[votes] bill_ids from vote summaries with no match in bills table:', unmatchedIds)
-      console.log('[votes] matched bill_ids:', billIds.filter(id => !!billTitleMap[id]))
-    }
   }
 
   return rows

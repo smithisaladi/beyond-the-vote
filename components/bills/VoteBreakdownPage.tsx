@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { PARTY_STYLES } from '@/lib/ui'
+import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { useFetchBillDetail } from '@/hooks/useFetchBillDetail'
 import type { Vote, MemberPosition } from '@/hooks/useFetchBillDetail'
 import type { Party } from '@/lib/types'
@@ -12,19 +13,6 @@ import type { Party } from '@/lib/types'
 const PARTY_CODE: Record<string, Party> = { D: 'Democrat', R: 'Republican', I: 'Independent' }
 const FILTERS = ['All', 'Yea', 'Nay', 'Not Voting'] as const
 type Filter = (typeof FILTERS)[number]
-
-function DotGridBackground() {
-  return (
-    <svg aria-hidden="true" className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="dot-grid-vote" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="12" cy="12" r="1.2" fill="#1C1C1A" opacity="0.18" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#dot-grid-vote)" />
-    </svg>
-  )
-}
 
 function resultBadge(result: string | null) {
   if (!result) return null
@@ -345,7 +333,7 @@ export default function VoteBreakdownPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="relative flex flex-col min-h-screen overflow-hidden">
-      <DotGridBackground />
+      <DotGridBackground id="dot-grid-vote" />
       <div className="relative z-10 flex flex-col flex-1">
         <main className="flex-1 px-6 pt-10 pb-8">
           {loading ? (

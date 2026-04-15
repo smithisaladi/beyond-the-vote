@@ -27,17 +27,3 @@ export function getUserInitials(user: User): string {
   }
   return (user.email?.[0] ?? '?').toUpperCase()
 }
-
-export const PALETTE = {
-  background: '#F5F0E8',
-  text: '#1C1C1A',
-  accent: '#7B5E8A',
-  accentHover: '#6A4F78',
-  card: 'white',
-  skeleton: '#E8E3DA',
-  border: 'rgba(28,28,26,0.08)',
-  shadow: '0_1px_4px_rgba(0,0,0,0.06)',
-  error: '#B85C38',
-  success: '#6A9B7B',
-  subtleBg: '#FAF8F5',
-} as const

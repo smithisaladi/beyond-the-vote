@@ -6,6 +6,7 @@ import { ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { useFetchPacDetail, type PacDetailRecipient } from '@/hooks/useFetchPacDetail'
 import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
+import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { PARTY_STYLES } from '@/lib/ui'
 import { FEC_DISPLAY_CYCLES, getFecCommitteeUrl, getOpenSecretsUrl } from '@/lib/fec'
@@ -14,23 +15,6 @@ import { partyAbbrev, toParty } from '@/lib/party'
 import type { Party } from '@/lib/types'
 
 const RECIPIENTS_PREVIEW = 30
-
-function DotGridBackground() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 w-full h-full"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <defs>
-        <pattern id="dot-grid-pac-detail" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="12" cy="12" r="1.2" fill="#1C1C1A" opacity="0.18" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#dot-grid-pac-detail)" />
-    </svg>
-  )
-}
 
 function BackArrow() {
   return (
@@ -227,7 +211,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
 
   return (
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
-      <DotGridBackground />
+      <DotGridBackground id="dot-grid-pac-detail" />
 
       <div className="relative z-10 flex flex-col flex-1">
         <PageHeader title="Donors" />

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toTitleCase, formatTotal, formatAmount, isUninformativeName } from './format'
+import { toTitleCase, formatTotal } from './format'
 
 describe('toTitleCase', () => {
   it('title-cases all-caps input', () => {
@@ -74,38 +74,3 @@ describe('formatTotal', () => {
   })
 })
 
-describe('formatAmount', () => {
-  it('formats with thousands separators', () => {
-    expect(formatAmount(0)).toBe('$0')
-    expect(formatAmount(850)).toBe('$850')
-    expect(formatAmount(40_134_927)).toBe('$40,134,927')
-  })
-
-  it('rounds fractional amounts', () => {
-    expect(formatAmount(100.49)).toBe('$100')
-    expect(formatAmount(100.5)).toBe('$101')
-  })
-
-  it('handles negatives', () => {
-    expect(formatAmount(-500)).toBe('$-500')
-  })
-})
-
-describe('isUninformativeName', () => {
-  it.each(['Other', 'N/A', 'None', 'Various', 'Unknown', 'Na'])(
-    'returns true for %s',
-    v => expect(isUninformativeName(v)).toBe(true),
-  )
-
-  it('is case-sensitive (lowercase not filtered)', () => {
-    // Documents current behavior; if we ever want case-insensitive, update here + source.
-    expect(isUninformativeName('other')).toBe(false)
-    expect(isUninformativeName('UNKNOWN')).toBe(false)
-  })
-
-  it('returns false for whitespace or unrelated names', () => {
-    expect(isUninformativeName('')).toBe(false)
-    expect(isUninformativeName(' Other ')).toBe(false)
-    expect(isUninformativeName('Acme Corp')).toBe(false)
-  })
-})

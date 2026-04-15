@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  ALL_TOPICS, topicToSlug, slugToTopic, classifyBillTopics,
-  TOPIC_KEYWORDS,
-} from './topics'
+import { ALL_TOPICS, topicToSlug, slugToTopic } from './topics'
 
 describe('topicToSlug', () => {
   it.each([
@@ -36,94 +33,6 @@ describe('slugToTopic', () => {
 
   it('returns null for empty string', () => {
     expect(slugToTopic('')).toBeNull()
-  })
-})
-
-describe('classifyBillTopics', () => {
-  it('matches by policyArea alone', () => {
-    const result = classifyBillTopics('Health', 'Unrelated title', null)
-    expect(result).toContain('healthcare')
-  })
-
-  it('matches by keyword in title', () => {
-    const result = classifyBillTopics(undefined, 'A bill about climate change', null)
-    expect(result).toContain('climate-environment')
-  })
-
-  it('matches by keyword in summary', () => {
-    const result = classifyBillTopics(undefined, 'Some title', 'Reform medicaid coverage')
-    expect(result).toContain('healthcare')
-  })
-
-  it('matches by agency', () => {
-    const result = classifyBillTopics(undefined, 'Some title', null, ['CDC'])
-    expect(result).toContain('healthcare')
-  })
-
-  it('deduplicates across sources (policyArea + keyword)', () => {
-    const result = classifyBillTopics(
-      'Health',
-      'Expand medicaid coverage',
-      null,
-      ['CDC'],
-    )
-    const healthcareCount = result.filter(s => s === 'healthcare').length
-    expect(healthcareCount).toBe(1)
-  })
-
-  it('returns multiple topics when matched', () => {
-    const result = classifyBillTopics(
-      undefined,
-      'Gun violence and criminal justice reform',
-      null,
-    )
-    expect(result).toContain('gun-policy')
-    expect(result).toContain('criminal-justice')
-  })
-
-  it('returns empty array when nothing matches', () => {
-    const result = classifyBillTopics(undefined, 'Lorem ipsum dolor sit amet', null)
-    expect(result).toEqual([])
-  })
-
-  it('handles null/undefined summary gracefully', () => {
-    expect(() => classifyBillTopics(undefined, 'title', null)).not.toThrow()
-    expect(() => classifyBillTopics(undefined, 'title', undefined)).not.toThrow()
-  })
-
-  it('handles empty agencies array', () => {
-    const result = classifyBillTopics(undefined, 'climate', null, [])
-    expect(result).toContain('climate-environment')
-  })
-
-  it('keyword matching is case-insensitive', () => {
-    const result = classifyBillTopics(undefined, 'CLIMATE Change Prevention Act', null)
-    expect(result).toContain('climate-environment')
-  })
-
-  it('handles agency with multiple topic mappings (ATF → gun-policy + criminal-justice)', () => {
-    const result = classifyBillTopics(undefined, 'Unrelated', null, ['ATF'])
-    expect(result).toContain('gun-policy')
-    expect(result).toContain('criminal-justice')
-  })
-
-  it('ignores unknown policyArea', () => {
-    const result = classifyBillTopics('Fake Area', 'Unrelated title', null)
-    expect(result).toEqual([])
-  })
-
-  it('documents substring matching behavior (e.g. "immigr" matches "immigration")', () => {
-    const result = classifyBillTopics(undefined, 'Border and immigration reform', null)
-    expect(result).toContain('immigration')
-  })
-})
-
-describe('TOPIC_KEYWORDS exhaustiveness', () => {
-  it('every TOPIC_KEYWORDS slug maps to a valid topic', () => {
-    for (const slug of Object.keys(TOPIC_KEYWORDS)) {
-      expect(slugToTopic(slug)).not.toBeNull()
-      expect(TOPIC_KEYWORDS[slug].length).toBeGreaterThan(0)
-    }
   })
 })
 

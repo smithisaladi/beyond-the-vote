@@ -106,7 +106,7 @@ WEBK_COLS = [
 ]
 
 # ── CSV output column names (match transform output schemas) ─────────────────
-# Used by write_csv / append_csv and DuckDB reads.
+# Used by append_csv and DuckDB reads.
 
 CANDIDATES_CSV_COLS = [
     "cand_id", "cand_name", "cand_pty_affiliation", "cand_election_yr",

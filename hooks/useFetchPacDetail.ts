@@ -55,7 +55,9 @@ export function useFetchPacDetail(cmteId: string) {
                 setPac(prev => prev ? { ...prev, summary: data2.summary } : prev)
               }
             })
-            .catch(() => {})
+            .catch(err => {
+              if (!cancelled) console.error('[pac-detail] summary fetch failed:', err)
+            })
             .finally(() => {
               if (!cancelled) setSummaryLoading(false)
             })

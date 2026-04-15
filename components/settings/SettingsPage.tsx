@@ -3,28 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAccountSettings } from '@/hooks/useAccountSettings'
 import { PageHeader } from '@/components/layout/PageHeader'
-
-// ── Toggle component ─────────────────────────────────────────────────────────
-
-function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
-        checked ? 'bg-[#7B5E8A]' : 'bg-[#D6CFC4]'
-      }`}
-    >
-      <span
-        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform duration-200 ${
-          checked ? 'translate-x-4' : 'translate-x-0'
-        }`}
-      />
-    </button>
-  )
-}
+import { DotGridBackground } from '@/components/shared/DotGridBackground'
 
 // ── Delete confirmation modal ─────────────────────────────────────────────────
 
@@ -69,14 +48,11 @@ export default function SettingsPage() {
   const {
     user,
     displayName, setDisplayName,
-    notifPrefs, setNotifPrefs,
     updateName,
     changePassword,
-    updateNotificationPreferences,
     signOut,
     name: nameState,
     password: passwordState,
-    notifications: notifState,
   } = useAccountSettings()
 
   // Password fields (transient form state — not persisted)
@@ -97,9 +73,6 @@ export default function SettingsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Active tab
-  const [tab, setTab] = useState<'account' | 'notifications'>('account')
-
   const handleDeleteAccount = async () => {
     setDeleteLoading(true)
     await signOut()
@@ -113,33 +86,16 @@ export default function SettingsPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen">
+    <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
+      <DotGridBackground id="dot-grid-settings" />
 
-      <PageHeader title="Settings" />
+      <div className="relative z-10 flex flex-col flex-1">
+        <PageHeader title="Settings" />
 
-      {/* Content */}
-      <main className="flex-1 px-8 py-8">
-        <div className="max-w-2xl">
+        {/* Content */}
+        <main className="flex-1 px-6 pt-24 pb-8">
+          <div className="max-w-4xl mx-auto">
 
-          {/* Tab pills */}
-          <div className="flex gap-1 mb-8 p-1 bg-[#E8E3DA] rounded-lg w-fit">
-            {(['account', 'notifications'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`px-4 py-1.5 rounded-md text-sm transition-colors capitalize ${
-                  tab === t
-                    ? 'bg-white text-[#1C1C1A] shadow-sm font-medium'
-                    : 'text-[#1C1C1A]/55 hover:text-[#1C1C1A]'
-                }`}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
-
-          {/* ── Account tab ── */}
-          {tab === 'account' && (
             <div className="flex flex-col gap-6">
 
               {/* Display name */}
@@ -249,100 +205,10 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
-          )}
 
-          {/* ── Notifications tab ── */}
-          {tab === 'notifications' && (
-            <form onSubmit={updateNotificationPreferences}>
-              <div className="flex flex-col gap-6">
-
-                {/* Email notifications */}
-                <div className="bg-white rounded-xl border border-[#D6CFC4] p-6">
-                  <h2 className="text-base text-[#1C1C1A] mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
-                    Email notifications
-                  </h2>
-                  <div className="flex flex-col gap-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-[#1C1C1A]">Enable email notifications</p>
-                        <p className="text-xs text-[#1C1C1A]/50 mt-0.5">Receive updates about your followed politicians and bills</p>
-                      </div>
-                      <Toggle
-                        checked={notifPrefs.emailEnabled}
-                        onChange={(v) => setNotifPrefs(p => ({ ...p, emailEnabled: v }))}
-                      />
-                    </div>
-
-                    {notifPrefs.emailEnabled && (
-                      <div>
-                        <p className="text-sm text-[#1C1C1A] mb-3">Frequency</p>
-                        <div className="flex gap-2">
-                          {(['immediate', 'daily', 'weekly'] as const).map((f) => (
-                            <button
-                              key={f}
-                              type="button"
-                              onClick={() => setNotifPrefs(p => ({ ...p, frequency: f }))}
-                              className={`px-3 py-1.5 rounded-lg text-sm border transition-colors capitalize ${
-                                notifPrefs.frequency === f
-                                  ? 'border-[#7B5E8A] bg-[#7B5E8A]/10 text-[#7B5E8A] font-medium'
-                                  : 'border-[#D6CFC4] text-[#1C1C1A]/60 hover:border-[#1C1C1A]/30'
-                              }`}
-                            >
-                              {f}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Notification triggers */}
-                <div className="bg-white rounded-xl border border-[#D6CFC4] p-6">
-                  <h2 className="text-base text-[#1C1C1A] mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
-                    Notify me when
-                  </h2>
-                  <div className="flex flex-col gap-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-[#1C1C1A]">A politician votes</p>
-                        <p className="text-xs text-[#1C1C1A]/50 mt-0.5">Get notified when someone you follow casts a vote</p>
-                      </div>
-                      <Toggle
-                        checked={notifPrefs.notifyVote}
-                        onChange={(v) => setNotifPrefs(p => ({ ...p, notifyVote: v }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-[rgba(28,28,26,0.06)] pt-5">
-                      <div>
-                        <p className="text-sm text-[#1C1C1A]">A bill status changes</p>
-                        <p className="text-xs text-[#1C1C1A]/50 mt-0.5">Updates on bills you are tracking move through committee</p>
-                      </div>
-                      <Toggle
-                        checked={notifPrefs.notifyBillStatus}
-                        onChange={(v) => setNotifPrefs(p => ({ ...p, notifyBillStatus: v }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="submit"
-                    disabled={notifState.loading}
-                    className="px-4 py-2 bg-[#7B5E8A] text-white text-sm rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
-                  >
-                    {notifState.loading ? 'Saving…' : 'Save preferences'}
-                  </button>
-                  {notifState.success && <span className="text-sm text-[#6A9B7B]">Saved</span>}
-                </div>
-              </div>
-            </form>
-          )}
-
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
 
       {showDeleteModal && (
         <DeleteModal

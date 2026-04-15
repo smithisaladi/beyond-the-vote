@@ -273,15 +273,6 @@ def duckdb_connect():
 
 # ── CSV helpers (pipe-delimited, FEC convention) ─────────────────────────────
 
-def write_csv(path: Path, rows: list[dict], cols: list[str]) -> None:
-    """Write rows to a pipe-delimited CSV (overwrite). Creates parent dirs."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=cols, delimiter="|", extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(rows)
-
-
 def append_csv(path: Path, rows: list[dict], cols: list[str]) -> None:
     """Append rows to a pipe-delimited CSV. Creates with header if new."""
     if not rows:

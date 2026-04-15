@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { Party } from '@/lib/types'
 import { parseSearchParams, RepresentativesParams } from '@/lib/api-validation'
+import { toParty } from '@/lib/party'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const GEOCODIO_API_KEY = process.env.GEOCODIO_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
 const GEOCODIO_BASE = 'https://api.geocod.io/v1.7'
-
-function normalizeParty(party?: string): Party {
-  const p = (party ?? '').toUpperCase()
-  if (p === 'D' || p.includes('DEMOCRAT')) return 'Democrat'
-  if (p === 'R' || p.includes('REPUBLICAN')) return 'Republican'
-  return 'Independent'
-}
 
 function ordinal(n: number): string {
   if (n === 0) return 'At-Large'
@@ -139,7 +132,7 @@ export async function GET(request: NextRequest) {
           bioguideId: bioguideId || null,
           name,
           title: isSenator ? 'U.S. Senator' : 'U.S. Representative',
-          party: normalizeParty(leg.bio?.party),
+          party: toParty(leg.bio?.party),
           state: stateCode,
           district: !isSenator ? ordinal(districtNumber) : undefined,
           photo: enrich.photo ?? localData?.photo_url ?? null,

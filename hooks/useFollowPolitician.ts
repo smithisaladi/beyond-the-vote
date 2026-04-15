@@ -14,17 +14,26 @@ export function useFollowPolitician(
 
   useEffect(() => {
     if (!userId) { setFollowing(false); return }
+    let cancelled = false
     const supabase = createClient()
-    supabase
-      .from('followed_politicians')
-      .select('politician_id')
-      .eq('user_id', userId)
-      .eq('politician_id', politicianId)
-      .maybeSingle()
-      .then(({ data, error: err }) => {
+    ;(async () => {
+      try {
+        const { data, error: err } = await supabase
+          .from('followed_politicians')
+          .select('politician_id')
+          .eq('user_id', userId)
+          .eq('politician_id', politicianId)
+          .maybeSingle()
+        if (cancelled) return
         if (err) setError(err.message)
         else setFollowing(!!data)
-      })
+      } catch (err) {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Failed to load follow state')
+        console.error('[follow-politician] read failed:', err)
+      }
+    })()
+    return () => { cancelled = true }
   }, [userId, politicianId])
 
   const toggleFollow = async () => {

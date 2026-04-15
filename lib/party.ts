@@ -1,8 +1,10 @@
 import type { Party } from '@/lib/types'
 
-/** Coerce a free-form party string into the canonical Party type. */
-export function toParty(p: string): Party {
-  if (p === 'Democrat' || p === 'Republican' || p === 'Independent') return p
+/** Coerce a free-form party string (any casing, abbreviations, null) into the canonical Party type. */
+export function toParty(p?: string | null): Party {
+  const s = (p ?? '').trim().toUpperCase()
+  if (s === 'D' || s.includes('DEMOCRAT')) return 'Democrat'
+  if (s === 'R' || s.includes('REPUBLICAN')) return 'Republican'
   return 'Independent'
 }
 

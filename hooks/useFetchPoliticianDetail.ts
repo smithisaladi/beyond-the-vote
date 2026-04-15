@@ -151,7 +151,10 @@ export function useFetchPoliticianDetail(id: string, initialPolitician?: Politic
           votes: data.politician.votes?.length > prev.votes.length ? data.politician.votes : prev.votes,
         } : prev)
       })
-      .catch(() => {})
+      .catch(err => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        console.error('[politician-detail] enrichment failed:', err)
+      })
     return () => controller.abort()
   }, [id, initialPolitician])
 

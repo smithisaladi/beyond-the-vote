@@ -2,8 +2,6 @@
 // Keep this file dependency-free so it can be imported from server & client
 // components alike.
 
-const UNINFORMATIVE_NAMES = new Set(['Other', 'N/A', 'None', 'Various', 'Unknown', 'Na'])
-
 /**
  * Acronyms 4+ letters that should stay uppercase. Short (≤3 char) words are
  * auto-uppercased unless they appear in SHORT_WORD_EXCLUSIONS below.
@@ -54,15 +52,6 @@ export function formatTotal(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
   return `$${n.toLocaleString()}`
-}
-
-/** Full dollar amount with thousands separators: $40,134,927. */
-export function formatAmount(n: number): string {
-  return `$${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-}
-
-export function isUninformativeName(s: string): boolean {
-  return UNINFORMATIVE_NAMES.has(s)
 }
 
 const BILL_TYPE_LABELS: Record<string, string> = {
