@@ -10,11 +10,18 @@ export function useMapboxAutocomplete(address: string) {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const selectedRef = useRef<string | null>(null)
   const debouncedAddress = useDebounce(address, 300)
 
   useEffect(() => {
     if (!MAPBOX_TOKEN || debouncedAddress.length < 3) {
       setSuggestions([])
+      return
+    }
+
+    // Skip fetch if this address was just selected from suggestions
+    if (selectedRef.current === debouncedAddress) {
+      selectedRef.current = null
       return
     }
 
@@ -46,7 +53,8 @@ export function useMapboxAutocomplete(address: string) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const clearSuggestions = () => {
+  const clearSuggestions = (selected?: string) => {
+    if (selected) selectedRef.current = selected
     setSuggestions([])
     setShowSuggestions(false)
   }

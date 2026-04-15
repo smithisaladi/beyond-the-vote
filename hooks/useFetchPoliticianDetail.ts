@@ -15,8 +15,10 @@ interface PoliticianVote {
   id: string
   bill: string
   billId: string | null
+  billTitle: string
   date: string
   vote: 'Yea' | 'Nay'
+  question: string | null
   donorAlignments: DonorAlignment[]
 }
 
@@ -105,27 +107,53 @@ export interface Politician {
   donorAlignmentIsStale?: boolean
 }
 
-export function useFetchPoliticianDetail(id: string): {
+export function useFetchPoliticianDetail(id: string, initialPolitician?: Politician | null): {
   politician: Politician | null
   loading: boolean
   error: string | null
 } {
-  const [politician, setPolitician] = useState<Politician | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [politician, setPolitician] = useState<Politician | null>(initialPolitician ?? null)
+  const [loading, setLoading] = useState(!initialPolitician)
   const [error, setError] = useState<string | null>(null)
 
+  // Full fetch when no initialPolitician provided (legacy path)
   useEffect(() => {
+    if (initialPolitician || !id) return
+    const controller = new AbortController()
     setLoading(true)
     setError(null)
-    fetch(`/api/politicians/${id}`)
+    fetch(`/api/politicians/${id}`, { signal: controller.signal })
       .then(async (res) => {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? 'Failed to load')
         setPolitician(data.politician)
       })
-      .catch((err) => setError(err.message))
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setError(err.message)
+      })
       .finally(() => setLoading(false))
-  }, [id])
+    return () => controller.abort()
+  }, [id, initialPolitician])
+
+  // Background enrichment when initialPolitician provided (sponsored bills from Congress.gov)
+  useEffect(() => {
+    if (!initialPolitician || !id) return
+    const controller = new AbortController()
+    fetch(`/api/politicians/${id}`, { signal: controller.signal })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (!data?.politician) return
+        setPolitician(prev => prev ? {
+          ...prev,
+          bills: data.politician.bills?.length > 0 ? data.politician.bills : prev.bills,
+          photoCredit: data.politician.photoCredit ?? prev.photoCredit,
+          votes: data.politician.votes?.length > prev.votes.length ? data.politician.votes : prev.votes,
+        } : prev)
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [id, initialPolitician])
 
   return { politician, loading, error }
 }

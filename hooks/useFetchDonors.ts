@@ -17,6 +17,7 @@ export interface ContributorRecipient {
 export interface ContributorEntry {
   cmteId: string
   cmteName: string
+  rank: number
   directTotal: number
   ieForTotal: number
   ieAgainstTotal: number
@@ -33,7 +34,7 @@ export function useFetchDonors(debouncedQuery: string) {
   const [total, setTotal] = useState(0)
   const [loadingMore, setLoadingMore] = useState(false)
 
-  const fetchDonors = useCallback(async (currentOffset: number, append: boolean) => {
+  const fetchDonors = useCallback(async (currentOffset: number, append: boolean, signal?: AbortSignal) => {
     if (currentOffset === 0) setLoading(true)
     else setLoadingMore(true)
     setError(null)
@@ -42,7 +43,7 @@ export function useFetchDonors(debouncedQuery: string) {
     if (debouncedQuery) params.set('q', debouncedQuery)
 
     try {
-      const res = await fetch(`/api/donors?${params.toString()}`)
+      const res = await fetch(`/api/donors?${params.toString()}`, { signal })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to load donors')
       if (append) {
@@ -52,6 +53,7 @@ export function useFetchDonors(debouncedQuery: string) {
       }
       setTotal(data.pagination?.total ?? data.contributors.length)
     } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === 'AbortError') return
       setError(err instanceof Error ? err.message : 'Failed to load donors')
     } finally {
       setLoading(false)
@@ -60,8 +62,10 @@ export function useFetchDonors(debouncedQuery: string) {
   }, [debouncedQuery])
 
   useEffect(() => {
+    const controller = new AbortController()
     setOffset(0)
-    fetchDonors(0, false)
+    fetchDonors(0, false, controller.signal)
+    return () => controller.abort()
   }, [debouncedQuery, fetchDonors])
 
   const loadMore = () => {

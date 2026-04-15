@@ -12,25 +12,28 @@ export function useTopicPreferences(user: User | null) {
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    async function load() {
-      if (user) {
-        const supabase = createClient()
-        const { data } = await supabase
-          .from('topic_preferences')
-          .select('topic')
-          .eq('user_id', user.id)
-        if (data) {
-          setSelectedTopics(new Set(data.map((r: { topic: string }) => r.topic as Topic)))
-        }
-      } else {
-        try {
-          const raw = localStorage.getItem(LS_KEY)
-          if (raw) setSelectedTopics(new Set(JSON.parse(raw) as Topic[]))
-        } catch {}
-      }
+    if (user) {
+      const controller = new AbortController()
+      fetch('/api/dashboard/topic-preferences', { signal: controller.signal })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.topics) {
+            setSelectedTopics(new Set(data.topics as Topic[]))
+          }
+          setLoaded(true)
+        })
+        .catch((err) => {
+          if (err instanceof DOMException && err.name === 'AbortError') return
+          setLoaded(true)
+        })
+      return () => controller.abort()
+    } else {
+      try {
+        const raw = localStorage.getItem(LS_KEY)
+        if (raw) setSelectedTopics(new Set(JSON.parse(raw) as Topic[]))
+      } catch {}
       setLoaded(true)
     }
-    load()
   }, [user])
 
   const toggle = async (t: Topic) => {

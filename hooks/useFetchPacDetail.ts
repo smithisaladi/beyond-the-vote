@@ -30,6 +30,7 @@ export interface PacDetail {
 export function useFetchPacDetail(cmteId: string) {
   const [pac, setPac] = useState<PacDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [summaryLoading, setSummaryLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -41,17 +42,34 @@ export function useFetchPacDetail(cmteId: string) {
       .then(async (res) => {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? 'Failed to load PAC details')
-        if (!cancelled) setPac(data)
+        if (!cancelled) {
+          setPac(data)
+          setLoading(false)
+
+          // Fetch AI summary in background
+          setSummaryLoading(true)
+          fetch(`/api/donors/${encodeURIComponent(cmteId)}?summary=1`)
+            .then(async (res2) => {
+              const data2 = await res2.json()
+              if (!cancelled && res2.ok && data2.summary) {
+                setPac(prev => prev ? { ...prev, summary: data2.summary } : prev)
+              }
+            })
+            .catch(() => {})
+            .finally(() => {
+              if (!cancelled) setSummaryLoading(false)
+            })
+        }
       })
       .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load PAC details')
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load PAC details')
+          setLoading(false)
+        }
       })
 
     return () => { cancelled = true }
   }, [cmteId])
 
-  return { pac, loading, error }
+  return { pac, loading, summaryLoading, error }
 }

@@ -10,18 +10,21 @@ export function useTrackedBills(userId: string | null) {
 
   useEffect(() => {
     if (!userId) { setTrackedBills(new Set()); return }
-    const supabase = createClient()
+    const controller = new AbortController()
     setLoading(true)
     setError(null)
-    supabase
-      .from('tracked_bills')
-      .select('bill_id')
-      .eq('user_id', userId)
-      .then(({ data, error: err }) => {
-        if (err) setError(err.message)
-        else if (data) setTrackedBills(new Set(data.map((r: { bill_id: string }) => r.bill_id)))
-        setLoading(false)
+    fetch('/api/dashboard/tracked-bills', { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Failed to load tracked bills')
+        const { bills } = await res.json()
+        setTrackedBills(new Set((bills ?? []).map((b: { id: string }) => b.id)))
       })
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setError(err.message)
+      })
+      .finally(() => setLoading(false))
+    return () => controller.abort()
   }, [userId])
 
   const toggleTrack = async (billId: string) => {

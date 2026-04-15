@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
+import { MIN_PASSWORD_LENGTH } from '@/lib/constants'
+import type { UserMetadata } from '@/lib/supabase/types'
 
 type Frequency = 'immediate' | 'daily' | 'weekly'
 
@@ -35,8 +37,9 @@ export function useAccountSettings() {
   // Initialise from user metadata when user loads
   useEffect(() => {
     if (!user) return
-    setDisplayName(user.user_metadata?.full_name ?? '')
-    const prefs = user.user_metadata?.notification_preferences
+    const meta = user.user_metadata as UserMetadata | undefined
+    setDisplayName(meta?.full_name ?? '')
+    const prefs = meta?.notification_preferences
     if (prefs) {
       setNotifPrefs({
         emailEnabled:    prefs.email_enabled ?? true,
@@ -65,8 +68,8 @@ export function useAccountSettings() {
       setPasswordState({ loading: false, success: false, error: 'Passwords do not match' })
       return false
     }
-    if (newPw.length < 8) {
-      setPasswordState({ loading: false, success: false, error: 'Password must be at least 8 characters' })
+    if (newPw.length < MIN_PASSWORD_LENGTH) {
+      setPasswordState({ loading: false, success: false, error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` })
       return false
     }
     setPasswordState({ loading: true, success: false, error: '' })
