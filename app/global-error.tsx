@@ -110,7 +110,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
               onClick={reset}
               style={{
                 padding: '10px 20px',
-                background: '#9B7FA6',
+                background: '#7B5E8A',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,

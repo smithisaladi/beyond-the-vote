@@ -27,7 +27,7 @@
   --card-foreground: #1C1C1A;
 
   /* Primary accent — used for CTAs, active states, progress. */
-  --primary: #9B7FA6;
+  --primary: #7B5E8A;
   --primary-foreground: #FFFFFF;
 
   /* Muted surfaces — skeletons, neutral chips. */
@@ -36,7 +36,7 @@
 
   /* Borders and focus rings. */
   --border: rgba(28, 28, 26, 0.1);
-  --ring: #9B7FA6;
+  --ring: #7B5E8A;
 
   /* Default radius. Smaller/larger variants are derived below. */
   --radius: 0.5rem;

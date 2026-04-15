@@ -22,7 +22,7 @@ export default function NotFound() {
     <div className="min-h-screen bg-[#F5F0E8] flex flex-col items-center justify-center px-6">
       <div className="max-w-md w-full text-center">
         <p
-          className="text-8xl font-bold text-[#9B7FA6]/20 mb-2 leading-none select-none"
+          className="text-8xl font-bold text-[#7B5E8A]/20 mb-2 leading-none select-none"
           style={{ fontFamily: 'var(--font-serif)' }}
         >
           404
@@ -38,7 +38,7 @@ export default function NotFound() {
         </p>
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#9B7FA6] text-white text-sm font-medium rounded-lg hover:bg-[#8a6e95] transition-colors"
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#7B5E8A] text-white text-sm font-medium rounded-lg hover:bg-[#6A4F78] transition-colors"
         >
           Back to home
         </Link>
