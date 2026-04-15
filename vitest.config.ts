@@ -3,7 +3,7 @@ import path from 'node:path'
 
 export default defineConfig({
   oxc: {
-    jsx: 'automatic',
+    jsx: 'automatic' as any,
   },
   test: {
     environment: 'jsdom',

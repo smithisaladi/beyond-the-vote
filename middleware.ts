@@ -1,7 +1,24 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  if (pathname.startsWith('/api/')) {
+    const ip = request.headers.get('x-forwarded-for') ?? (request as any).ip ?? 'unknown'
+    if (!rateLimit(ip)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+    }
+  }
+
+  // Only run auth checks for routes that need redirect logic.
+  // API routes handle their own auth; public pages don't need it.
+  const needsAuth = pathname.startsWith('/settings') || pathname.startsWith('/dashboard')
+  if (!needsAuth) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -27,8 +44,6 @@ export async function middleware(request: NextRequest) {
 
   // Refresh session so it doesn't expire mid-visit
   const { data: { user } } = await supabase.auth.getUser()
-
-  const { pathname } = request.nextUrl
 
   // Redirect signed-in users from /dashboard to / (dashboard now lives at /)
   if (user && pathname.startsWith('/dashboard')) {
