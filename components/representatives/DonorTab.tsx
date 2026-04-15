@@ -80,7 +80,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
       <div className="px-6 py-8 text-center">
         <p className="text-sm text-[#1C1C1A]/40 mb-2">Donor data unavailable.</p>
         {fecUrl && (
-          <a href={fecUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#9B7FA6] hover:text-[#8a6e95]">
+          <a href={fecUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#7B5E8A] hover:text-[#6A4F78]">
             View on FEC →
           </a>
         )}
@@ -97,9 +97,9 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
       {/* ── Funding Split ── */}
       {bd && (
         <div className="grid grid-cols-4 gap-3 mb-7">
-          <div className="bg-[#9B7FA6]/5 rounded-lg p-4 border border-[#9B7FA6]/10">
+          <div className="bg-[#7B5E8A]/5 rounded-lg p-4 border border-[#7B5E8A]/10">
             <div
-              className="text-[#9B7FA6] mb-0.5"
+              className="text-[#7B5E8A] mb-0.5"
               style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
             >
               {Math.round(bd.pacPct)}%
@@ -175,7 +175,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
           <div className="flex h-2 rounded-full overflow-hidden bg-[#E8E3DA] mb-2.5">
             {bd.inStatePct > 0 && (
               <div
-                className="bg-[#9B7FA6]/60"
+                className="bg-[#7B5E8A]/60"
                 style={{ width: `${bd.inStatePct}%`, minWidth: bd.inStatePct > 0 ? 2 : 0 }}
               />
             )}
@@ -189,8 +189,8 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
 
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#9B7FA6]/60" />
-              <span className="text-[#9B7FA6] font-medium">In-state</span>
+              <span className="w-2 h-2 rounded-full bg-[#7B5E8A]/60" />
+              <span className="text-[#7B5E8A] font-medium">In-state</span>
               <span className="text-[#1C1C1A]/60">
                 {Math.round(bd.inStatePct)}% · {formatTotal(bd.inStateTotal)}
               </span>
@@ -240,7 +240,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
                     {c.orgName}
                   </span>
                   <span
-                    className={`flex-shrink-0 ${i === 0 ? 'text-[#9B7FA6]' : 'text-[#1C1C1A]/70'}`}
+                    className={`flex-shrink-0 ${i === 0 ? 'text-[#7B5E8A]' : 'text-[#1C1C1A]/70'}`}
                     style={{
                       fontSize: i === 0 ? '1rem' : '0.875rem',
                       fontWeight: 600,
@@ -263,7 +263,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             href={fecUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-[#1C1C1A]/30 hover:text-[#9B7FA6] transition-colors"
+            className="text-xs text-[#1C1C1A]/30 hover:text-[#7B5E8A] transition-colors"
           >
             Data via FEC →
           </a>

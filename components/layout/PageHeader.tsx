@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Bell, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { getUserInitials } from '@/lib/ui'
 import { SignInModal } from '@/components/auth/SignInModal'
@@ -25,14 +25,14 @@ export function PageHeader({ title }: { title: string }) {
               className="text-base text-[#1C1C1A] tracking-[0.01em] flex-shrink-0"
               style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
             >
-              Beyond the Vote
+              Beyond the <span className="text-[#7B5E8A]">Vote</span>
             </Link>
 
             <div className="w-px h-5 bg-[rgba(28,28,26,0.15)]" />
 
             <nav className="flex gap-1 flex-1 h-full items-stretch" aria-label="Main navigation">
               {([
-                { href: '/representatives', label: 'Know Your Representative' },
+                { href: '/representatives', label: 'Representatives' },
                 { href: '/bills', label: 'Bills' },
                 { href: '/donors', label: 'Donors' },
               ] as const).map(({ href, label }) => (
@@ -59,7 +59,7 @@ export function PageHeader({ title }: { title: string }) {
               </button>
               <button
                 onClick={() => setShowSignUp(true)}
-                className="text-sm bg-[#9B7FA6] text-white px-4 py-2 rounded-lg hover:bg-[#8a6e95] transition-colors shadow-sm font-medium"
+                className="text-sm bg-[#7B5E8A] text-white px-4 py-2 rounded-lg hover:bg-[#6A4F78] transition-colors shadow-sm font-medium"
               >
                 Sign up
               </button>
@@ -85,36 +85,16 @@ export function PageHeader({ title }: { title: string }) {
     <header className="sticky top-0 z-10 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] min-h-[64px] px-8 flex items-center justify-between">
       <h1 className="text-xl text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>{title}</h1>
 
-      <div className="flex items-center gap-5">
-        <button
-          className="relative text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70 transition-colors"
-          aria-label="Notifications"
-        >
-          <Bell size={19} />
-        </button>
-
+      <div className="flex items-center">
         {user && (
-          <>
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-[#9B7FA6]/20 border border-[#9B7FA6]/30 flex items-center justify-center">
-                <span className="text-xs font-semibold text-[#9B7FA6]" style={{ fontFamily: 'var(--font-serif)' }}>
-                  {getUserInitials(user)}
-                </span>
-              </div>
-              <span className="text-sm text-[#1C1C1A]/60 hidden sm:inline">
-                {user.user_metadata?.full_name ?? user.email}
-              </span>
-            </div>
-
-            <button
-              onClick={signOut}
-              aria-label="Sign out"
-              className="flex items-center gap-2 text-sm text-[#1C1C1A]/45 hover:text-[#1C1C1A]/75 transition-colors"
-            >
-              <span className="hidden sm:inline">Sign out</span>
-              <LogOut size={16} />
-            </button>
-          </>
+          <button
+            onClick={signOut}
+            aria-label="Sign out"
+            className="flex items-center gap-2 text-sm text-[#1C1C1A]/45 hover:text-[#1C1C1A]/75 transition-colors"
+          >
+            <span>Sign out</span>
+            <LogOut size={16} />
+          </button>
         )}
       </div>
     </header>

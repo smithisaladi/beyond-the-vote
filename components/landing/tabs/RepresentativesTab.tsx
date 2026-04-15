@@ -9,7 +9,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
             <div>
-              <span className="inline-block text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
+              <span className="inline-block text-xs font-medium text-[#7B5E8A] bg-[#7B5E8A]/10 border border-[#7B5E8A]/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Know Your Representative
               </span>
               <h1
@@ -25,13 +25,13 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={onSignUp}
-                  className="px-6 py-3 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-[#7B5E8A] text-white rounded-xl text-sm font-medium hover:bg-[#6A4F78] transition-colors shadow-sm"
                 >
                   Get started
                 </button>
                 <a
                   href="/representatives"
-                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#9B7FA6]/50 hover:text-[#9B7FA6] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors shadow-sm"
                 >
                   Find your representatives →
                 </a>
@@ -102,7 +102,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
             { stat: '100%', label: 'Open and accessible' },
           ].map(({ stat, label }) => (
             <div key={label}>
-              <p className="text-4xl font-semibold text-[#9B7FA6] mb-1.5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}>
+              <p className="text-4xl font-semibold text-[#7B5E8A] mb-1.5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}>
                 {stat}
               </p>
               <p className="text-[11px] text-[#1C1C1A]/50 leading-snug uppercase tracking-[0.04em]">{label}</p>
@@ -112,7 +112,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6 bg-[#9B7FA6]/[0.07] border-t border-[#9B7FA6]/15" aria-labelledby="rep-cta-heading">
+      <section className="py-20 px-6 bg-[#7B5E8A]/[0.07] border-t border-[#7B5E8A]/15" aria-labelledby="rep-cta-heading">
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="rep-cta-heading"
@@ -126,7 +126,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
           </p>
           <button
             onClick={onSignUp}
-            className="px-10 py-3.5 bg-[#9B7FA6] text-white rounded-xl text-sm font-medium hover:bg-[#8a6e95] transition-colors shadow-sm"
+            className="px-10 py-3.5 bg-[#7B5E8A] text-white rounded-xl text-sm font-medium hover:bg-[#6A4F78] transition-colors shadow-sm"
           >
             Create your account
           </button>

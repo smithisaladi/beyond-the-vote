@@ -1,41 +1,66 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useFetchDonors, type ContributorEntry, type ContributorRecipient } from '@/hooks/useFetchDonors'
 import { useDebounce } from '@/hooks/useDebounce'
 import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
-import { PARTY_STYLES } from '@/lib/ui'
 import { FEC_DISPLAY_CYCLES } from '@/lib/fec'
 import { formatTotal, toTitleCase } from '@/lib/format'
-import { partyAbbrev, toParty } from '@/lib/party'
+import { PARTY_STYLES } from '@/lib/ui'
 
-function TopoBackground() {
+type Lean = { label: string; party: 'Democrat' | 'Republican' | null; pct: number }
+
+function computeLean(recipients: ContributorRecipient[]): Lean | null {
+  if (recipients.length === 0) return null
+  let demTotal = 0, repTotal = 0
+  for (const r of recipients) {
+    if (r.party === 'Democrat') demTotal += r.amount
+    else if (r.party === 'Republican') repTotal += r.amount
+  }
+  const total = demTotal + repTotal
+  if (total === 0) return null
+  const demPct = demTotal / total
+  const repPct = repTotal / total
+  if (demPct >= 0.65) return { label: 'Leans Democrat', party: 'Democrat', pct: Math.round(demPct * 100) }
+  if (repPct >= 0.65) return { label: 'Leans Republican', party: 'Republican', pct: Math.round(repPct * 100) }
+  return { label: 'Mixed', party: null, pct: Math.round(Math.max(demPct, repPct) * 100) }
+}
+
+function LeanPill({ lean }: { lean: Lean }) {
+  if (lean.party) {
+    const style = PARTY_STYLES[lean.party]
+    return (
+      <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
+        <span className="w-1.5 h-1.5 rounded-full" style={{ background: style.hex }} />
+        {lean.label}
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#8A8A7A]/[0.12] text-[#8A8A7A]">
+      <span className="w-1.5 h-1.5 rounded-full bg-[#8A8A7A]" />
+      {lean.label}
+    </span>
+  )
+}
+
+function DotGridBackground() {
   return (
     <svg
       aria-hidden="true"
       className="absolute inset-0 w-full h-full"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ opacity: 0.025 }}
     >
       <defs>
-        <pattern id="topo-donors" x="0" y="0" width="800" height="600" patternUnits="userSpaceOnUse">
-          <ellipse cx="400" cy="300" rx="380" ry="260" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="400" cy="300" rx="320" ry="210" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="405" cy="295" rx="260" ry="165" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="410" cy="290" rx="205" ry="125" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="415" cy="285" rx="155" ry="90"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="418" cy="282" rx="110" ry="62"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="110" cy="500" rx="140" ry="90"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="115" cy="496" rx="95"  ry="58"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="700" cy="90"  rx="160" ry="100" fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="704" cy="87"  rx="110" ry="65"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="707" cy="85"  rx="65"  ry="38"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
+        <pattern id="dot-grid-donors" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="12" cy="12" r="1.2" fill="#1C1C1A" opacity="0.18" />
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#topo-donors)" />
+      <rect width="100%" height="100%" fill="url(#dot-grid-donors)" />
     </svg>
   )
 }
@@ -51,96 +76,60 @@ function SearchIcon() {
 
 function CardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden animate-pulse">
-      <div className="p-6 pb-5">
-        <div className="flex items-baseline justify-between mb-3">
-          <div className="h-7 w-6 bg-[#E8E3DA] rounded" />
-          <div className="h-7 w-20 bg-[#E8E3DA] rounded" />
+    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 animate-pulse">
+      <div className="flex items-baseline justify-between mb-1">
+        <div className="flex items-baseline gap-3">
+          <div className="h-4 w-4 bg-[#E8E3DA] rounded" />
+          <div className="h-4 w-48 bg-[#E8E3DA] rounded" />
         </div>
-        <div className="h-4 bg-[#E8E3DA] rounded w-3/4 mb-2.5" />
-        <div className="h-3 bg-[#E8E3DA] rounded w-1/3" />
+        <div className="h-4 w-16 bg-[#E8E3DA] rounded" />
       </div>
-      <div className="bg-[#F5F0E8]/40 px-6 py-5 border-t border-[rgba(28,28,26,0.06)]">
-        <div className="h-2.5 bg-[#E8E3DA] rounded w-20 mb-3" />
-        <div className="space-y-2.5">
-          <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
-          <div className="h-3.5 bg-[#E8E3DA] rounded w-5/6" />
-          <div className="h-3.5 bg-[#E8E3DA] rounded w-4/6" />
-        </div>
+      <div className="h-3 bg-[#E8E3DA] rounded w-24 mb-3 ml-7" />
+      <div className="border-t border-[rgba(28,28,26,0.06)] pt-3 ml-7 space-y-2">
+        <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
+        <div className="h-3.5 bg-[#E8E3DA] rounded w-5/6" />
+        <div className="h-3.5 bg-[#E8E3DA] rounded w-4/6" />
       </div>
     </div>
   )
 }
 
 function ContributorCard({ contributor, rank }: { contributor: ContributorEntry; rank: number }) {
-  const router = useRouter()
+  const lean = computeLean(contributor.topRecipients)
 
   return (
-    <article
-      className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden hover:border-[#9B7FA6]/30 hover:shadow-md transition-all cursor-pointer group"
-      onClick={() => router.push(`/donors/${contributor.cmteId}`)}
-    >
-      {/* Header zone */}
-      <div className="p-6 pb-5">
-        <div className="flex items-baseline justify-between gap-4 mb-2">
-          <span
-            className="text-2xl text-[#1C1C1A]/30 tabular-nums flex-shrink-0"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            {rank}
-          </span>
-          <span
-            className="text-2xl text-[#1C1C1A] font-medium tabular-nums flex-shrink-0"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            {formatTotal(contributor.totalContributions)}
-          </span>
-        </div>
+    <Link href={`/donors/${contributor.cmteId}`} className="block group">
+      <article className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] group-hover:shadow-md group-hover:border-[#7B5E8A]/20 transition-all p-6 cursor-pointer">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            {/* Rank + Name */}
+            <div className="flex items-baseline gap-2.5 mb-1">
+              <span className="text-xs font-mono text-[#1C1C1A]/30 flex-shrink-0">#{rank}</span>
+              <h2
+                className="text-lg text-[#1C1C1A] leading-snug group-hover:text-[#7B5E8A] transition-colors"
+                style={{ fontFamily: 'var(--font-serif)' }}
+              >
+                {toTitleCase(contributor.cmteName)}
+              </h2>
+            </div>
+            <span className="text-xs text-[#1C1C1A]/38 pl-7">
+              {contributor.recipientCount} candidate{contributor.recipientCount !== 1 ? 's' : ''} supported
+            </span>
+          </div>
 
-        <h2
-          className="text-[15px] text-[#1C1C1A] leading-snug mb-2.5 group-hover:text-[#9B7FA6] transition-colors"
-          style={{ fontFamily: 'var(--font-serif)' }}
-        >
-          {toTitleCase(contributor.cmteName)}
-        </h2>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-[13px] text-[#1C1C1A]/50">
-            {contributor.recipientCount} candidate{contributor.recipientCount !== 1 ? 's' : ''}
-          </span>
-        </div>
-      </div>
-
-      {/* Recipients zone */}
-      {contributor.topRecipients.length > 0 && (
-        <div className="bg-[#F5F0E8]/40 px-6 py-5 border-t border-[rgba(28,28,26,0.06)]">
-          <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-3">Top Recipients</p>
-          <div className="grid gap-1.5">
-            {contributor.topRecipients.map((r: ContributorRecipient, idx: number) => {
-              const p = toParty(r.party)
-              const ps = PARTY_STYLES[p]
-              return (
-                <button
-                  key={`${r.bioguideId}-${idx}`}
-                  onClick={e => { e.stopPropagation(); router.push(`/representatives/${r.bioguideId}`) }}
-                  className="w-full grid grid-cols-[1fr_auto] items-center gap-3 hover:bg-white -mx-2 px-2 py-1 rounded-md transition-colors text-left"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm text-[#1C1C1A]/75 truncate">{r.name}</span>
-                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${ps.bg} ${ps.text}`}>
-                      {partyAbbrev(p)}-{r.state}
-                    </span>
-                  </div>
-                  <span className="text-sm text-[#1C1C1A]/60 tabular-nums flex-shrink-0 min-w-[56px] text-right">
-                    {formatTotal(r.amount)}
-                  </span>
-                </button>
-              )
-            })}
+          {/* Total + lean pill */}
+          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+            <span
+              className="text-xl text-[#1C1C1A] font-medium tabular-nums text-right"
+              style={{ fontFamily: 'var(--font-serif)' }}
+            >
+              {formatTotal(contributor.totalContributions)}
+            </span>
+            {lean && <LeanPill lean={lean} />}
           </div>
         </div>
-      )}
-    </article>
+      </article>
+    </Link>
   )
 }
 
@@ -156,33 +145,35 @@ function DonorsContent() {
   } = useFetchDonors(debouncedQuery)
 
   return (
-    <div className="relative flex flex-col flex-1 overflow-hidden">
-      <TopoBackground />
+    <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
+      <DotGridBackground />
 
       <div className="relative z-10 flex flex-col flex-1">
         <PageHeader title="Donors" />
-        <main className="flex-1 px-6 py-10">
-          <div className="max-w-2xl mx-auto">
+        <main className="flex-1 px-6 pt-24 pb-8">
+          <div className="max-w-4xl mx-auto">
 
-            {/* Page header — landing-scale, centered */}
-            <div className="text-center mb-8">
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-5 tracking-[0.08em] uppercase">
-                FEC · {FEC_DISPLAY_CYCLES}
-                <InfoTooltip term="fecCycle" />
-              </span>
+            {/* Page heading */}
+            <div className="mb-5 text-center">
               <h1
-                className="text-5xl sm:text-6xl text-[#1C1C1A] mb-4 leading-[1.08] tracking-[-0.02em]"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
+                className="text-2xl sm:text-3xl text-[#1C1C1A] mb-1.5"
+                style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
               >
                 Top Contributors
               </h1>
-              <p className="text-base sm:text-lg text-[#1C1C1A]/55 leading-relaxed max-w-md mx-auto mb-8">
-                <em className="not-italic">PACs</em> that spend the most supporting candidates across Congress.
+              <p className="text-sm text-[#1C1C1A]/50">
+                PACs that spend the most supporting candidates across Congress.
+                <span className="inline-flex items-center ml-1.5 text-xs text-[#1C1C1A]/38">
+                  FEC · {FEC_DISPLAY_CYCLES}
+                  <InfoTooltip term="fecCycle" />
+                </span>
               </p>
+            </div>
 
-              {/* Search input */}
-              <div className="flex items-center gap-3 bg-white rounded-lg border border-[rgba(28,28,26,0.12)] px-4 py-3 focus-within:border-[#9B7FA6]/40 transition-colors">
-                <span className="text-[#1C1C1A]/35 flex-shrink-0">
+            {/* Search card */}
+            <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+              <div className="flex items-center px-5 py-4 gap-3">
+                <span className="text-[#1C1C1A]/25 flex-shrink-0">
                   <SearchIcon />
                 </span>
                 <input
@@ -190,7 +181,7 @@ function DonorsContent() {
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Search organizations…"
-                  className="flex-1 bg-transparent outline-none text-sm text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+                  className="flex-1 bg-transparent outline-none text-[15px] text-[#1C1C1A] placeholder:text-[#1C1C1A]/35"
                 />
                 {query && (
                   <button onClick={() => setQuery('')} className="text-[#1C1C1A]/35 hover:text-[#1C1C1A]/60 flex-shrink-0">
@@ -203,12 +194,7 @@ function DonorsContent() {
             </div>
 
             {/* Contributor list */}
-            <div>
-              {!loading && !error && (
-                <p className="text-xs text-[#1C1C1A]/40 mb-4">
-                  {contributors.length} organization{contributors.length !== 1 ? 's' : ''}
-                </p>
-              )}
+            <div className="mt-8">
 
               {loading ? (
                 <div className="space-y-4">
@@ -221,7 +207,7 @@ function DonorsContent() {
                   <p className="text-[#1C1C1A]/40 text-sm mb-3">Failed to load contributors.</p>
                   <button
                     onClick={() => refetch()}
-                    className="text-sm text-[#9B7FA6] hover:text-[#8a6e95]"
+                    className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
                   >
                     Try again
                   </button>
@@ -232,7 +218,7 @@ function DonorsContent() {
                   {query && (
                     <button
                       onClick={() => setQuery('')}
-                      className="mt-3 text-sm text-[#9B7FA6] hover:text-[#8a6e95]"
+                      className="mt-3 text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
                     >
                       Clear search
                     </button>
@@ -241,8 +227,8 @@ function DonorsContent() {
               ) : (
                 <>
                   <div className="space-y-4">
-                    {contributors.map((c, idx) => (
-                      <ContributorCard key={c.cmteId} contributor={c} rank={idx + 1} />
+                    {contributors.map((c) => (
+                      <ContributorCard key={c.cmteId} contributor={c} rank={c.rank} />
                     ))}
                   </div>
 
@@ -250,7 +236,7 @@ function DonorsContent() {
                     <button
                       onClick={loadMore}
                       disabled={loadingMore}
-                      className="mt-4 w-full text-sm font-medium text-[#9B7FA6] hover:text-[#8a6e95] disabled:opacity-50 bg-white border border-[#9B7FA6]/30 rounded-xl px-5 py-3 hover:bg-[#9B7FA6]/5 hover:border-[#9B7FA6]/50 transition-colors"
+                      className="mt-4 w-full text-sm font-medium text-[#7B5E8A] hover:text-[#6A4F78] disabled:opacity-50 bg-white border border-[#7B5E8A]/30 rounded-xl px-5 py-3 hover:bg-[#7B5E8A]/5 hover:border-[#7B5E8A]/50 transition-colors"
                     >
                       {loadingMore ? 'Loading…' : 'Load more'}
                     </button>

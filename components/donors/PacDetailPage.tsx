@@ -15,30 +15,19 @@ import type { Party } from '@/lib/types'
 
 const RECIPIENTS_PREVIEW = 30
 
-function TopoBackground() {
+function DotGridBackground() {
   return (
     <svg
       aria-hidden="true"
       className="absolute inset-0 w-full h-full"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ opacity: 0.025 }}
     >
       <defs>
-        <pattern id="topo-pac-detail" x="0" y="0" width="800" height="600" patternUnits="userSpaceOnUse">
-          <ellipse cx="400" cy="300" rx="380" ry="260" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="400" cy="300" rx="320" ry="210" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="405" cy="295" rx="260" ry="165" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="410" cy="290" rx="205" ry="125" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="415" cy="285" rx="155" ry="90"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="418" cy="282" rx="110" ry="62"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="110" cy="500" rx="140" ry="90"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="115" cy="496" rx="95"  ry="58"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="700" cy="90"  rx="160" ry="100" fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="704" cy="87"  rx="110" ry="65"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="707" cy="85"  rx="65"  ry="38"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
+        <pattern id="dot-grid-pac-detail" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="12" cy="12" r="1.2" fill="#1C1C1A" opacity="0.18" />
         </pattern>
       </defs>
-      <rect width="100%" height="100%" fill="url(#topo-pac-detail)" />
+      <rect width="100%" height="100%" fill="url(#dot-grid-pac-detail)" />
     </svg>
   )
 }
@@ -54,7 +43,7 @@ function BackArrow() {
 
 function DetailSkeleton() {
   return (
-    <div className="max-w-2xl mx-auto animate-pulse">
+    <div className="max-w-4xl mx-auto animate-pulse">
       <div className="h-4 w-24 bg-[#E8E3DA] rounded mb-8" />
       <div className="h-6 w-24 bg-[#E8E3DA] rounded-full mb-4" />
       <div className="h-8 bg-[#E8E3DA] rounded w-2/3 mb-5" />
@@ -102,7 +91,7 @@ function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="text-sm text-[#1C1C1A]/75 truncate group-hover:text-[#9B7FA6] transition-colors">
+          <span className="text-sm text-[#1C1C1A]/75 truncate group-hover:text-[#7B5E8A] transition-colors">
             {recipient.name}
           </span>
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${ps.bg} ${ps.text}`}>
@@ -122,7 +111,7 @@ function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
       <ChevronRight
         size={14}
         strokeWidth={1.8}
-        className="text-[#1C1C1A]/20 group-hover:text-[#9B7FA6] transition-colors flex-shrink-0"
+        className="text-[#1C1C1A]/20 group-hover:text-[#7B5E8A] transition-colors flex-shrink-0"
       />
     </Link>
   )
@@ -147,7 +136,7 @@ function FundingCard({
   valueClassName?: string
 }) {
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
+    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 text-center">
       <p className="text-[10px] text-[#1C1C1A]/50 uppercase tracking-wider mb-2 inline-flex items-center gap-1">
         {label}
         <InfoTooltip term={tooltip} />
@@ -170,7 +159,7 @@ type PartyFilter = 'all' | Party
 
 export default function PacDetailPage({ params }: { params: Promise<{ cmteId: string }> }) {
   const { cmteId } = use(params)
-  const { pac, loading, error } = useFetchPacDetail(cmteId)
+  const { pac, loading, summaryLoading, error } = useFetchPacDetail(cmteId)
 
   const [sortKey, setSortKey] = useState<SortKey>('amount')
   const [partyFilter, setPartyFilter] = useState<PartyFilter>('all')
@@ -213,7 +202,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
             sublabel="Supporting candidates"
             tooltip="ieFor"
             amount={pac.ieForTotal}
-            valueClassName="text-[#6A9B7B]"
+            valueClassName="text-[#4A8B6F]"
           />
         ),
         pac.ieAgainstTotal > 0 && (
@@ -223,7 +212,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
             sublabel="Opposing candidates"
             tooltip="ieAgainst"
             amount={pac.ieAgainstTotal}
-            valueClassName="text-[#B85C38]"
+            valueClassName="text-[#C4553A]"
           />
         ),
       ].filter(Boolean)
@@ -237,101 +226,82 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
   ]
 
   return (
-    <div className="relative flex flex-col flex-1 overflow-hidden">
-      <TopoBackground />
+    <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
+      <DotGridBackground />
 
       <div className="relative z-10 flex flex-col flex-1">
         <PageHeader title="Donors" />
-        <main className="flex-1 px-6 py-10">
+        <main className="flex-1 px-6 pt-10 pb-8">
 
           {loading ? (
             <DetailSkeleton />
           ) : error || !pac ? (
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-4xl mx-auto">
               <Link href="/donors" className="inline-flex items-center gap-1.5 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70 transition-colors mb-8">
                 <BackArrow /> Top Contributors
               </Link>
               <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-12 text-center">
                 <p className="text-[#1C1C1A]/45 text-sm">{error ?? 'PAC not found.'}</p>
-                <Link href="/donors" className="mt-3 inline-block text-sm text-[#9B7FA6] hover:underline underline-offset-2">
+                <Link href="/donors" className="mt-3 inline-block text-sm text-[#7B5E8A] hover:underline underline-offset-2">
                   Back to leaderboard
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="max-w-2xl mx-auto">
+            <div className="max-w-4xl mx-auto">
               {/* Back link */}
-              <Link href="/donors" className="inline-flex items-center gap-1.5 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70 transition-colors mb-8">
+              <Link href="/donors" className="inline-flex items-center gap-1.5 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70 transition-colors mb-6">
                 <BackArrow /> Top Contributors
               </Link>
 
-              {/* PAC Header — landing-scale, centered */}
-              <div className="text-center mb-10">
-                {/* Eyebrow pill */}
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-3 py-1 rounded-full mb-5 tracking-[0.08em] uppercase">
-                  {FEC_DISPLAY_CYCLES}
-                  <InfoTooltip term="fecCycle" />
-                </span>
-
-                {/* H1 — PAC name */}
+              {/* PAC Header */}
+              <div className="mb-8">
                 <h1
-                  className="text-4xl sm:text-5xl text-[#1C1C1A] mb-4 leading-[1.08] tracking-[-0.02em]"
-                  style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
+                  className="text-2xl sm:text-3xl text-[#1C1C1A] mb-2 leading-[1.15] tracking-[-0.01em]"
+                  style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
                 >
                   {toTitleCase(pac.name)}
                 </h1>
 
-                {/* Subtitle sentence */}
-                <p className="text-base sm:text-lg text-[#1C1C1A]/55 leading-relaxed max-w-md mx-auto mb-6">
-                  {pac.connectedOrg && (
-                    <>
-                      Affiliated with {toTitleCase(pac.connectedOrg)}.{' '}
-                    </>
-                  )}
-                  {pac.recipientCount} candidate{pac.recipientCount !== 1 ? 's' : ''} supported this cycle.
-                </p>
-
-                {/* External links as an action group */}
-                <div className="flex items-center justify-center gap-3 flex-wrap">
-                  <a
-                    href={getFecCommitteeUrl(cmteId)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`View ${toTitleCase(pac.name)} on the FEC website (opens in new tab)`}
-                    className="inline-flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#9B7FA6] transition-colors"
-                  >
-                    View on FEC <ExternalLink size={11} strokeWidth={1.8} aria-hidden="true" />
-                  </a>
-                  <span className="text-[#1C1C1A]/20">·</span>
-                  <a
-                    href={getOpenSecretsUrl(cmteId)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`View ${toTitleCase(pac.name)} on OpenSecrets (opens in new tab)`}
-                    className="inline-flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#9B7FA6] transition-colors"
-                  >
-                    View on OpenSecrets <ExternalLink size={11} strokeWidth={1.8} aria-hidden="true" />
-                  </a>
-                </div>
+                {pac.connectedOrg && (
+                  <p className="text-sm text-[#1C1C1A]/50">
+                    Affiliated with {toTitleCase(pac.connectedOrg)}
+                  </p>
+                )}
               </div>
 
-              {/* AI Summary — positioned as a TL;DR under the hero */}
-              {pac.summary && (
+              {/* AI Analysis — background + spending breakdown */}
+              {(summaryLoading || pac.summary) && (
                 <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 mb-6">
                   <div className="flex items-center gap-2 mb-3">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9B7FA6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7B5E8A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M12 2L2 7l10 5 10-5-10-5z" />
                       <path d="M2 17l10 5 10-5" />
                       <path d="M2 12l10 5 10-5" />
                     </svg>
-                    <p className="text-[10px] text-[#9B7FA6] uppercase tracking-wider font-medium">AI Summary</p>
+                    <p className="text-[10px] text-[#7B5E8A] uppercase tracking-wider font-medium">AI Analysis</p>
                   </div>
-                  <p className="text-sm text-[#1C1C1A]/70 leading-relaxed">
-                    {pac.summary}
-                  </p>
-                  <p className="text-[10px] text-[#1C1C1A]/50 mt-3">
-                    AI-generated from FEC contribution data. Describes patterns only — not an official analysis or endorsement.
-                  </p>
+                  {summaryLoading ? (
+                    <div className="animate-pulse space-y-3">
+                      <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
+                      <div className="h-3.5 bg-[#E8E3DA] rounded w-11/12" />
+                      <div className="h-3.5 bg-[#E8E3DA] rounded w-4/5" />
+                      <div className="h-3.5 bg-[#E8E3DA] rounded w-full mt-4" />
+                      <div className="h-3.5 bg-[#E8E3DA] rounded w-10/12" />
+                      <div className="h-3.5 bg-[#E8E3DA] rounded w-3/4" />
+                    </div>
+                  ) : (
+                    <>
+                      <div className="text-sm text-[#1C1C1A]/70 leading-relaxed space-y-3">
+                        {pac.summary.split('\n\n').map((paragraph, i) => (
+                          <p key={i}>{paragraph}</p>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-[#1C1C1A]/50 mt-3">
+                        AI-generated from FEC data and general knowledge. Not an official analysis.
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -348,15 +318,22 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
 
               {/* All Recipients */}
               <div className="mb-10">
-                <h2
-                  className="text-3xl text-[#1C1C1A] mb-2 text-center"
-                  style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-                >
-                  All Recipients
-                </h2>
-                <p className="text-sm text-[#1C1C1A]/50 text-center mb-8 max-w-md mx-auto tracking-[0.01em]">
-                  {pac.recipients.length} candidate{pac.recipients.length !== 1 ? 's' : ''} this PAC supported with direct or independent-expenditure spending.
-                </p>
+                <div className="flex items-baseline justify-between mb-4">
+                  <h2
+                    className="text-lg text-[#1C1C1A]"
+                    style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
+                  >
+                    All Recipients
+                  </h2>
+                  <span className="inline-flex items-center gap-2 text-xs text-[#1C1C1A]/38">
+                    {pac.recipients.length} candidate{pac.recipients.length !== 1 ? 's' : ''}
+                    <span className="text-[#1C1C1A]/20">·</span>
+                    <span className="inline-flex items-center gap-0.5">
+                      FEC {FEC_DISPLAY_CYCLES}
+                      <InfoTooltip term="fecCycle" />
+                    </span>
+                  </span>
+                </div>
 
                 {pac.recipients.length === 0 ? (
                   <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-6 py-10 text-center">
@@ -376,7 +353,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                             onClick={() => setPartyFilter(f.key)}
                             className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
                               partyFilter === f.key
-                                ? 'bg-[#9B7FA6]/10 text-[#9B7FA6]'
+                                ? 'bg-[#7B5E8A]/10 text-[#7B5E8A]'
                                 : 'text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70'
                             }`}
                           >
@@ -422,7 +399,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                         <button
                           type="button"
                           onClick={() => setShowAll(s => !s)}
-                          className="text-xs text-[#9B7FA6] hover:underline underline-offset-2"
+                          className="text-xs text-[#7B5E8A] hover:underline underline-offset-2"
                         >
                           {showAll
                             ? 'Show fewer'
@@ -434,6 +411,27 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                 )}
               </div>
 
+              <div className="flex items-center gap-3 flex-wrap mt-6 mb-2">
+                <a
+                  href={getFecCommitteeUrl(cmteId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`View ${toTitleCase(pac.name)} on the FEC website (opens in new tab)`}
+                  className="inline-flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#7B5E8A] transition-colors"
+                >
+                  View on FEC <ExternalLink size={11} strokeWidth={1.8} aria-hidden="true" />
+                </a>
+                <span className="text-[#1C1C1A]/20">·</span>
+                <a
+                  href={getOpenSecretsUrl(cmteId)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`View ${toTitleCase(pac.name)} on OpenSecrets (opens in new tab)`}
+                  className="inline-flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#7B5E8A] transition-colors"
+                >
+                  View on OpenSecrets <ExternalLink size={11} strokeWidth={1.8} aria-hidden="true" />
+                </a>
+              </div>
               <DataSourceDisclosure showAiDisclaimer className="mb-10" />
             </div>
           )}
