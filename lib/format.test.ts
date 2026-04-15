@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toTitleCase, formatTotal } from './format'
+import { toTitleCase, formatTotal, formatBillType } from './format'
 
 describe('toTitleCase', () => {
   it('title-cases all-caps input', () => {
@@ -42,6 +42,41 @@ describe('toTitleCase', () => {
 
   it('treats mixed-letter-plus-number words', () => {
     expect(toTitleCase('LOCAL 1000 UNION')).toBe('Local 1000 Union')
+  })
+
+  it('title-cases Jr/Sr name suffixes (not all-caps)', () => {
+    expect(toTitleCase('JOHN SMITH JR')).toBe('John Smith Jr')
+    expect(toTitleCase('JOHN SMITH SR.')).toBe('John Smith Sr.')
+    expect(toTitleCase('ROBERT JONES, JR.')).toBe('Robert Jones, Jr.')
+  })
+
+  it('keeps roman-numeral suffixes uppercase', () => {
+    // II / III / IV are short, not suffix-exclusions, so they auto-uppercase.
+    expect(toTitleCase('JOHN SMITH III')).toBe('John Smith III')
+    expect(toTitleCase('WILLIAM GATES IV')).toBe('William Gates IV')
+  })
+})
+
+describe('formatBillType', () => {
+  it('maps known bill types to their canonical labels', () => {
+    expect(formatBillType('hr')).toBe('H.R.')
+    expect(formatBillType('s')).toBe('S.')
+    expect(formatBillType('hjres')).toBe('H.J.Res.')
+    expect(formatBillType('sjres')).toBe('S.J.Res.')
+    expect(formatBillType('hconres')).toBe('H.Con.Res.')
+    expect(formatBillType('sconres')).toBe('S.Con.Res.')
+    expect(formatBillType('hres')).toBe('H.Res.')
+    expect(formatBillType('sres')).toBe('S.Res.')
+  })
+
+  it('is case-insensitive on input', () => {
+    expect(formatBillType('HR')).toBe('H.R.')
+    expect(formatBillType('Hr')).toBe('H.R.')
+  })
+
+  it('uppercases unknown types as a fallback', () => {
+    expect(formatBillType('xyz')).toBe('XYZ')
+    expect(formatBillType('')).toBe('')
   })
 })
 

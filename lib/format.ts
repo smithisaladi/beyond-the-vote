@@ -27,6 +27,13 @@ const SHORT_WORD_EXCLUSIONS = new Set([
 ])
 
 /**
+ * Short name suffixes that should be title-cased ("Jr.", "Sr.") rather than
+ * auto-uppercased. Roman numeral suffixes (II, III, IV) are intentionally
+ * omitted — those should stay uppercase.
+ */
+const TITLE_CASE_SUFFIXES = new Set(['jr', 'sr'])
+
+/**
  * FEC data arrives SHOUTING IN ALL CAPS. Convert to Title Case unless the
  * original was already mixed-case (in which case we assume human editing and
  * leave it alone). Acronyms in KEEP_UPPERCASE stay uppercase so "DBA"
@@ -39,8 +46,8 @@ export function toTitleCase(s: string): string {
     const upper = word.toUpperCase()
     if (KEEP_UPPERCASE.has(upper)) return upper
     const lower = word.toLowerCase()
-    // Short words (≤3 chars) auto-uppercase unless excluded
-    if (lower.length <= 3 && !SHORT_WORD_EXCLUSIONS.has(lower)) return upper
+    // Short words (≤3 chars) auto-uppercase unless excluded or a title-cased suffix
+    if (lower.length <= 3 && !SHORT_WORD_EXCLUSIONS.has(lower) && !TITLE_CASE_SUFFIXES.has(lower)) return upper
     // Excluded short words stay lowercase (except at start of string)
     if (SHORT_WORD_EXCLUSIONS.has(lower) && offset > 0) return lower
     return lower.charAt(0).toUpperCase() + lower.slice(1)

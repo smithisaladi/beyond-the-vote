@@ -16,6 +16,21 @@ export const STATUS_STYLES: Record<BillStatus, { bg: string; text: string }> = {
   Failed:    { bg: 'bg-[#B85C38]/[0.12]', text: 'text-[#B85C38]' },
 }
 
+/** Standard card shell — white bg, subtle border, soft shadow, rounded-xl. No padding; compose with your own. */
+export const CARD_CLASS =
+  'bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)]'
+
+/** Lighter border used on settings/form cards. No shadow. */
+export const CARD_LIGHT_BORDER_CLASS =
+  'bg-white rounded-xl border border-[#D6CFC4]'
+
+/** Hover elevation applied to clickable tile cards. Must be placed inside a `group` wrapper. */
+export const CARD_HOVER_CLASS =
+  'group-hover:shadow-md group-hover:border-[#7B5E8A]/20 transition-all'
+
+/** Skeleton placeholder fill. Pair with `animate-pulse` on an ancestor. */
+export const SKELETON_BG = 'bg-[#E8E3DA]'
+
 export function getUserInitials(user: User): string {
   const meta = user.user_metadata as UserMetadata | undefined
   const name = meta?.full_name
