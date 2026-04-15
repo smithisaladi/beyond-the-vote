@@ -121,6 +121,8 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
             >
               Try again
             </button>
+            {/* Plain <a> is intentional — global-error must render without Next.js primitives. */}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/"
               style={{
