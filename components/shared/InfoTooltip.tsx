@@ -26,7 +26,7 @@ export function InfoTooltip({ term, content, label, className }: Props) {
         <button
           type="button"
           aria-label={ariaLabel}
-          className={`inline-flex items-center justify-center text-[#1C1C1A]/38 hover:text-[#9B7FA6] focus:text-[#9B7FA6] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#9B7FA6]/40 rounded-full transition-colors ${className ?? ''}`}
+          className={`inline-flex items-center justify-center text-[#1C1C1A]/38 hover:text-[#7B5E8A] focus:text-[#7B5E8A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B5E8A]/40 rounded-full transition-colors ${className ?? ''}`}
         >
           <HelpCircle size={13} strokeWidth={1.8} />
         </button>
