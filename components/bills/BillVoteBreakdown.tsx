@@ -127,7 +127,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
                     onClick={() => setFilter(f)}
                     className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                       filter === f
-                        ? 'bg-[#9B7FA6]/10 text-[#9B7FA6] border-[#9B7FA6]/20'
+                        ? 'bg-[#7B5E8A]/10 text-[#7B5E8A] border-[#7B5E8A]/20'
                         : 'border-[rgba(28,28,26,0.08)] text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70'
                     }`}
                   >

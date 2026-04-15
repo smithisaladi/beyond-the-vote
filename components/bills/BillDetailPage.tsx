@@ -1,48 +1,23 @@
 'use client'
 
-import { useState, use } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { SignInModal } from '@/components/auth/SignInModal'
 import { SignUpModal } from '@/components/auth/SignUpModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTrackedBills } from '@/hooks/useTrackedBills'
-import { useFetchBillDetail } from '@/hooks/useFetchBillDetail'
+import { useFetchBillDetail, type BillDetail } from '@/hooks/useFetchBillDetail'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
+import { PartyBadge } from '@/components/shared/PartyBadge'
+import BillVoteTally from '@/components/bills/BillVoteTally'
+import { DotGridBackground } from '@/components/shared/DotGridBackground'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function TopoBackground() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 w-full h-full"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ opacity: 0.04 }}
-    >
-      <defs>
-        <pattern id="topo-bill-detail" x="0" y="0" width="800" height="600" patternUnits="userSpaceOnUse">
-          <ellipse cx="400" cy="300" rx="380" ry="260" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="400" cy="300" rx="320" ry="210" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="405" cy="295" rx="260" ry="165" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="410" cy="290" rx="205" ry="125" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="415" cy="285" rx="155" ry="90"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="418" cy="282" rx="110" ry="62"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="110" cy="500" rx="140" ry="90"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="115" cy="496" rx="95"  ry="58"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="700" cy="90"  rx="160" ry="100" fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="704" cy="87"  rx="110" ry="65"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="707" cy="85"  rx="65"  ry="38"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#topo-bill-detail)" />
-    </svg>
-  )
-}
-
 function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#9B7FA6' : 'none'} stroke="#9B7FA6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )
@@ -60,9 +35,9 @@ function ExternalLinkIcon() {
 
 function DetailSkeleton() {
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-pulse">
+    <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
       <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
-      <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 sm:p-8 space-y-4">
+      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8 space-y-4">
         <div className="flex gap-3">
           <div className="h-5 w-20 bg-[#E8E3DA] rounded-full" />
           <div className="h-5 w-16 bg-[#E8E3DA] rounded-full" />
@@ -70,13 +45,13 @@ function DetailSkeleton() {
         <div className="h-8 bg-[#E8E3DA] rounded w-3/4" />
         <div className="h-4 bg-[#E8E3DA] rounded w-1/4" />
       </div>
-      <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 h-32" />
+      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-32" />
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 h-40" />
-          <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 h-48" />
+          <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-40" />
+          <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-48" />
         </div>
-        <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 h-64" />
+        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-64" />
       </div>
     </div>
   )
@@ -93,43 +68,22 @@ function PartyTag({ party }: { party: string }) {
   )
 }
 
-function VoteBar({ yeas, nays }: { yeas: number; nays: number }) {
-  const total = yeas + nays
-  if (total === 0) return null
-  const yeaPct = Math.round((yeas / total) * 100)
-  const nayPct = 100 - yeaPct
-  return (
-    <div className="space-y-1.5">
-      <div className="flex h-2 rounded-full overflow-hidden bg-[#E8E3DA]">
-        <div className="bg-[#6A9B7B] transition-all" style={{ width: `${yeaPct}%` }} />
-        <div className="bg-[#B85C38] transition-all" style={{ width: `${nayPct}%` }} />
-      </div>
-      <div className="flex justify-between text-xs text-[#1C1C1A]/50">
-        <span className="text-[#6A9B7B] font-medium">{yeas} Yea</span>
-        <span className="text-[#B85C38] font-medium">{nays} Nay</span>
-      </div>
-    </div>
-  )
-}
-
 // ─── Main component ────────────────────────────────────────────────────────────
 
-export default function BillDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function BillDetailPage({ id, initialBill }: { id: string; initialBill?: BillDetail | null }) {
   const router = useRouter()
 
-  const [showSignIn, setShowSignIn] = useState(false)
-  const [showSignUp, setShowSignUp] = useState(false)
+  const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
   const [showAllCosponsors, setShowAllCosponsors] = useState(false)
 
   const { user } = useAuth()
-  const { bill, loading, error } = useFetchBillDetail(id)
+  const { bill, loading, error } = useFetchBillDetail(id, initialBill)
   const { trackedBills, toggleTrack } = useTrackedBills(user?.id ?? null)
   const tracked = trackedBills.has(id)
 
   const handleTrack = () => {
     if (!user) {
-      setShowSignIn(true)
+      setAuthModal('signin')
       return
     }
     toggleTrack(id)
@@ -160,16 +114,16 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="relative flex flex-col overflow-hidden">
-      <TopoBackground />
+    <div className="relative flex flex-col min-h-screen overflow-hidden">
+      <DotGridBackground id="dot-grid-bill-detail" />
 
       <div className="relative z-10 flex flex-col flex-1">
 
-        <main className="flex-1 px-6 py-10">
+        <main className="flex-1 px-6 pt-10 pb-8">
           {loading ? (
             <DetailSkeleton />
           ) : error ? (
-            <div className="max-w-5xl mx-auto">
+            <div className="max-w-4xl mx-auto">
               <div className="flex-1 flex items-center justify-center py-24">
                 <div className="text-center">
                   <p className="text-[#1C1C1A]/40 mb-4">
@@ -177,7 +131,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                   </p>
                   <button
                     onClick={() => router.back()}
-                    className="text-sm text-[#9B7FA6] hover:text-[#8a6e95]"
+                    className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
                   >
                     ← Back to bills
                   </button>
@@ -185,21 +139,21 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             </div>
           ) : !bill ? null : (
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="max-w-4xl mx-auto space-y-6">
 
               {/* Back link */}
-              <Link
-                href="/bills"
+              <button
+                onClick={() => router.back()}
                 className="inline-flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 12H5M12 5l-7 7 7 7" />
                 </svg>
-                Bills
-              </Link>
+                Back to results
+              </button>
 
               {/* Header card */}
-              <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 sm:p-8">
+              <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
                     {/* Meta row */}
@@ -212,7 +166,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                       {bill.policyArea && (
                         <>
                           <span className="text-xs text-[#1C1C1A]/20">·</span>
-                          <span className="text-xs font-medium text-[#9B7FA6] bg-[#9B7FA6]/10 border border-[#9B7FA6]/20 px-2.5 py-0.5 rounded-full">
+                          <span className="text-xs font-medium text-[#7B5E8A] bg-[#7B5E8A]/[0.12] px-2.5 py-0.5 rounded-full">
                             {bill.policyArea}
                           </span>
                         </>
@@ -252,8 +206,8 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                       aria-label={tracked ? 'Stop tracking this bill' : 'Track this bill'}
                       className={`inline-flex items-center gap-2 text-xs font-medium rounded-lg px-3 py-2 transition-colors ${
                         tracked
-                          ? 'bg-[#9B7FA6]/10 text-[#9B7FA6] hover:bg-[#9B7FA6]/15'
-                          : 'border border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/60 hover:border-[#9B7FA6]/40 hover:text-[#9B7FA6]'
+                          ? 'bg-[#7B5E8A]/10 text-[#7B5E8A] hover:bg-[#7B5E8A]/15'
+                          : 'border border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/60 hover:border-[#7B5E8A]/40 hover:text-[#7B5E8A]'
                       }`}
                     >
                       <BookmarkIcon filled={tracked} />
@@ -265,7 +219,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
               {/* Summary */}
               {bill.summary && (
-                <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 sm:p-8">
+                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
                   <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Summary</h2>
                   <p className="text-sm text-[#1C1C1A]/75 leading-relaxed">{bill.summary}</p>
                 </div>
@@ -279,11 +233,11 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
                   {/* Sponsor */}
                   {bill.sponsor && (
-                    <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Sponsor</h2>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-[#1C1C1A]">{bill.sponsor.name}</p>
+                          <p className="text-sm font-medium text-[#1C1C1A]">{bill.sponsor.name.replace(/\s*\[.*?\]\s*$/, '')}</p>
                           <div className="flex items-center gap-2 mt-1">
                             <PartyTag party={bill.sponsor.party} />
                             <span className="text-xs text-[#1C1C1A]/45">
@@ -294,7 +248,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                         </div>
                         <Link
                           href={`/representatives/${bill.sponsor.bioguideId}`}
-                          className="text-xs text-[#9B7FA6] hover:text-[#8a6e95] transition-colors"
+                          className="text-xs text-[#7B5E8A] hover:text-[#6A4F78] transition-colors"
                         >
                           View profile →
                         </Link>
@@ -304,7 +258,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
                   {/* Co-sponsors */}
                   {bill.cosponsors.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">
                         Co-sponsors
                         <span className="ml-1.5 text-[#1C1C1A]/30 normal-case tracking-normal font-normal">
@@ -315,20 +269,16 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                         {(showAllCosponsors ? bill.cosponsors : bill.cosponsors.slice(0, 5)).map(c => (
                           <div key={c.bioguideId} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                             <div>
-                              <p className="text-sm text-[#1C1C1A]">{c.name}</p>
+                              <p className="text-sm text-[#1C1C1A]">{c.name.replace(/\s*\[.*?\]\s*$/, '')}</p>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                {(() => {
-                                  const pm: Record<string, keyof typeof PARTY_STYLES> = { D: 'Democrat', R: 'Republican', I: 'Independent' }
-                                  const pk = pm[c.party] ?? 'Independent'
-                                  return <span className={`text-xs ${PARTY_STYLES[pk].text}`}>{PARTY_STYLES[pk].label}</span>
-                                })()}
+                                <PartyBadge party={c.party} size="xs" />
                                 <span className="text-xs text-[#1C1C1A]/30">·</span>
                                 <span className="text-xs text-[#1C1C1A]/45">{c.state}</span>
                               </div>
                             </div>
                             <Link
                               href={`/representatives/${c.bioguideId}`}
-                              className="text-xs text-[#9B7FA6]/60 hover:text-[#9B7FA6] transition-colors"
+                              className="text-xs text-[#7B5E8A]/60 hover:text-[#7B5E8A] transition-colors"
                             >
                               →
                             </Link>
@@ -338,7 +288,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                       {bill.cosponsors.length > 5 && (
                         <button
                           onClick={() => setShowAllCosponsors(v => !v)}
-                          className="mt-3 text-xs text-[#9B7FA6] hover:text-[#8a6e95]"
+                          className="mt-3 text-xs text-[#7B5E8A] hover:text-[#6A4F78]"
                         >
                           {showAllCosponsors ? 'Show fewer' : `Show all ${bill.cosponsors.length}`}
                         </button>
@@ -348,7 +298,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
                   {/* Subjects */}
                   {bill.subjects.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Legislative Subjects</h2>
                       <div className="flex flex-wrap gap-2">
                         {bill.subjects.map(subject => (
@@ -369,53 +319,15 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
 
                   {/* Votes */}
                   {bill.votes.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
-                      <div className="space-y-5">
-                        {bill.votes.map((vote, i) => (
-                          <div key={i} className={i > 0 ? 'pt-5 border-t border-[rgba(28,28,26,0.06)]' : ''}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-medium text-[#1C1C1A]/60">{vote.chamber}</span>
-                              <span className="text-xs text-[#1C1C1A]/35">{formatShortDate(vote.date)}</span>
-                            </div>
-                            {vote.question && (
-                              <p className="text-xs text-[#1C1C1A]/50 mb-2">{vote.question}</p>
-                            )}
-                            {vote.yeas !== null && vote.nays !== null ? (
-                              <VoteBar yeas={vote.yeas} nays={vote.nays} />
-                            ) : (
-                              <p className="text-xs text-[#1C1C1A]/30">Vote data unavailable</p>
-                            )}
-                            {vote.result && (
-                              <p className={`text-xs font-medium mt-1.5 ${
-                                vote.result.toLowerCase().includes('pass') || vote.result.toLowerCase().includes('agreed')
-                                  ? 'text-[#6A9B7B]'
-                                  : vote.result.toLowerCase().includes('fail') || vote.result.toLowerCase().includes('rejected')
-                                    ? 'text-[#B85C38]'
-                                    : 'text-[#1C1C1A]/50'
-                              }`}>
-                                {vote.result}
-                              </p>
-                            )}
-                            {vote.url && (
-                              <a
-                                href={vote.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-xs text-[#9B7FA6]/70 hover:text-[#9B7FA6] mt-2 transition-colors"
-                              >
-                                Full record <ExternalLinkIcon />
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <BillVoteTally votes={bill.votes} billId={id} />
                     </div>
                   )}
 
                   {/* Status timeline */}
                   {bill.actions.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Timeline</h2>
                       <div className="relative">
                         {/* Vertical line */}
@@ -424,7 +336,7 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
                           {bill.actions.map((action, i) => (
                             <div key={i} className="flex gap-4 pl-5 relative">
                               {/* Dot */}
-                              <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full border-2 border-[#9B7FA6]/40 bg-[#F5F0E8]" />
+                              <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full border-2 border-[#7B5E8A]/40 bg-[#F5F0E8]" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs text-[#1C1C1A]/35 mb-0.5">{formatShortDate(action.date)}</p>
                                 <p className="text-xs text-[#1C1C1A]/65 leading-snug">{action.text}</p>
@@ -444,14 +356,14 @@ export default function BillDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       <SignInModal
-        isOpen={showSignIn}
-        onClose={() => setShowSignIn(false)}
-        onSwitchToSignUp={() => { setShowSignIn(false); setShowSignUp(true) }}
+        isOpen={authModal === 'signin'}
+        onClose={() => setAuthModal(null)}
+        onSwitchToSignUp={() => setAuthModal('signup')}
       />
       <SignUpModal
-        isOpen={showSignUp}
-        onClose={() => setShowSignUp(false)}
-        onSwitchToSignIn={() => { setShowSignUp(false); setShowSignIn(true) }}
+        isOpen={authModal === 'signup'}
+        onClose={() => setAuthModal(null)}
+        onSwitchToSignIn={() => setAuthModal('signin')}
       />
     </div>
   )
