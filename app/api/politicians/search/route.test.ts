@@ -45,18 +45,14 @@ describe('GET /api/politicians/search', () => {
     mockCreateClient.mockReset()
   })
 
-  it('returns empty list for short query', async () => {
+  it('returns 400 for short query', async () => {
     const res = await GET(makeReq({ q: 'ab' }))
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(json.politicians).toEqual([])
+    expect(res.status).toBe(400)
   })
 
-  it('returns empty list for missing query', async () => {
+  it('returns 400 for missing query', async () => {
     const res = await GET(makeReq({}))
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(json.politicians).toEqual([])
+    expect(res.status).toBe(400)
   })
 
   it('returns deduplicated results from both queries', async () => {

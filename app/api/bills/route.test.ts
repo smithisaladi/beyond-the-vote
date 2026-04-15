@@ -30,6 +30,7 @@ function buildQueryMock(data: unknown[] = [], count = 0, error: unknown = null) 
   mock.range = vi.fn().mockResolvedValue({ data, error, count })
   mock.from = vi.fn().mockReturnValue(mock)
   mock.ilike = vi.fn().mockReturnValue(mock)
+  mock.overlaps = vi.fn().mockReturnValue(mock)
   return mock
 }
 
@@ -67,13 +68,13 @@ describe('GET /api/bills', () => {
       expect(mockHybridBillSearch).toHaveBeenCalled()
     })
 
-    it('passes status filter and category to hybrid search', async () => {
+    it('passes status filter and topic to hybrid search', async () => {
       mockHybridBillSearch.mockResolvedValue([])
-      await GET(makeReq({ q: 'test', status: 'Active', category: 'Healthcare' }))
+      await GET(makeReq({ q: 'test', status: 'Active', topics: 'healthcare' }))
       expect(mockHybridBillSearch).toHaveBeenCalledWith(
         expect.objectContaining({
           statusFilter: 'Active',
-          policyAreas: ['Health'],
+          topicFilters: ['healthcare'],
         }),
       )
     })
@@ -114,14 +115,13 @@ describe('GET /api/bills', () => {
       expect(mockHybridBillSearch).not.toHaveBeenCalled()
     })
 
-    it('returns empty for unknown category', async () => {
-      const supabaseMock = buildQueryMock()
+    it('applies topic filter via overlaps', async () => {
+      const supabaseMock = buildQueryMock([], 0)
       mockCreateClient.mockResolvedValue(supabaseMock)
 
-      const res = await GET(makeReq({ category: 'FakeCategory' }))
+      const res = await GET(makeReq({ topics: 'healthcare,gun-policy' }))
       expect(res.status).toBe(200)
-      const json = await res.json()
-      expect(json.bills).toEqual([])
+      expect(supabaseMock.overlaps).toHaveBeenCalledWith('topics', ['healthcare', 'gun-policy'])
     })
   })
 

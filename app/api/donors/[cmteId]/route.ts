@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { pacDetail } from '@/lib/queries/pac-detail'
 
+export const revalidate = 600
+
 function toTitleCase(str: string): string {
   return str
     .toLowerCase()
@@ -49,14 +51,17 @@ async function generatePacSummary(pac: {
     pac.ieAgainstTotal > 0 ? `$${pac.ieAgainstTotal.toLocaleString()} in independent expenditures opposing candidates` : null,
   ].filter(Boolean).join('; ')
 
-  const prompt = `You are a neutral, factual political data analyst. Given the following data about a Political Action Committee (PAC), write a concise 2-3 sentence summary describing this PAC and how its spending is distributed.
+  const prompt = `You are a knowledgeable, neutral political analyst. Given the following FEC data about a Political Action Committee (PAC), write an informative analysis in two short paragraphs.
+
+**Paragraph 1 — Background:** Using your own knowledge, describe what this organization is, what industry or cause it represents, and any notable context about its role in politics. If you don't recognize the PAC, describe it based on the name and connected organization.
+
+**Paragraph 2 — Spending analysis:** Summarize the FEC spending data provided below. Note the total amount, how spending breaks down between direct contributions and independent expenditures, and how it is distributed across parties and top recipients.
 
 Rules:
-- Only state facts that are directly supported by the data provided. Do not speculate about motives, goals, ideology, or political leanings.
-- Do not characterize the PAC as leaning toward any party or ideology. Simply report the distribution of spending (e.g. "distributed across X Democrats and Y Republicans").
-- Do not use loaded language (e.g. "favors", "targets", "aligned with"). Use neutral terms like "contributed to", "distributed across", "supported".
-- Accurately distinguish between direct contributions and independent expenditures. Do not call independent expenditures "contributions" or "donations."
-- If a connected organization is listed, briefly note it. Otherwise describe the PAC by name.
+- Be informative and direct. Avoid filler phrases like "based on the data provided."
+- Accurately distinguish between direct contributions and independent expenditures.
+- You may note partisan patterns (e.g. "overwhelmingly supports Republican candidates") when the data clearly shows it — just state the facts without editorializing about motives.
+- Keep each paragraph to 2-3 sentences. Separate paragraphs with a blank line.
 
 PAC Name: ${pac.name}
 ${pac.connectedOrg ? `Connected Organization: ${pac.connectedOrg}` : ''}
@@ -66,13 +71,13 @@ Number of candidates supported: ${pac.recipientCount}
 Party breakdown of recipients: ${partyBreakdown.dem} Democrats, ${partyBreakdown.rep} Republicans, ${partyBreakdown.ind} Independent
 Top recipients: ${topRecipients.map((r) => `${r.name} (${r.party}, ${r.state}): $${Number(r.amount).toLocaleString()}`).join('; ')}
 
-Write only the summary, no preamble or labels.`
+Write only the two paragraphs, no headings or labels.`
 
   try {
     const client = new Anthropic({ apiKey })
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
+      max_tokens: 400,
       messages: [{ role: 'user', content: prompt }],
     })
 
@@ -117,13 +122,18 @@ export async function GET(
       recipients,
     }
 
-    const summary = await generatePacSummary({
-      ...pacData,
-      directTotal: Number(row.direct_total),
-      ieForTotal: Number(row.ie_for_total),
-      ieAgainstTotal: Number(row.ie_against_total),
-      recipients: row.recipients ?? [],
-    })
+    const includeSummary = req.nextUrl.searchParams.get('summary') === '1'
+
+    let summary = ''
+    if (includeSummary) {
+      summary = await generatePacSummary({
+        ...pacData,
+        directTotal: Number(row.direct_total),
+        ieForTotal: Number(row.ie_for_total),
+        ieAgainstTotal: Number(row.ie_against_total),
+        recipients: row.recipients ?? [],
+      })
+    }
 
     return NextResponse.json({
       cmteId: row.cmte_id,

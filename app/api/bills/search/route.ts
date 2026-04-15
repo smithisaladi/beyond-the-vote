@@ -1,26 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { lookupBill } from '@/lib/queries/lookup-bill'
 import { hybridBillSearch } from '@/lib/queries/hybrid-bill-search'
+import { parseSearchParams, BillSearchParams } from '@/lib/api-validation'
 
 // Bill ID format: "119-hr-4521" or bill_number format: "H.R. 4521", "S. 1247"
 const BILL_ID_RE     = /^\d{3}-[a-z]+-\d+$/i
 const BILL_NUMBER_RE = /^[hs]\.?\s*(?:r(?:es)?|j\.?res|con\.?res)?\.?\s*\d+$/i
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl
-  const q = searchParams.get('q')?.trim() ?? ''
-  const limitParam = parseInt(searchParams.get('limit') ?? '20', 10)
-  const congressParam = searchParams.get('congress')
-
-  if (q.length < 3) {
-    return NextResponse.json(
-      { error: 'Query must be at least 3 characters' },
-      { status: 400 }
-    )
+  const parsed = parseSearchParams(BillSearchParams, req.nextUrl.searchParams)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
-
-  const limit = Math.min(Math.max(1, limitParam || 20), 50)
-  const congress = congressParam ? parseInt(congressParam, 10) : null
+  const { q, limit, congress } = parsed.data
 
   try {
     // Bill number / ID shortcut — exact lookup before full search
@@ -42,7 +34,7 @@ export async function GET(req: NextRequest) {
   } catch (err) {
     console.error('[api/bills/search]', err)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Search failed' },
+      { error: 'Search failed' },
       { status: 500 }
     )
   }

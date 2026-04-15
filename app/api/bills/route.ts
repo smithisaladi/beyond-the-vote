@@ -1,48 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { BillStatus as Status } from '@/lib/bills'
-import { mapStatus } from '@/lib/bills'
 import { hybridBillSearch } from '@/lib/queries/hybrid-bill-search'
+import { parseSearchParams, BillsParams } from '@/lib/api-validation'
 
-type Category =
-  | 'Environment'
-  | 'Economy'
-  | 'Healthcare'
-  | 'Defense'
-  | 'Education'
-  | 'Housing'
-  | 'Technology'
-  | 'Immigration'
-
-const POLICY_AREA_MAP: Record<string, Category> = {
-  'Environmental Protection': 'Environment',
-  'Energy': 'Environment',
-  'Public Lands and Natural Resources': 'Environment',
-  'Water Resources Development': 'Environment',
-  'Health': 'Healthcare',
-  'Economics and Public Finance': 'Economy',
-  'Commerce': 'Economy',
-  'Finance and Financial Sector': 'Economy',
-  'Labor and Employment': 'Economy',
-  'Taxation': 'Economy',
-  'Armed Forces and National Security': 'Defense',
-  'Education': 'Education',
-  'Housing and Community Development': 'Housing',
-  'Science, Technology, Communications': 'Technology',
-  'Immigration': 'Immigration',
+async function enrichBillsWithSponsors(bills: any[], supabase: any) {
+  const missingIds = [...new Set(
+    bills.filter((r: any) => r.sponsor_bioguide_id && (!r.sponsor_party || !r.sponsor_name))
+      .map((r: any) => r.sponsor_bioguide_id as string)
+  )]
+  if (missingIds.length === 0) return bills
+  const { data: legRows } = await supabase
+    .from('legislators')
+    .select('bioguide_id, full_name, party')
+    .in('bioguide_id', missingIds)
+  const legMap = new Map<string, any>((legRows ?? []).map((l: any) => [l.bioguide_id, l]))
+  return bills.map((b: any) => ({
+    ...b,
+    sponsor_party: b.sponsor_party ?? legMap.get(b.sponsor_bioguide_id)?.party,
+    sponsor_name: b.sponsor_name ?? legMap.get(b.sponsor_bioguide_id)?.full_name,
+  }))
 }
 
-function mapCategory(policyArea?: string | null): Category | undefined {
-  if (!policyArea) return undefined
-  return POLICY_AREA_MAP[policyArea] as Category | undefined
-}
-
-// Reverse map: Category → list of Congress.gov policyArea strings
-const CATEGORY_TO_POLICY_AREAS: Record<string, string[]> = {}
-for (const [policyArea, category] of Object.entries(POLICY_AREA_MAP)) {
-  if (!CATEGORY_TO_POLICY_AREAS[category]) CATEGORY_TO_POLICY_AREAS[category] = []
-  CATEGORY_TO_POLICY_AREAS[category].push(policyArea)
-}
+export const revalidate = 300
 
 interface Bill {
   id: string
@@ -51,7 +31,7 @@ interface Bill {
   sponsor: string
   party: 'Democrat' | 'Republican' | 'Independent'
   status: Status
-  category?: Category
+  topics: string[]
   lastAction: string
   lastActionTimestamp: number
   summary: string
@@ -72,8 +52,8 @@ function mapRowToBill(row: any): Bill {
     title:              row.title,
     sponsor:            row.sponsor_name ?? 'Unknown',
     party:              normalizeParty(row.sponsor_party),
-    status:             mapStatus(row.last_action_text, row.introduced_date),
-    category:           mapCategory(row.policy_area),
+    status:             (row.status as Status) ?? 'Active',
+    topics:             row.topics ?? [],
     lastAction:         row.last_action_date
                           ? new Date(row.last_action_date).toLocaleDateString('en-US', {
                               month: 'short', day: 'numeric', year: 'numeric',
@@ -87,54 +67,38 @@ function mapRowToBill(row: any): Bill {
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl
-  const q = searchParams.get('q')?.trim() ?? ''
-  const status = searchParams.get('status') ?? ''
-  const category = searchParams.get('category') ?? ''
-  const dateFilter = searchParams.get('date') ?? ''
-  const limit = Math.min(parseInt(searchParams.get('limit') ?? '20'), 250)
-  const offset = parseInt(searchParams.get('offset') ?? '0')
+  const parsed = parseSearchParams(BillsParams, request.nextUrl.searchParams)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+  const { q: rawQ, status, topics, date: dateFilter, sort, limit, offset, billIds: billIdsParam } = parsed.data
+  const q = rawQ ?? ''
 
   try {
     const supabase = await createClient()
 
+    const topicSlugs = topics ? topics.split(',').filter(Boolean) : []
+    const billIds = billIdsParam ? billIdsParam.split(',').filter(Boolean) : []
+
     // Text search mode: hybrid FTS + trigram RRF via direct Postgres query
     if (q) {
-      const policyAreas = category ? (CATEGORY_TO_POLICY_AREAS[category] ?? []) : null
-
       const results = await hybridBillSearch({
         queryText:    q,
         resultLimit:  limit,
         offsetCount:  offset,
         statusFilter: status || null,
-        policyAreas,
+        topicFilters: topicSlugs.length > 0 ? topicSlugs : null,
+        billIds:      billIds.length > 0 ? billIds : null,
       }) as any[]
 
-      // Enrich missing sponsor fields from legislators table
-      const missingIds1 = [...new Set(
-        results.filter((r: any) => r.sponsor_bioguide_id && (!r.sponsor_party || !r.sponsor_name))
-          .map((r: any) => r.sponsor_bioguide_id as string)
-      )]
-      if (missingIds1.length > 0) {
-        const { data: legRows } = await supabase
-          .from('legislators')
-          .select('bioguide_id, full_name, party')
-          .in('bioguide_id', missingIds1)
-        const legMap = new Map((legRows ?? []).map((l: any) => [l.bioguide_id, l]))
-        for (const row of results) {
-          if (row.sponsor_bioguide_id) {
-            const leg = legMap.get(row.sponsor_bioguide_id)
-            if (leg) {
-              if (!row.sponsor_party) row.sponsor_party = leg.party ?? null
-              if (!row.sponsor_name) row.sponsor_name = leg.full_name ?? null
-            }
-          }
-        }
-      }
+      const enriched = await enrichBillsWithSponsors(results, supabase)
+
+      // If we got a full page, signal there may be more results
+      const estimatedTotal = enriched.length + offset + (enriched.length === limit ? 1 : 0)
 
       return NextResponse.json({
-        bills: results.map(mapRowToBill),
-        pagination: { total: results.length + offset, limit, offset },
+        bills: enriched.map(mapRowToBill),
+        pagination: { total: estimatedTotal, limit, offset },
       })
     }
 
@@ -148,51 +112,29 @@ export async function GET(request: NextRequest) {
       if (statuses.length === 1) query = query.eq('status', statuses[0])
       else if (statuses.length > 1) query = query.in('status', statuses)
     }
-    if (category) {
-      const cats = category.split(',').filter(Boolean)
-      const allAreas = cats.flatMap(c => CATEGORY_TO_POLICY_AREAS[c] ?? [])
-      if (allAreas.length > 0) {
-        query = query.in('policy_area', allAreas)
-      } else {
-        return NextResponse.json({ bills: [], pagination: { total: 0, limit, offset } })
-      }
+    if (topicSlugs.length > 0) {
+      query = query.overlaps('topics', topicSlugs)
+    }
+    if (billIds.length > 0) {
+      query = query.in('bill_id', billIds)
     }
     if (dateFilter === 'month') {
-      query = query.gte('last_action_date', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+      const d = new Date(); d.setMonth(d.getMonth() - 1)
+      query = query.gte('last_action_date', d.toISOString())
     } else if (dateFilter === 'year') {
-      query = query.gte('last_action_date', new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString())
+      const d = new Date(); d.setFullYear(d.getFullYear() - 1)
+      query = query.gte('last_action_date', d.toISOString())
     }
 
     query = query
-      .order('introduced_date', { ascending: false, nullsFirst: false })
+      .order('introduced_date', { ascending: sort === 'oldest', nullsFirst: false })
       .range(offset, offset + limit - 1)
 
     const { data, error, count } = await query
 
     if (error) throw new Error(error.message)
 
-    // Enrich missing sponsor fields from legislators table
-    const rows = (data ?? []) as any[]
-    const missingIds2 = [...new Set(
-      rows.filter((r: any) => r.sponsor_bioguide_id && (!r.sponsor_party || !r.sponsor_name))
-        .map((r: any) => r.sponsor_bioguide_id as string)
-    )]
-    if (missingIds2.length > 0) {
-      const { data: legRows } = await supabase
-        .from('legislators')
-        .select('bioguide_id, full_name, party')
-        .in('bioguide_id', missingIds2)
-      const legMap = new Map((legRows ?? []).map((l: any) => [l.bioguide_id, l]))
-      for (const row of rows) {
-        if (row.sponsor_bioguide_id) {
-          const leg = legMap.get(row.sponsor_bioguide_id)
-          if (leg) {
-            if (!row.sponsor_party) row.sponsor_party = leg.party ?? null
-            if (!row.sponsor_name) row.sponsor_name = leg.full_name ?? null
-          }
-        }
-      }
-    }
+    const rows = await enrichBillsWithSponsors((data ?? []) as any[], supabase)
 
     return NextResponse.json({
       bills: rows.map(mapRowToBill),
@@ -201,7 +143,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('[/api/bills]', err)
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Failed to fetch bills' },
+      { error: 'Failed to load bills' },
       { status: 500 },
     )
   }

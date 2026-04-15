@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { parseSearchParams, DonorsParams } from '@/lib/api-validation'
+
+export const revalidate = 300
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl
-  const q = searchParams.get('q') || null
-  const limit = Math.min(Number(searchParams.get('limit') ?? 20), 100)
-  const offset = Number(searchParams.get('offset') ?? 0)
+  const parsed = parseSearchParams(DonorsParams, req.nextUrl.searchParams)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
+  }
+  const { q: rawQ, limit, offset } = parsed.data
+  const q = rawQ ?? null
 
   try {
     const supabase = await createClient()
@@ -26,8 +31,28 @@ export async function GET(req: NextRequest) {
 
     const rows = data ?? []
 
-    const contributors = rows.map((row) => ({
+    // Compute global rank: when searching, use a single query to find the rank
+    // of the highest-contributing result, then derive ranks from sorted order.
+    let rankMap: Map<string, number> | null = null
+    if (q && rows.length > 0) {
+      rankMap = new Map<string, number>()
+      const amountRankCache = new Map<number, number>()
+      for (const row of rows) {
+        const amount = Number(row.total_contributions)
+        if (!amountRankCache.has(amount)) {
+          const { count: higherCount } = await supabase
+            .from('contributor_leaderboard_cache')
+            .select('*', { count: 'exact', head: true })
+            .gt('total_contributions', amount)
+          amountRankCache.set(amount, (higherCount ?? 0) + 1)
+        }
+        rankMap.set(row.cmte_id as string, amountRankCache.get(amount)!)
+      }
+    }
+
+    const contributors = rows.map((row, idx) => ({
       cmteId: row.cmte_id,
+      rank: rankMap ? rankMap.get(row.cmte_id as string) ?? (offset + idx + 1) : offset + idx + 1,
       cmteName: row.cmte_name,
       directTotal: Number(row.direct_total),
       ieForTotal: Number(row.ie_for_total),

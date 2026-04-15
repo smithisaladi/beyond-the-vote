@@ -13,7 +13,7 @@ const PARTY_COLORS: Record<string, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  Active:    '#9B7FA6',
+  Active:    '#7B5E8A',
   Committee: '#8A8A7A',
   Stalled:   '#B85C38',
   Passed:    '#6A9B7B',
@@ -240,7 +240,7 @@ function Wordmark() {
           width: 12,
           height: 12,
           borderRadius: '50%',
-          background: '#9B7FA6',
+          background: '#7B5E8A',
           flexShrink: 0,
         }}
       />
@@ -266,7 +266,7 @@ function BottomAccent() {
         width: '100%',
         height: 4,
         borderRadius: 2,
-        background: 'linear-gradient(90deg, #9B7FA6 0%, rgba(155,127,166,0.2) 100%)',
+        background: 'linear-gradient(90deg, #7B5E8A 0%, rgba(155,127,166,0.2) 100%)',
       }}
     />
   )

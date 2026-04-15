@@ -2,18 +2,152 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getIdeologyLabel } from '@/lib/ideology'
 import { mapStatus as mapBillStatusFull } from '@/lib/bills'
+import { formatBillType } from '@/lib/format'
 
 const CONGRESS_API_KEY  = process.env.CONGRESS_API_KEY ?? ''
 const CONGRESS_BASE     = 'https://api.congress.gov/v3'
 const SENATE_VOTE_BASE  = 'https://www.senate.gov/legislative/LIS/roll_call_votes'
 const SENATE_INDEX_BASE = 'https://www.senate.gov/legislative/LIS/roll_call_lists'
 
+// ── Congress.gov API types ────────────────────────────────────────────────────
+
+interface CongressMember {
+  directOrderName?: string
+  terms?: { item?: CongressTerm[] }
+  partyHistory?: Array<{ partyName?: string }>
+  depiction?: { imageUrl?: string; attribution?: string }
+  currentMember?: boolean
+  state?: string
+  district?: number
+  addressInformation?: { officeAddress?: string; phoneNumber?: string }
+  officialWebsiteUrl?: string
+  updateDate?: string
+}
+
+interface CongressTerm {
+  chamber?: string
+  party?: string
+  startYear?: number
+  endYear?: number
+  stateCode?: string
+  stateName?: string
+  district?: number
+  memberType?: string
+}
+
+interface CongressSponsoredBill {
+  congress?: number
+  type?: string
+  number?: number
+  title?: string
+  introducedDate?: string
+  latestAction?: { actionDate?: string; text?: string }
+  policyArea?: { name?: string }
+}
+
+// ── Supabase query result types ───────────────────────────────────────────────
+
+interface VotePositionRow {
+  position: string
+  bill_vote_summaries: {
+    id: string
+    bill_id: string
+    chamber: string
+    date: string
+    title: string
+    question: string
+    result: string
+    yea_total: number
+    nay_total: number
+    yea_democrat: number
+    nay_democrat: number
+    yea_republican: number
+    nay_republican: number
+  } | null
+}
+
+interface TopPacRow {
+  rank: number
+  cmte_id: string
+  cmte_name: string
+  connected_org: string | null
+  direct_contribution: number | null
+  ie_for: number | null
+  ie_against: number | null
+  total_support: number | null
+  cycle: number | null
+}
+
+interface TopContributorRow {
+  rank: number
+  org_name: string
+  individual_total: number
+  pac_total: number
+  grand_total: number
+  cycle: number
+}
+
+interface FundingSummaryRow {
+  total_receipts: number | null
+  pac_direct_total: number | null
+  pac_direct_pct: number | null
+  large_donor_total: number | null
+  large_donor_pct: number | null
+  small_donor_total: number | null
+  small_donor_pct: number | null
+  pol_pty_total: number | null
+  pol_pty_pct: number | null
+  self_funded_total: number | null
+  self_funded_pct: number | null
+  other_total: number | null
+  other_pct: number | null
+  superpac_ie_for: number | null
+  superpac_ie_against: number | null
+  in_state_total: number | null
+  out_of_state_total: number | null
+  dc_donor_total: number | null
+  cycle: number
+}
+
+interface CommitteeRow {
+  title: string | null
+  committees: {
+    name: string
+    url: string | null
+    chamber: string | null
+  } | null
+}
+
+interface PipelineRunRow {
+  finished_at: string | null
+}
+
+interface LegislatorRow {
+  bioguide_id: string
+  full_name: string
+  title: string
+  party: string
+  state: string
+  state_full: string
+  district: number | null
+  chamber: string
+  lis_id: string | null
+  last_name: string
+  fec_ids: string[] | null
+  term_start: string | null
+  term_end: string | null
+  next_election: number | null
+  photo_url: string | null
+  website: string | null
+  address: string | null
+  phone: string | null
+  twitter: string | null
+  raw_json: { terms?: Array<{ start?: string }> } | null
+  [key: string]: unknown
+}
+
 function formatBillNumber(type: string, number: number): string {
-  const types: Record<string, string> = {
-    hr: 'H.R.', s: 'S.', hjres: 'H.J.Res.', sjres: 'S.J.Res.',
-    hconres: 'H.Con.Res.', sconres: 'S.Con.Res.', hres: 'H.Res.', sres: 'S.Res.',
-  }
-  return `${types[type.toLowerCase()] ?? type.toUpperCase()} ${number}`
+  return `${formatBillType(type)} ${number}`
 }
 
 function mapBillStatus(action?: string, introducedDate?: string) {
@@ -85,7 +219,7 @@ async function maxSenateVoteNumber(congress: number, session: number): Promise<n
   return max
 }
 
-type PoliticianVote = { id: string; bill: string; billId: string | null; date: string; vote: 'Yea' | 'Nay'; donorAlignments: any[] }
+type PoliticianVote = { id: string; bill: string; billId: string | null; billTitle: string; date: string; vote: 'Yea' | 'Nay'; question: string | null; donorAlignments: never[] }
 type SenateMemberKey = { lisId: string } | { lastName: string; state: string }
 
 // Extract this member's block from a senate vote XML, return vote or null.
@@ -124,8 +258,10 @@ function parseSenateVoteXml(xml: string, key: SenateMemberKey, voteId: string): 
     id:              voteId,
     bill:            title || voteId,
     billId:          null,
+    billTitle:       '',
     date:            dateFormatted,
     vote:            (rawPos === 'nay' || rawPos === 'no') ? 'Nay' : 'Yea',
+    question:        title || null,
     donorAlignments: [],
   }
 }
@@ -136,14 +272,14 @@ async function fetchRecentVotesForSenator(key: SenateMemberKey): Promise<Politic
   const pad = (n: number) => String(n).padStart(5, '0')
 
   for (const { congress, session } of sessions) {
-    if (votes.length >= 20) break
+    if (votes.length >= 50) break
     const max = await maxSenateVoteNumber(congress, session)
     if (max === 0) continue
 
     let current = max
     const base  = `${SENATE_VOTE_BASE}/vote${congress}${session}`
 
-    while (current > 0 && votes.length < 20) {
+    while (current > 0 && votes.length < 50) {
       const batchNums = Array.from({ length: Math.min(15, current) }, (_, i) => current - i)
       current -= batchNums.length
 
@@ -164,7 +300,7 @@ async function fetchRecentVotesForSenator(key: SenateMemberKey): Promise<Politic
       )
 
       for (let i = 0; i < batchNums.length; i++) {
-        if (votes.length >= 20) break
+        if (votes.length >= 50) break
         const r   = xmlResults[i]
         const xml = r.status === 'fulfilled' ? r.value : null
         if (!xml) continue
@@ -193,11 +329,12 @@ async function fetchRecentVotesFromDB(
     `)
     .eq('bioguide_id', bioguideId)
     .order('bill_vote_summaries(date)', { ascending: false })
-    .limit(20)
+    .limit(50)
   // Collect bill_ids so we can look up real bill titles
+  const rows = (data ?? []) as unknown as VotePositionRow[]
   const billIds = [...new Set(
-    (data ?? [])
-      .map((row: any) => row.bill_vote_summaries?.bill_id)
+    rows
+      .map((row) => row.bill_vote_summaries?.bill_id)
       .filter(Boolean) as string[]
   )]
 
@@ -211,23 +348,31 @@ async function fetchRecentVotesFromDB(
     for (const row of billRows ?? []) {
       if (row.title) billTitleMap[row.bill_id] = row.title
     }
+    // Debug: log bill_ids that didn't match any bill in the bills table
+    const unmatchedIds = billIds.filter(id => !billTitleMap[id])
+    if (unmatchedIds.length > 0) {
+      console.log('[votes] bill_ids from vote summaries with no match in bills table:', unmatchedIds)
+      console.log('[votes] matched bill_ids:', billIds.filter(id => !!billTitleMap[id]))
+    }
   }
 
-  return (data ?? [])
-    .map((row: any) => {
+  return rows
+    .map((row) => {
       const summary = row.bill_vote_summaries
       if (!summary) return null
       // Prefer the actual bill title from bills table over the vote question
-      const billTitle = billTitleMap[summary.bill_id]
+      const billTitle = summary.bill_id ? billTitleMap[summary.bill_id] : null
       return {
         id:              summary.id,
         bill:            billTitle || summary.title || summary.question,
         billId:          summary.bill_id ?? null,
+        billTitle:       billTitle ?? '',
         date:            summary.date
           ? new Date(summary.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
           : '',
         vote:            row.position as 'Yea' | 'Nay',
-        donorAlignments: [] as any[],
+        question:        summary.question ?? null,
+        donorAlignments: [] as never[],
       }
     })
     .filter(Boolean) as PoliticianVote[]
@@ -241,12 +386,12 @@ async function fetchSponsoredBills(bioguideId: string) {
   )
   if (!res.ok) return []
   const data = await res.json()
-  return ((data.sponsoredLegislation ?? []) as any[])
-    .filter((b: any) => b.congress && b.type && b.number)
-    .map((b: any) => ({
+  return ((data.sponsoredLegislation ?? []) as CongressSponsoredBill[])
+    .filter((b): b is CongressSponsoredBill & { congress: number; type: string; number: number } => !!(b.congress && b.type && b.number))
+    .map((b) => ({
     id:     `${b.congress}-${b.type.toLowerCase()}-${b.number}`,
     name:   b.title ?? '',
-    number: formatBillNumber(b.type ?? '', b.number),
+    number: formatBillNumber(b.type, b.number),
     status: mapBillStatus(b.latestAction?.text, b.introducedDate),
     date:   b.introducedDate
       ? new Date(b.introducedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -332,7 +477,7 @@ async function fetchDonors(opts: {
   ])
 
   // PAC donors — merge across cycles by committee, sum total_support, top 10
-  const rawPacRows = topPacsRes.status === 'fulfilled' ? ((topPacsRes.value.data ?? []) as any[]) : []
+  const rawPacRows = topPacsRes.status === 'fulfilled' ? ((topPacsRes.value.data ?? []) as TopPacRow[]) : []
   const pacMerged = new Map<string, { name: string; total: number; category: string }>()
   for (const row of rawPacRows) {
     const name = (row.cmte_name ?? '').toUpperCase().trim()
@@ -361,7 +506,7 @@ async function fetchDonors(opts: {
     }))
 
   // Top contributors — merge across cycles by org name, sum totals, top 10
-  const rawContribRows = topContributorsRes.status === 'fulfilled' ? ((topContributorsRes.value.data ?? []) as any[]) : []
+  const rawContribRows = topContributorsRes.status === 'fulfilled' ? ((topContributorsRes.value.data ?? []) as TopContributorRow[]) : []
   const contribMerged = new Map<string, { orgName: string; total: number }>()
   for (const row of rawContribRows) {
     const orgName = (row.org_name ?? '').trim()
@@ -385,12 +530,12 @@ async function fetchDonors(opts: {
 
   // Funding breakdown — aggregate across available cycles
   let fundingBreakdown: FundingBreakdown | null = null
-  const fundingRows = fundingSummaryRes.status === 'fulfilled' ? ((fundingSummaryRes.value as any).data ?? []) as any[] : []
+  const fundingRows = fundingSummaryRes.status === 'fulfilled' ? ((fundingSummaryRes.value.data ?? []) as FundingSummaryRow[]) : []
   if (fundingRows.length > 0) {
     const maxCycle = fundingRows[0].cycle
     const minCycle = fundingRows[fundingRows.length - 1].cycle
 
-    const sum = (field: string) => fundingRows.reduce((acc: number, r: any) => acc + Number(r[field] ?? 0), 0)
+    const sum = (field: keyof FundingSummaryRow) => fundingRows.reduce((acc, r) => acc + Number(r[field] ?? 0), 0)
     const total = sum('total_receipts')
     const pct = (val: number) => total > 0 ? (val / total) * 100 : 0
 
@@ -441,6 +586,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   const { id: bioguideId } = await params
   const supabase = await createClient()
 
@@ -476,25 +622,25 @@ export async function GET(
       .maybeSingle(),
   ])
 
-  const legislator   = extract(legislatorRes)?.data
+  const legislator   = extract(legislatorRes)?.data as LegislatorRow | null | undefined
   const scores       = extract(scoresRes)?.data
-  const commRows     = extract(committeesRes)?.data ?? []
-  const lastDonorRun = extract(lastDonorRunRes)?.data
+  const commRows     = (extract(committeesRes)?.data ?? []) as unknown as CommitteeRow[]
+  const lastDonorRun = extract(lastDonorRunRes)?.data as PipelineRunRow | null | undefined
 
   // ── Tier 2: External APIs + votes (all in parallel) ───────────────────────
-  const isSenate = (legislator as any)?.chamber === 'senate'
-  const lisId    = (legislator as any)?.lis_id as string | null | undefined
+  const isSenate = legislator?.chamber === 'senate'
+  const lisId    = legislator?.lis_id
 
   // Build senate member key: prefer lis_id (exact); fall back to last_name+state
   const senateMemberKey: SenateMemberKey | null = isSenate
     ? (lisId
         ? { lisId }
-        : { lastName: (legislator as any)?.last_name ?? '', state: (legislator as any)?.state ?? '' })
+        : { lastName: legislator?.last_name ?? '', state: legislator?.state ?? '' })
     : null
 
   const [sponsoredRes, donorsRes, votesRes] = await Promise.allSettled([
     fetchSponsoredBills(bioguideId),
-    fetchDonors({ bioguideId, fecIds: (legislator as any)?.fec_ids ?? null, supabase }),
+    fetchDonors({ bioguideId, fecIds: legislator?.fec_ids ?? null, supabase }),
     // Senators → senate.gov XML; House members → DB
     senateMemberKey
       ? fetchRecentVotesForSenator(senateMemberKey)
@@ -511,10 +657,10 @@ export async function GET(
     )
     if (!fallback.ok) {
       if (fallback.status === 404) return NextResponse.json({ error: 'Politician not found' }, { status: 404 })
-      return NextResponse.json({ error: 'Congress.gov API error' }, { status: fallback.status })
+      return NextResponse.json({ error: 'Failed to load politician' }, { status: 502 })
     }
-    const { member } = await fallback.json()
-    const terms: any[] = member.terms?.item ?? []
+    const { member } = await fallback.json() as { member: CongressMember }
+    const terms: CongressTerm[] = member.terms?.item ?? []
     const latestTerm = terms.at(-1) ?? {}
     const firstTerm  = terms[0] ?? {}
     const party = latestTerm.party ?? member.partyHistory?.[0]?.partyName ?? 'Unknown'
@@ -549,8 +695,8 @@ export async function GET(
         fecUrl,
         stats: { yearsInOffice, attendance: null, ideologyScore: null, ideologyLabel: null, billVotesCast: 0, votedWithParty: null },
         nextElectionYear, votes: extract(votesRes) ?? [], bills, donors, pacDonors, topContributors, fundingBreakdown, committees: [],
-        donorAlignmentSyncedAt:  (lastDonorRun as any)?.finished_at ?? null,
-        donorAlignmentIsStale:   isDonorDataStale((lastDonorRun as any)?.finished_at),
+        donorAlignmentSyncedAt:  lastDonorRun?.finished_at ?? null,
+        donorAlignmentIsStale:   isDonorDataStale(lastDonorRun?.finished_at),
         _sources: {
           profile: 'congress.gov-fallback', ideology: 'unavailable',
           votes: 'unavailable', committees: 'unavailable',
@@ -567,7 +713,7 @@ export async function GET(
   const billVotesCast  = 0
   const votedWithParty = null
 
-  const committees = (commRows as any[]).map((r: any) => ({
+  const committees = commRows.map((r) => ({
     name:    r.committees?.name ?? '',
     url:     r.committees?.url ?? null,
     chamber: r.committees?.chamber ?? null,
@@ -575,7 +721,7 @@ export async function GET(
   }))
 
   const isSenateMember = legislator.chamber === 'senate'
-  const rawTerms: any[] = legislator.raw_json?.terms ?? []
+  const rawTerms = legislator.raw_json?.terms ?? []
   const firstTermStart = rawTerms[0]?.start ?? legislator.term_start
   const yearsInOffice = firstTermStart
     ? new Date().getFullYear() - new Date(firstTermStart).getFullYear()
@@ -602,7 +748,7 @@ export async function GET(
       state:       legislator.state_full,
       stateCode:   legislator.state,
       district:    legislator.district ? `${legislator.district}th District` : undefined,
-      since:       (() => { const rawTerms: any[] = legislator.raw_json?.terms ?? []; const firstStart = rawTerms[0]?.start ?? legislator.term_start; return firstStart ? new Date(firstStart).getFullYear().toString() : null })(),
+      since:       (() => { const terms = legislator.raw_json?.terms ?? []; const firstStart = terms[0]?.start ?? legislator.term_start; return firstStart ? new Date(firstStart).getFullYear().toString() : null })(),
       photo:       legislator.photo_url,
       photoCredit: null,
       website:     legislator.website,
@@ -626,8 +772,8 @@ export async function GET(
       topContributors,
       fundingBreakdown,
       committees,
-      donorAlignmentSyncedAt:  (lastDonorRun as any)?.finished_at ?? null,
-      donorAlignmentIsStale:   isDonorDataStale((lastDonorRun as any)?.finished_at),
+      donorAlignmentSyncedAt:  lastDonorRun?.finished_at ?? null,
+      donorAlignmentIsStale:   isDonorDataStale(lastDonorRun?.finished_at),
       _sources: {
         profile:     sourceStatus(legislatorRes),
         ideology:    sourceStatus(scoresRes),
@@ -638,4 +784,8 @@ export async function GET(
       },
     },
   })
+  } catch (err) {
+    console.error('[api/politicians/[id]]', err)
+    return NextResponse.json({ error: 'Failed to load politician' }, { status: 500 })
+  }
 }

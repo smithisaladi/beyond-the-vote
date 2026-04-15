@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { Party } from '@/lib/types'
+import { parseSearchParams, RepresentativesParams } from '@/lib/api-validation'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const GEOCODIO_API_KEY = process.env.GEOCODIO_API_KEY ?? ''
@@ -44,11 +45,11 @@ async function enrichFromCongress(
 }
 
 export async function GET(request: NextRequest) {
-  const address = request.nextUrl.searchParams.get('address')
-
-  if (!address) {
-    return NextResponse.json({ error: 'address is required' }, { status: 400 })
+  const parsed = parseSearchParams(RepresentativesParams, request.nextUrl.searchParams)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
+  const { address } = parsed.data
 
   if (!GEOCODIO_API_KEY) {
     return NextResponse.json({ error: 'geocode_failed' }, { status: 500 })

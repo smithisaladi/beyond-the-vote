@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBillsByTopic } from '@/lib/queries/get-bills-by-topic'
+import { parseSearchParams, BillsByTopicParams } from '@/lib/api-validation'
 
 export const revalidate = 300
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = req.nextUrl
-  const slug   = searchParams.get('slug') ?? ''
-  const limit  = Math.min(parseInt(searchParams.get('limit') ?? '20'), 100)
-  const status = searchParams.get('status') ?? null
-
-  if (!slug) {
-    return NextResponse.json({ error: 'slug is required' }, { status: 400 })
+  const parsed = parseSearchParams(BillsByTopicParams, req.nextUrl.searchParams)
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error }, { status: 400 })
   }
+  const { slug, limit, status } = parsed.data
 
   try {
-    const rows = await getBillsByTopic(slug, limit, status)
+    const rows = await getBillsByTopic(slug, limit, status ?? null)
 
     const bills = rows.map(b => ({
       id:      b.bill_id,

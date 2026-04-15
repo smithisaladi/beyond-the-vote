@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { formatBillType } from '@/lib/format'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
@@ -15,11 +16,7 @@ function parseId(id: string): { congress: number; type: string; number: number }
 }
 
 function formatBillNumber(type: string, number: number): string {
-  const types: Record<string, string> = {
-    hr: 'H.R.', s: 'S.', hjres: 'H.J.Res.', sjres: 'S.J.Res.',
-    hconres: 'H.Con.Res.', sconres: 'S.Con.Res.', hres: 'H.Res.', sres: 'S.Res.',
-  }
-  return `${types[type.toLowerCase()] ?? type.toUpperCase()} ${number}`
+  return `${formatBillType(type)} ${number}`
 }
 
 import { mapStatus as mapBillStatus } from '@/lib/bills'
@@ -33,14 +30,15 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   if (!CONGRESS_API_KEY) {
-    return NextResponse.json({ error: 'CONGRESS_API_KEY is not configured' }, { status: 500 })
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
   }
 
   const { id } = await params
   const parsed = parseId(id)
   if (!parsed) {
-    return NextResponse.json({ error: 'Invalid bill id format. Expected: {congress}-{type}-{number}' }, { status: 400 })
+    return NextResponse.json({ error: 'Invalid bill ID' }, { status: 400 })
   }
 
   const { congress, type, number } = parsed
@@ -175,11 +173,22 @@ export async function GET(
       policyArea: bill.policyArea?.name ?? null,
       subjects: (bill.subjects?.legislativeSubjects ?? []).slice(0, 8).map((s: any) => s.name),
       congressGovUrl: `https://www.congress.gov/bill/${congress}th-congress/${type === 'hr' ? 'house-bill' : type === 's' ? 'senate-bill' : type}/${number}`,
-      actions: actions.slice(0, 10).map((a: any) => ({
-        date: a.actionDate, text: a.text, type: a.type,
-      })),
+      actions: actions
+        .reduce((acc: any[], a: any) => {
+          const key = `${a.actionDate}|${a.text}`
+          if (!acc.some((x: any) => `${x.actionDate}|${x.text}` === key)) acc.push(a)
+          return acc
+        }, [])
+        .slice(0, 10)
+        .map((a: any) => ({
+          date: a.actionDate, text: a.text, type: a.type,
+        })),
       votes,
       _hasDetailedVotes: dbVotes.length > 0,
     },
   })
+  } catch (err) {
+    console.error('[api/bills/[id]]', err)
+    return NextResponse.json({ error: 'Failed to load bill' }, { status: 500 })
+  }
 }
