@@ -97,10 +97,10 @@ All text uses `text-[#1C1C1A]` with opacity — never use `text-gray-*`:
 
 ### Component Patterns
 
-- **Card**: `bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6`
+- **Card**: `<Card>` from `@/components/ui/Card`. Defaults: `padding="lg"` (p-6), standard border, soft shadow. Override via `padding` (`none`/`sm`/`md`/`lg`/`xl`), `border` (`standard`/`light`/`none`), `shadow` (bool), `hoverable` (bool, must be inside a `group` wrapper). Raw class constants `CARD_CLASS`, `CARD_LIGHT_BORDER_CLASS`, `CARD_HOVER_CLASS` are also exported from `@/lib/ui` for cases where a component isn't practical.
 - **Badge**: `text-[11px] font-medium px-2 py-0.5 rounded-full` + party/status style from `@/lib/ui`
 - **Section header**: `text-lg font-semibold` serif + `text-sm text-[#1C1C1A]/38` count/subtitle
-- **Skeleton**: `animate-pulse` wrapper, `bg-[#E8E3DA] rounded` placeholder shapes
+- **Skeleton**: `<Skeleton className="h-4 w-24 rounded-full" />` from `@/components/ui/Skeleton`. Pair with an ancestor `animate-pulse`. Uses `SKELETON_BG` (`bg-[#E8E3DA]`) from `@/lib/ui`.
 - **List dividers**: `border-b border-[rgba(28,28,26,0.05)]` or `divide-y divide-[rgba(28,28,26,0.05)]`
 - **Icons**: Lucide with `strokeWidth={1.8}`, size 16–19px
 - **Rounded corners**: `rounded-xl` cards, `rounded-lg` small buttons, `rounded-full` badges/pills/avatars
