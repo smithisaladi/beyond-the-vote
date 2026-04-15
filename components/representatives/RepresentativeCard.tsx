@@ -45,15 +45,15 @@ export function RepresentativeCard({
   const [photoError, setPhotoError] = useState(false)
 
   return (
-    <Link href={`/representatives/${id}`} className="block">
-      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col items-center text-center gap-4 h-full">
+    <Link href={`/representatives/${id}`} className="block group">
+      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] hover:shadow-md hover:border-[#7B5E8A]/20 transition-all p-6 flex flex-col items-center text-center gap-4 h-full">
         {photo && !photoError
           ? <Image src={photo} alt={name} width={80} height={80} className="rounded-full object-cover" onError={() => setPhotoError(true)} />
           : <Initials name={name} />
         }
 
         <div className="flex flex-col items-center gap-1.5">
-          <h3 className="text-xl text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>
+          <h3 className="text-xl text-[#1C1C1A] group-hover:text-[#7B5E8A] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
             {name}
           </h3>
           <p className="text-sm text-[#1C1C1A]/60">{title}</p>
@@ -84,7 +84,7 @@ export function RepresentativeCard({
             </div>
             <div className="relative w-full h-1 bg-[#E8E3DA] rounded-full">
               <div
-                className="absolute top-1/2 w-2.5 h-2.5 rounded-full bg-[#9B7FA6] border-2 border-white shadow-sm"
+                className="absolute top-1/2 w-2.5 h-2.5 rounded-full bg-[#7B5E8A] border-2 border-white shadow-sm"
                 style={{
                   left: `${Math.round(((ideologyScore + 1) / 2) * 100)}%`,
                   transform: 'translateX(-50%) translateY(-50%)',
@@ -101,8 +101,8 @@ export function RepresentativeCard({
             followLoading ? 'opacity-50 cursor-not-allowed' : ''
           } ${
             following
-              ? 'bg-[#9B7FA6] border-[#9B7FA6] text-white'
-              : 'bg-transparent border-[#9B7FA6] text-[#9B7FA6] hover:bg-[#9B7FA6] hover:text-white'
+              ? 'bg-[#7B5E8A] border-[#7B5E8A] text-white'
+              : 'bg-transparent border-[#7B5E8A] text-[#7B5E8A] hover:bg-[#7B5E8A] hover:text-white'
           }`}
         >
           {following

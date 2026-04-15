@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,47 +8,18 @@ import { SignInModal } from '@/components/auth/SignInModal'
 import { SignUpModal } from '@/components/auth/SignUpModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useFollowPolitician } from '@/hooks/useFollowPolitician'
-import { useFetchPoliticianDetail } from '@/hooks/useFetchPoliticianDetail'
+import { useFetchPoliticianDetail, type Politician } from '@/hooks/useFetchPoliticianDetail'
 import type { DonorAlignment } from '@/hooks/useFetchPoliticianDetail'
 import { DonorTab } from '@/components/representatives/DonorTab'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
+import { isFinalPassageVote } from '@/lib/votes'
+import { formatBillId } from '@/lib/bills'
+import { DotGridBackground } from '@/components/shared/DotGridBackground'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Tab = 'votes' | 'bills' | 'donors'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-function TopoBackground() {
-  return (
-    <svg
-      aria-hidden="true"
-      className="absolute inset-0 w-full h-full"
-      xmlns="http://www.w3.org/2000/svg"
-      style={{ opacity: 0.045 }}
-    >
-      <defs>
-        <pattern id="topo" x="0" y="0" width="800" height="600" patternUnits="userSpaceOnUse">
-          <ellipse cx="400" cy="300" rx="380" ry="260" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="400" cy="300" rx="320" ry="210" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="405" cy="295" rx="260" ry="165" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="410" cy="290" rx="205" ry="125" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="415" cy="285" rx="155" ry="90"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="418" cy="282" rx="110" ry="62"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="420" cy="280" rx="70"  ry="40"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="422" cy="278" rx="38"  ry="22"  fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="110" cy="500" rx="140" ry="90"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="115" cy="496" rx="95"  ry="58"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="118" cy="493" rx="55"  ry="32"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="700" cy="90"  rx="160" ry="100" fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="704" cy="87"  rx="110" ry="65"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="707" cy="85"  rx="65"  ry="38"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="709" cy="83"  rx="30"  ry="18"  fill="none" stroke="#1C1C1A" strokeWidth="1" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#topo)" />
-    </svg>
-  )
-}
 
 function Initials({ name }: { name: string }) {
   const parts = name.trim().split(' ')
@@ -66,9 +37,9 @@ function Initials({ name }: { name: string }) {
 
 function ProfileSkeleton() {
   return (
-    <div className="max-w-6xl mx-auto space-y-6 animate-pulse">
+    <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
       <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
-      <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 sm:p-8">
+      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
         <div className="flex gap-6">
           <div className="w-24 h-24 rounded-full bg-[#E8E3DA] flex-shrink-0" />
           <div className="flex-1 space-y-3 pt-2">
@@ -80,8 +51,8 @@ function ProfileSkeleton() {
         </div>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-        <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm h-64" />
-        <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm h-64" />
+        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] h-64" />
+        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] h-64" />
       </div>
     </div>
   )
@@ -94,7 +65,7 @@ function ErrorState({ message, onBack }: { message: string; onBack: () => void }
         <p className="text-[#1C1C1A]/40 mb-4">{message}</p>
         <button
           onClick={onBack}
-          className="text-sm text-[#9B7FA6] hover:text-[#8a6e95]"
+          className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
         >
           ← Back to results
         </button>
@@ -157,21 +128,20 @@ function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment[] }) {
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-export default function RepresentativeDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function RepresentativeDetailPage({ id, initialPolitician }: { id: string; initialPolitician?: Politician | null }) {
   const router = useRouter()
 
   const [activeTab, setActiveTab] = useState<Tab>('votes')
+  const [voteFilter, setVoteFilter] = useState<'final' | 'all'>('final')
   const [photoError, setPhotoError] = useState(false)
-  const [showSignIn, setShowSignIn] = useState(false)
-  const [showSignUp, setShowSignUp] = useState(false)
+  const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
 
   const { user } = useAuth()
-  const { politician, loading, error } = useFetchPoliticianDetail(id)
+  const { politician, loading, error } = useFetchPoliticianDetail(id, initialPolitician)
   const { following, loading: followLoading, toggleFollow: handleFollow } = useFollowPolitician(
     id,
     user?.id ?? null,
-    () => setShowSignIn(true),
+    () => setAuthModal('signin'),
   )
 
   // Reset photo error when navigating to a different politician
@@ -186,12 +156,12 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
   ]
 
   return (
-    <div className="relative flex flex-col overflow-hidden">
-      <TopoBackground />
+    <div className="relative flex flex-col min-h-screen overflow-hidden">
+      <DotGridBackground id="dot-grid-rep-detail" />
 
       <div className="relative z-10 flex flex-col flex-1">
 
-        <main className="flex-1 px-6 py-10">
+        <main className="flex-1 px-6 pt-10 pb-8">
           {loading ? (
             <ProfileSkeleton />
           ) : error ? (
@@ -200,7 +170,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
               onBack={() => router.back()}
             />
           ) : !politician ? null : (
-            <div className="max-w-6xl mx-auto space-y-6">
+            <div className="max-w-4xl mx-auto space-y-6">
 
               {/* Back link */}
               <button
@@ -214,7 +184,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
               </button>
 
               {/* Hero card */}
-              <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 sm:p-8">
+              <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                   {politician.photo && !photoError
                     ? <Image src={politician.photo} alt={politician.name} width={96} height={96} className="rounded-full object-cover flex-shrink-0" onError={() => setPhotoError(true)} />
@@ -223,7 +193,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
 
                   <div className="flex-1 text-center sm:text-left">
                     <h1
-                      className="text-4xl text-[#1C1C1A] mb-1 leading-[1.1] tracking-tight"
+                      className="text-2xl sm:text-3xl text-[#1C1C1A] mb-1 leading-[1.15] tracking-[-0.01em]"
                       style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
                     >
                       {politician.name}
@@ -258,7 +228,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                           href={politician.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs text-[#9B7FA6] hover:text-[#8a6e95] transition-colors"
+                          className="flex items-center gap-1.5 text-xs text-[#7B5E8A] hover:text-[#6A4F78] transition-colors"
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <circle cx="12" cy="12" r="10" />
@@ -296,8 +266,8 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                     disabled={followLoading}
                     className={`flex-shrink-0 px-6 py-2.5 rounded-lg text-sm border transition-colors disabled:opacity-60 ${
                       following
-                        ? 'bg-[#9B7FA6] border-[#9B7FA6] text-white'
-                        : 'bg-transparent border-[#9B7FA6] text-[#9B7FA6] hover:bg-[#9B7FA6] hover:text-white'
+                        ? 'bg-[#7B5E8A] border-[#7B5E8A] text-white'
+                        : 'bg-transparent border-[#7B5E8A] text-[#7B5E8A] hover:bg-[#7B5E8A] hover:text-white'
                     }`}
                   >
                     {following ? 'Following ✓' : 'Follow'}
@@ -309,15 +279,17 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
 
                 {/* Tab panel */}
-                <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm overflow-hidden">
-                  <div className="flex border-b border-[rgba(28,28,26,0.08)]">
+                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+                  <div className="flex border-b border-[rgba(28,28,26,0.08)]" role="tablist">
                     {tabs.map(tab => (
                       <button
                         key={tab.key}
+                        role="tab"
+                        aria-selected={activeTab === tab.key}
                         onClick={() => setActiveTab(tab.key)}
                         className={`px-5 py-4 text-sm font-medium transition-colors border-b-2 -mb-px ${
                           activeTab === tab.key
-                            ? 'border-[#9B7FA6] text-[#1C1C1A]'
+                            ? 'border-[#7B5E8A] text-[#1C1C1A]'
                             : 'border-transparent text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70'
                         }`}
                       >
@@ -329,37 +301,68 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                   <div className="divide-y divide-[rgba(28,28,26,0.06)]">
 
                     {/* Votes */}
-                    {activeTab === 'votes' && (
-                      (politician.votes?.length ?? 0) === 0 ? (
-                        <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">No recent votes found.</p>
-                      ) : politician.votes.map(v => (
-                        <div key={v.id} className="px-6 py-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              {v.billId ? (
-                                <Link
-                                  href={`/bills/${v.billId}`}
-                                  className="text-sm text-[#1C1C1A] hover:text-[#9B7FA6] hover:underline transition-colors"
+                    {activeTab === 'votes' && (() => {
+                      const filteredVotes = voteFilter === 'all'
+                        ? (politician.votes ?? [])
+                        : (politician.votes ?? []).filter(v => isFinalPassageVote(v.question))
+                      return (
+                        <>
+                          {(politician.votes?.length ?? 0) > 0 && (
+                            <div className="px-6 pt-4 pb-2 flex items-center gap-2">
+                              {(['final', 'all'] as const).map(f => (
+                                <button
+                                  key={f}
+                                  onClick={() => setVoteFilter(f)}
+                                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                                    voteFilter === f
+                                      ? 'bg-[#7B5E8A] text-white border-[#7B5E8A]'
+                                      : 'border-[rgba(28,28,26,0.12)] text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70'
+                                  }`}
                                 >
-                                  {v.bill}
-                                </Link>
-                              ) : (
-                                <p className="text-sm text-[#1C1C1A]">{v.bill}</p>
-                              )}
-                              <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
+                                  {f === 'final' ? 'Final Passage' : 'All Votes'}
+                                </button>
+                              ))}
                             </div>
-                            <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
-                              v.vote === 'Yea' ? 'bg-[#6A9B7B]/[0.12] text-[#6A9B7B]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
-                            }`}>
-                              {v.vote}
-                            </span>
-                          </div>
-                          {(v.donorAlignments?.length ?? 0) > 0 && (
-                            <DonorAlignmentPanel alignments={v.donorAlignments} />
                           )}
-                        </div>
-                      ))
-                    )}
+                          {filteredVotes.length === 0 ? (
+                            <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">
+                              {voteFilter === 'final' ? 'No final passage votes found.' : 'No recent votes found.'}
+                            </p>
+                          ) : filteredVotes.map(v => {
+                            const question = v.question?.replace(/^On /i, '') ?? ''
+                            const displayTitle = v.billTitle
+                              ? `${question}: ${v.billTitle}`
+                              : v.billId ? `${question}: ${formatBillId(v.billId)}` : v.bill
+                            return (
+                            <div key={v.id} className="px-6 py-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  {v.billId ? (
+                                    <Link
+                                      href={`/bills/${v.billId}`}
+                                      className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] hover:underline transition-colors"
+                                    >
+                                      {displayTitle}
+                                    </Link>
+                                  ) : (
+                                    <p className="text-sm text-[#1C1C1A]">{displayTitle}</p>
+                                  )}
+                                  <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
+                                </div>
+                                <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
+                                  v.vote === 'Yea' ? 'bg-[#6A9B7B]/[0.12] text-[#6A9B7B]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
+                                }`}>
+                                  {v.vote}
+                                </span>
+                              </div>
+                              {(v.donorAlignments?.length ?? 0) > 0 && (
+                                <DonorAlignmentPanel alignments={v.donorAlignments} />
+                              )}
+                            </div>
+                          )})}
+                        </>
+                      )
+                    })()}
 
                     {/* Bills */}
                     {activeTab === 'bills' && (
@@ -368,7 +371,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                       ) : politician.bills.map(b => (
                         <Link key={b.id} href={`/bills/${b.id}`} className="flex items-center justify-between px-6 py-4 hover:bg-[#F5F0E8]/60 transition-colors">
                           <div className="min-w-0 flex-1 mr-4">
-                            <p className="text-sm text-[#1C1C1A] hover:text-[#9B7FA6] transition-colors line-clamp-2" title={b.name}>{b.name}</p>
+                            <p className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] transition-colors line-clamp-2" title={b.name}>{b.name}</p>
                             <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{b.number} · {b.date}</p>
                           </div>
                           <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-4 ${(STATUS_STYLES[b.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Committee).bg} ${(STATUS_STYLES[b.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Committee).text}`}>
@@ -394,7 +397,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                 <div className="space-y-4">
 
                   {/* Stats */}
-                  <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6 flex flex-col gap-6">
+                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 flex flex-col gap-6">
                     <div>
                       <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide mb-1">Years in Office</p>
                       <p className="text-3xl font-medium text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>
@@ -409,7 +412,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                           <p className="text-sm font-medium text-[#1C1C1A]">{politician.stats.attendance}%</p>
                         </div>
                         <div className="h-1.5 bg-[#E8E3DA] rounded-full overflow-hidden">
-                          <div className="h-full bg-[#9B7FA6] rounded-full" style={{ width: `${politician.stats.attendance}%` }} />
+                          <div className="h-full bg-[#7B5E8A] rounded-full" style={{ width: `${politician.stats.attendance}%` }} />
                         </div>
                       </div>
                     )}
@@ -419,7 +422,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                         <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide mb-3">Ideology Score</p>
                         <div className="relative h-1.5 bg-gradient-to-r from-[#7B8FA8] to-[#A87B7B] rounded-full mb-2">
                           <div
-                            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-[#9B7FA6] rounded-full shadow-sm"
+                            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-[#7B5E8A] rounded-full shadow-sm"
                             style={{ left: `calc(${((politician.stats.ideologyScore + 1) / 2) * 100}% - 6px)` }}
                           />
                         </div>
@@ -442,7 +445,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
 
                   {/* Committees */}
                   {politician.committees.length > 0 && (
-                    <div className="bg-white rounded-xl border border-[#D6CFC4] shadow-sm p-6">
+                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
                       <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide mb-3">Committees</p>
                       <ul className="space-y-2">
                         {politician.committees.map((c, i) => (
@@ -452,7 +455,7 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
                                 href={c.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm text-[#1C1C1A] hover:text-[#9B7FA6] transition-colors leading-snug"
+                                className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] transition-colors leading-snug"
                               >
                                 {c.name}
                               </a>
@@ -476,14 +479,14 @@ export default function RepresentativeDetailPage({ params }: { params: Promise<{
       </div>
 
       <SignInModal
-        isOpen={showSignIn}
-        onClose={() => setShowSignIn(false)}
-        onSwitchToSignUp={() => { setShowSignIn(false); setShowSignUp(true) }}
+        isOpen={authModal === 'signin'}
+        onClose={() => setAuthModal(null)}
+        onSwitchToSignUp={() => setAuthModal('signup')}
       />
       <SignUpModal
-        isOpen={showSignUp}
-        onClose={() => setShowSignUp(false)}
-        onSwitchToSignIn={() => { setShowSignUp(false); setShowSignIn(true) }}
+        isOpen={authModal === 'signup'}
+        onClose={() => setAuthModal(null)}
+        onSwitchToSignIn={() => setAuthModal('signin')}
       />
     </div>
   )

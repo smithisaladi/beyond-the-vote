@@ -57,7 +57,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
             onClick={() => setFilter(f)}
             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
               filter === f
-                ? 'bg-[#9B7FA6]/10 text-[#9B7FA6] border-[#9B7FA6]/20'
+                ? 'bg-[#7B5E8A]/10 text-[#7B5E8A] border-[#7B5E8A]/20'
                 : 'border-[rgba(28,28,26,0.08)] text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70'
             }`}
           >
@@ -86,7 +86,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
             <div className="space-y-0.5 min-w-0">
               <a
                 href={`/bills/${v.billId}`}
-                className="text-[#1C1C1A] hover:text-[#9B7FA6] transition-colors truncate block"
+                className="text-[#1C1C1A] hover:text-[#7B5E8A] transition-colors truncate block"
               >
                 {v.billId.toUpperCase().replace(/-/g, ' ').replace(/(\d+) (\w+) (\d+)/, '$1 $2. $3')}
               </a>
