@@ -24,9 +24,10 @@ export type HybridBillSearchParams = {
   resultLimit?: number
   offsetCount?: number
   statusFilter?: string | null
-  topicFilter?: string | null
+  topicFilters?: string[] | null
   policyAreas?: string[] | null
   congressFilter?: number | null
+  billIds?: string[] | null
 }
 
 /** Hybrid full-text + trigram search with Reciprocal Rank Fusion. Mirrors the
@@ -37,9 +38,10 @@ export async function hybridBillSearch({
   resultLimit = 20,
   offsetCount = 0,
   statusFilter = null,
-  topicFilter = null,
+  topicFilters = null,
   policyAreas = null,
   congressFilter = null,
+  billIds = null,
 }: HybridBillSearchParams): Promise<HybridBillSearchRow[]> {
   const rows = await sql<HybridBillSearchRow[]>`
     WITH tsq AS (
@@ -53,9 +55,10 @@ export async function hybridBillSearch({
       FROM bills b
       WHERE b.search_vector @@ (SELECT q FROM tsq)
         AND (${statusFilter}::text    IS NULL OR b.status      = ${statusFilter})
-        AND (${topicFilter}::text     IS NULL OR b.topics      @> ARRAY[${topicFilter}]::text[])
+        AND (${topicFilters}::text[]  IS NULL OR b.topics      && ${topicFilters}::text[])
         AND (${policyAreas}::text[]   IS NULL OR b.policy_area = ANY(${policyAreas}))
         AND (${congressFilter}::int   IS NULL OR b.congress    = ${congressFilter})
+        AND (${billIds}::text[]       IS NULL OR b.bill_id     = ANY(${billIds}))
       LIMIT 40
     ),
     trgm AS (
@@ -66,9 +69,10 @@ export async function hybridBillSearch({
       FROM bills b
       WHERE similarity(b.title, ${queryText}) > 0.1
         AND (${statusFilter}::text    IS NULL OR b.status      = ${statusFilter})
-        AND (${topicFilter}::text     IS NULL OR b.topics      @> ARRAY[${topicFilter}]::text[])
+        AND (${topicFilters}::text[]  IS NULL OR b.topics      && ${topicFilters}::text[])
         AND (${policyAreas}::text[]   IS NULL OR b.policy_area = ANY(${policyAreas}))
         AND (${congressFilter}::int   IS NULL OR b.congress    = ${congressFilter})
+        AND (${billIds}::text[]       IS NULL OR b.bill_id     = ANY(${billIds}))
       LIMIT 20
     ),
     fused AS (

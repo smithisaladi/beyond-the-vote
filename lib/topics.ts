@@ -11,12 +11,66 @@ export const ALL_TOPICS = [
   'Social Security',
   'Gun Policy',
   'Foreign Policy',
+  'Agriculture',
+  'Defense',
+  'Culture',
+  'Civil Rights',
+  'Energy',
+  'Social Policy',
+  'Trade',
+  'Government',
+  'Labor',
+  'Law',
+  'Indigenous Rights',
+  'Technology',
+  'Taxes',
+  'Transportation',
+  'Emergency Management',
+  'Environment',
 ] as const
 
 export type Topic = (typeof ALL_TOPICS)[number]
 
+// Explicit slug ↔ topic mapping to handle pipeline slugs that don't
+// round-trip cleanly through the auto-generated slug function.
+const SLUG_TO_TOPIC: Record<string, Topic> = {
+  'climate-environment': 'Climate & Environment',
+  'healthcare':          'Healthcare',
+  'economy':             'Economy & Jobs',
+  'economy-jobs':        'Economy & Jobs',
+  'education':           'Education',
+  'housing':             'Housing',
+  'immigration':         'Immigration',
+  'tech-privacy':        'Tech & Privacy',
+  'criminal-justice':    'Criminal Justice',
+  'voting-rights':       'Voting Rights',
+  'social-security':     'Social Security',
+  'gun-policy':          'Gun Policy',
+  'foreign-policy':      'Foreign Policy',
+  'agriculture':         'Agriculture',
+  'defense':             'Defense',
+  'culture':             'Culture',
+  'civil-rights':        'Civil Rights',
+  'energy':              'Energy',
+  'social-policy':       'Social Policy',
+  'trade':               'Trade',
+  'government':          'Government',
+  'labor':               'Labor',
+  'law':                 'Law',
+  'indigenous-rights':   'Indigenous Rights',
+  'technology':          'Technology',
+  'taxes':               'Taxes',
+  'transportation':      'Transportation',
+  'emergency-management':'Emergency Management',
+  'environment':         'Environment',
+}
+
+const TOPIC_TO_SLUG: Record<string, string> = Object.fromEntries(
+  Object.entries(SLUG_TO_TOPIC).map(([slug, topic]) => [topic, slug])
+)
+
 export function topicToSlug(topic: Topic): string {
-  return topic
+  return TOPIC_TO_SLUG[topic] ?? topic
     .toLowerCase()
     .replace(/&/g, '')
     .replace(/\s+/g, '-')
@@ -25,7 +79,7 @@ export function topicToSlug(topic: Topic): string {
 }
 
 export function slugToTopic(slug: string): Topic | null {
-  return ALL_TOPICS.find(t => topicToSlug(t) === slug) ?? null
+  return SLUG_TO_TOPIC[slug] ?? null
 }
 
 // Congress.gov policyArea → topic slug
@@ -136,22 +190,3 @@ export function classifyBillTopics(
   return Array.from(matched)
 }
 
-// Maps a topic to the bills API `category` param where applicable
-export const TOPIC_TO_CATEGORY: Partial<Record<Topic, string>> = {
-  'Climate & Environment': 'Environment',
-  'Healthcare': 'Healthcare',
-  'Economy & Jobs': 'Economy',
-  'Education': 'Education',
-  'Housing': 'Housing',
-  'Immigration': 'Immigration',
-  'Tech & Privacy': 'Technology',
-  'Foreign Policy': 'Defense',
-}
-
-// Keyword search fallback for topics without a category mapping
-export const TOPIC_SEARCH_QUERY: Partial<Record<Topic, string>> = {
-  'Criminal Justice': 'criminal justice',
-  'Voting Rights': 'voting rights election',
-  'Social Security': 'social security',
-  'Gun Policy': 'gun firearms',
-}

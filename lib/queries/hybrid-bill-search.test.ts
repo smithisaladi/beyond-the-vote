@@ -63,22 +63,22 @@ describe('hybridBillSearch', () => {
     await hybridBillSearch({
       queryText: 'climate',
       statusFilter: 'Active',
-      topicFilter: 'climate-environment',
+      topicFilters: ['climate-environment'],
       congressFilter: 119,
     })
     const values = mockSql.mock.calls[0].slice(1)
     expect(values).toContain('climate')
     expect(values).toContain('Active')
-    expect(values).toContain('climate-environment')
+    expect(values).toContainEqual(['climate-environment'])
     expect(values).toContain(119)
   })
 
   it('passes null for unset filters', async () => {
     await hybridBillSearch({ queryText: 'test' })
     const values = mockSql.mock.calls[0].slice(1)
-    // statusFilter, topicFilter, policyAreas, congressFilter default to null
+    // statusFilter, topicFilters, policyAreas, congressFilter, billIds default to null
     const nullCount = values.filter((v: unknown) => v === null).length
-    expect(nullCount).toBeGreaterThanOrEqual(4)
+    expect(nullCount).toBeGreaterThanOrEqual(5)
   })
 
   it('returns empty array when no results', async () => {

@@ -5,24 +5,27 @@
 const UNINFORMATIVE_NAMES = new Set(['Other', 'N/A', 'None', 'Various', 'Unknown', 'Na'])
 
 /**
- * Tokens that should stay uppercase inside a title-cased name. Mostly
- * acronyms that appear inside FEC committee names and PAC org names.
- * Add sparingly — only tokens that are genuinely ambiguous when lowercased.
+ * Acronyms 4+ letters that should stay uppercase. Short (≤3 char) words are
+ * auto-uppercased unless they appear in SHORT_WORD_EXCLUSIONS below.
  */
 const KEEP_UPPERCASE = new Set([
-  // Legal / corporate structure
-  'DBA', 'LLC', 'LLP', 'LP', 'PLLC', 'PC', 'PAC', 'SUPERPAC', 'IE',
-  // Political orgs & committees
-  'AFP', 'AIPAC', 'CVA', 'GOP', 'RNC', 'DNC', 'NRSC', 'DSCC', 'DCCC', 'NRCC',
-  'NRA', 'AARP', 'NAACP', 'ACLU', 'AFL', 'CIO', 'NEA', 'SEIU', 'UAW',
-  'AFSCME', 'NFIB', 'AFT', 'IBEW', 'UFCW', 'USPS', 'FOP', 'IAFF',
-  // Country / region
-  'USA', 'US', 'UK', 'EU',
-  // Common business abbreviations
-  'IBM', 'AT&T', 'UPS', 'GE', 'HP', 'ESPN', 'CNN', 'NBC', 'CBS', 'ABC', 'PBS',
-  'NBA', 'NFL', 'MLB', 'NHL', 'NCAA', 'FIFA',
-  // Agencies
-  'FBI', 'CIA', 'IRS', 'SEC', 'FDA', 'EPA', 'DOJ', 'DOD', 'DOE', 'DHS',
+  'AIPAC', 'AARP', 'NAACP', 'ACLU', 'SEIU', 'AFSCME', 'NFIB',
+  'IBEW', 'UFCW', 'USPS', 'IAFF', 'AT&T', 'ESPN', 'NCAA', 'FIFA',
+  'PLLC', 'SUPERPAC',
+])
+
+/**
+ * Short words (≤3 chars) that should NOT be auto-uppercased. These are common
+ * English words that would look wrong in all caps (e.g. "Inc", "the", "for").
+ */
+const SHORT_WORD_EXCLUSIONS = new Set([
+  // Articles, conjunctions, prepositions
+  'a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'if', 'in',
+  'los', 'nor', 'not', 'of', 'on', 'or', 'so', 'the', 'to', 'up', 'via', 'yet', 'you',
+  // Common short non-acronym words
+  'inc', 'ltd', 'act', 'co', 'no', 'we', 'our', 'its', 'new', 'one',
+  'all', 'any', 'his', 'her', 'who', 'how', 'did', 'has', 'had', 'was',
+  'are', 'can', 'may', 'win', 'do', 'is', 'it', 'my', 'he', 'me',
 ])
 
 /**
@@ -34,10 +37,14 @@ const KEEP_UPPERCASE = new Set([
 export function toTitleCase(s: string): string {
   const t = s.trim()
   if (t !== t.toUpperCase()) return t
-  return t.replace(/[A-Za-z&]+/g, word => {
+  return t.replace(/[A-Za-z&]+/g, (word, offset) => {
     const upper = word.toUpperCase()
     if (KEEP_UPPERCASE.has(upper)) return upper
     const lower = word.toLowerCase()
+    // Short words (≤3 chars) auto-uppercase unless excluded
+    if (lower.length <= 3 && !SHORT_WORD_EXCLUSIONS.has(lower)) return upper
+    // Excluded short words stay lowercase (except at start of string)
+    if (SHORT_WORD_EXCLUSIONS.has(lower) && offset > 0) return lower
     return lower.charAt(0).toUpperCase() + lower.slice(1)
   })
 }
@@ -56,4 +63,13 @@ export function formatAmount(n: number): string {
 
 export function isUninformativeName(s: string): boolean {
   return UNINFORMATIVE_NAMES.has(s)
+}
+
+const BILL_TYPE_LABELS: Record<string, string> = {
+  hr: 'H.R.', s: 'S.', hjres: 'H.J.Res.', sjres: 'S.J.Res.',
+  hconres: 'H.Con.Res.', sconres: 'S.Con.Res.', hres: 'H.Res.', sres: 'S.Res.',
+}
+
+export function formatBillType(type: string): string {
+  return BILL_TYPE_LABELS[type.toLowerCase()] ?? type.toUpperCase()
 }

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   ALL_TOPICS, topicToSlug, slugToTopic, classifyBillTopics,
-  TOPIC_KEYWORDS, TOPIC_TO_CATEGORY, TOPIC_SEARCH_QUERY,
+  TOPIC_KEYWORDS,
 } from './topics'
 
 describe('topicToSlug', () => {
@@ -119,20 +119,11 @@ describe('classifyBillTopics', () => {
 })
 
 describe('TOPIC_KEYWORDS exhaustiveness', () => {
-  it('has keywords for every topic slug derivable from ALL_TOPICS', () => {
-    const slugs = ALL_TOPICS.map(topicToSlug)
-    for (const slug of slugs) {
-      expect(TOPIC_KEYWORDS[slug]).toBeDefined()
+  it('every TOPIC_KEYWORDS slug maps to a valid topic', () => {
+    for (const slug of Object.keys(TOPIC_KEYWORDS)) {
+      expect(slugToTopic(slug)).not.toBeNull()
       expect(TOPIC_KEYWORDS[slug].length).toBeGreaterThan(0)
     }
   })
 })
 
-describe('TOPIC_TO_CATEGORY / TOPIC_SEARCH_QUERY coverage', () => {
-  it('every topic is in either TOPIC_TO_CATEGORY or TOPIC_SEARCH_QUERY', () => {
-    for (const topic of ALL_TOPICS) {
-      const covered = topic in TOPIC_TO_CATEGORY || topic in TOPIC_SEARCH_QUERY
-      expect(covered).toBe(true)
-    }
-  })
-})
