@@ -59,8 +59,8 @@ Political transparency app — track legislators, bills, votes, and campaign fin
 |-------|-------|-------|
 | Page background | `#F5F0E8` | All pages, headers |
 | Text base | `#1C1C1A` | All text — use opacity modifiers (`/70`, `/45`, `/32`, etc.) |
-| Accent | `#9B7FA6` | CTAs, active states, links, progress |
-| Accent hover | `#8a6e95` | Button hover |
+| Accent | `#7B5E8A` | CTAs, active states, links, progress |
+| Accent hover | `#6A4F78` | Button hover |
 | Card surface | `white` | Cards, list containers |
 | Skeleton fill | `#E8E3DA` | Loading placeholders |
 | Card border | `rgba(28,28,26,0.08)` | Card/divider borders |
@@ -83,7 +83,7 @@ All text uses `text-[#1C1C1A]` with opacity — never use `text-gray-*`:
 | Democrat | `#7B8FA8` — `PARTY_STYLES.Democrat` |
 | Republican | `#A87B7B` — `PARTY_STYLES.Republican` |
 | Independent | `#8A8A7A` — `PARTY_STYLES.Independent` |
-| Active | `#9B7FA6` — `STATUS_STYLES.Active` |
+| Active | `#7B5E8A` — `STATUS_STYLES.Active` |
 | Committee | `#8A8A7A` — `STATUS_STYLES.Committee` |
 | Stalled/Failed | `#B85C38` — `STATUS_STYLES.Stalled` / `STATUS_STYLES.Failed` |
 | Passed | `#6A9B7B` — `STATUS_STYLES.Passed` |
