@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js'
 import type { BillStatus as Status } from '@/lib/types'
 import type { Topic } from '@/lib/topics'
 import { ALL_TOPICS } from '@/lib/topics'
+import { Card } from '@/components/ui/Card'
 
 type DateFilter = 'all' | 'month' | 'year'
 type SortOption = 'newest' | 'oldest'
@@ -111,11 +112,11 @@ export function BillFilters({
           </svg>
         </button>
         {openDropdown === 'status' && (
-          <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-lg p-3 min-w-[140px] z-20 space-y-1.5">
+          <Card padding="sm" className="absolute top-full left-0 mt-1.5 min-w-[140px] z-20 space-y-1.5">
             {ALL_STATUSES.map(s => (
               <FilterCheckbox key={s} label={s} checked={selectedStatuses.has(s)} onChange={() => toggleStatus(s)} />
             ))}
-          </div>
+          </Card>
         )}
       </div>
 
@@ -136,7 +137,7 @@ export function BillFilters({
           </svg>
         </button>
         {openDropdown === 'date' && (
-          <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-lg p-3 min-w-[150px] z-20 space-y-2">
+          <Card padding="sm" className="absolute top-full left-0 mt-1.5 min-w-[150px] z-20 space-y-2">
             {([
               { key: 'all', label: 'All time' },
               { key: 'month', label: 'Past month' },
@@ -156,7 +157,7 @@ export function BillFilters({
                 <span className={`text-sm ${dateFilter === opt.key ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>{opt.label}</span>
               </label>
             ))}
-          </div>
+          </Card>
         )}
       </div>
 
@@ -177,11 +178,11 @@ export function BillFilters({
           </svg>
         </button>
         {openDropdown === 'topics' && (
-          <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-lg p-3 min-w-[200px] max-h-[280px] overflow-y-auto z-20 space-y-1.5">
+          <Card padding="sm" className="absolute top-full left-0 mt-1.5 min-w-[200px] max-h-[280px] overflow-y-auto z-20 space-y-1.5">
             {ALL_TOPICS.map(t => (
               <FilterCheckbox key={t} label={t} checked={selectedTopics.has(t)} onChange={() => toggleTopic(t)} />
             ))}
-          </div>
+          </Card>
         )}
       </div>
 
@@ -203,7 +204,7 @@ export function BillFilters({
             </svg>
           </button>
           {openDropdown === 'sort' && (
-            <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-lg p-3 min-w-[140px] z-20 space-y-2">
+            <Card padding="sm" className="absolute top-full left-0 mt-1.5 min-w-[140px] z-20 space-y-2">
               {([
                 { key: 'newest', label: 'Latest first' },
                 { key: 'oldest', label: 'Oldest first' },
@@ -222,7 +223,7 @@ export function BillFilters({
                   <span className={`text-sm ${sort === opt.key ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>{opt.label}</span>
                 </label>
               ))}
-            </div>
+            </Card>
           )}
         </div>
       )}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { PARTY_STYLES } from '@/lib/ui'
+import { Card } from '@/components/ui/Card'
 
 interface PartyBreakdown {
   democrat:    { yea: number; nay: number }
@@ -85,7 +86,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
   )
 
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-4 space-y-3">
+    <Card padding="md" className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="text-xs text-[#1C1C1A]/38">{vote.date} · {vote.chamber}</div>
@@ -169,7 +170,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
           )}
         </>
       )}
-    </div>
+    </Card>
   )
 }
 

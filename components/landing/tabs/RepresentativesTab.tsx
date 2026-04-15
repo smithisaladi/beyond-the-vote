@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { TopoBackground, MockRepCard, Feature, IconUsers, IconVote, IconBell } from './Shared'
 
 export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
@@ -19,7 +20,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
                 Know exactly who represents you, and what they stand for
               </h1>
               <p className="text-xl text-[#1C1C1A]/55 mb-9 leading-relaxed max-w-lg">
-                Beyond the Vote connects you directly to your elected officials' voting records,
+                Beyond the Vote connects you directly to your elected officials&apos; voting records,
                 positions, and actions so you can hold them accountable.
               </p>
               <div className="flex flex-wrap gap-3">
@@ -29,12 +30,12 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
                 >
                   Get started
                 </button>
-                <a
+                <Link
                   href="/representatives"
                   className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors shadow-sm"
                 >
                   Find your representatives →
-                </a>
+                </Link>
               </div>
             </div>
 

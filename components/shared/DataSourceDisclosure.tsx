@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Info, ChevronDown } from 'lucide-react'
+import { Card } from '@/components/ui/Card'
 
 interface DataSourceDisclosureProps {
   showAiDisclaimer?: boolean
@@ -27,7 +28,7 @@ export default function DataSourceDisclosure({ showAiDisclaimer, className = '' 
       </button>
 
       {open && (
-        <div className="mt-3 bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden text-sm text-[#1C1C1A]/55 leading-relaxed">
+        <Card padding="none" className="mt-3 overflow-hidden text-sm text-[#1C1C1A]/55 leading-relaxed">
           {/* Data Source */}
           <div className="px-5 py-4">
             <p className="text-[11px] text-[#1C1C1A]/38 uppercase tracking-wider font-medium mb-1.5">Data Source</p>
@@ -65,7 +66,7 @@ export default function DataSourceDisclosure({ showAiDisclaimer, className = '' 
               </p>
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   )

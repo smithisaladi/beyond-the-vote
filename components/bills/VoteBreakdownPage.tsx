@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { PARTY_STYLES } from '@/lib/ui'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { Card } from '@/components/ui/Card'
+import { Skeleton as SkeletonBox } from '@/components/ui/Skeleton'
 import { useFetchBillDetail } from '@/hooks/useFetchBillDetail'
 import type { Vote, MemberPosition } from '@/hooks/useFetchBillDetail'
 import type { Party } from '@/lib/types'
@@ -36,21 +38,21 @@ function positionColor(position: string) {
   return 'text-[#1C1C1A]/25'
 }
 
-function Skeleton() {
+function VoteBreakdownSkeleton() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
-      <div className="h-5 w-28 bg-[#E8E3DA] rounded" />
-      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8 space-y-4">
+      <SkeletonBox className="h-5 w-28" />
+      <Card padding="none" className="p-6 sm:p-8 space-y-4">
         <div className="flex gap-3">
-          <div className="h-5 w-16 bg-[#E8E3DA] rounded-full" />
-          <div className="h-5 w-24 bg-[#E8E3DA] rounded-full" />
+          <SkeletonBox className="h-5 w-16 rounded-full" />
+          <SkeletonBox className="h-5 w-24 rounded-full" />
         </div>
-        <div className="h-7 bg-[#E8E3DA] rounded w-2/3" />
-        <div className="h-3 bg-[#E8E3DA] rounded-full w-full" />
-      </div>
+        <SkeletonBox className="h-7 w-2/3" />
+        <SkeletonBox className="h-3 rounded-full w-full" />
+      </Card>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
-        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-72" />
-        <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 h-48" />
+        <Card className="h-72" />
+        <Card className="h-48" />
       </div>
     </div>
   )
@@ -128,7 +130,7 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
       </Link>
 
       {/* Header card: meta + question + bar */}
-      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 sm:p-8">
+      <Card padding="none" className="p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -189,14 +191,14 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
           <span className="text-xs text-[#1C1C1A]/32 ml-auto self-end">{formatDate(vote.date)}</span>
         </div>
 
-      </div>
+      </Card>
 
       {/* Two-column grid: member positions + party breakdown sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
 
         {/* Member positions */}
         {(vote.memberPositions?.length ?? 0) > 0 && (
-          <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
+          <Card>
             <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">
               Member Positions
               <span className="ml-1.5 normal-case tracking-normal font-normal text-[#1C1C1A]/25">
@@ -220,7 +222,7 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
                   </svg>
                 </button>
                 {openDropdown === 'position' && (
-                  <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-lg p-1.5 min-w-[140px] z-20">
+                  <Card padding="none" className="absolute top-full left-0 mt-1.5 p-1.5 min-w-[140px] z-20">
                     {FILTERS.map(f => (
                       <button
                         key={f}
@@ -233,7 +235,7 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
                         {f !== 'All' && <span className="ml-1 text-[#1C1C1A]/25">({counts[f as keyof typeof counts] ?? 0})</span>}
                       </button>
                     ))}
-                  </div>
+                  </Card>
                 )}
               </div>
 
@@ -252,7 +254,7 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
                   </svg>
                 </button>
                 {openDropdown === 'party' && (
-                  <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-lg p-1.5 min-w-[150px] z-20">
+                  <Card padding="none" className="absolute top-full left-0 mt-1.5 p-1.5 min-w-[150px] z-20">
                     {(['All', 'Democrat', 'Republican', 'Independent'] as const).map(p => {
                       const isAll = p === 'All'
                       const s = isAll ? null : PARTY_STYLES[p]
@@ -269,7 +271,7 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
                         </button>
                       )
                     })}
-                  </div>
+                  </Card>
                 )}
               </div>
             </div>
@@ -281,13 +283,13 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
                 <p className="text-sm text-[#1C1C1A]/30 italic py-6 text-center">No members match these filters.</p>
               )}
             </div>
-          </div>
+          </Card>
         )}
 
         {/* Sidebar: party breakdown */}
         {pb && (
           <div className="space-y-6">
-            <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
+            <Card>
               <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Party Breakdown</h2>
               <div className="space-y-3">
                 {(['Democrat', 'Republican', 'Independent'] as const).map(key => {
@@ -316,7 +318,7 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
                   )
                 })}
               </div>
-            </div>
+            </Card>
           </div>
         )}
       </div>
@@ -337,7 +339,7 @@ export default function VoteBreakdownPage({ params }: { params: Promise<{ id: st
       <div className="relative z-10 flex flex-col flex-1">
         <main className="flex-1 px-6 pt-10 pb-8">
           {loading ? (
-            <Skeleton />
+            <VoteBreakdownSkeleton />
           ) : error || !bill ? (
             <div className="max-w-4xl mx-auto flex items-center justify-center py-24">
               <div className="text-center">

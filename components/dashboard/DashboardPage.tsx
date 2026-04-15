@@ -10,39 +10,17 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useDashboard } from '@/hooks/useDashboard'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
-
-function Initials({ name }: { name: string }) {
-  const parts = name.trim().split(' ')
-  const initials = parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : parts[0][0]
-  return (
-    <div className="w-9 h-9 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0">
-      <span className="text-xs text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
-        {initials.toUpperCase()}
-      </span>
-    </div>
-  )
-}
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-lg border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-4 py-3.5 flex items-center gap-3 animate-pulse">
-      <div className="w-9 h-9 rounded-full bg-[#E8E3DA] flex-shrink-0" />
-      <div className="flex-1 space-y-2">
-        <div className="h-3.5 bg-[#E8E3DA] rounded w-3/4" />
-        <div className="h-3 bg-[#E8E3DA] rounded w-1/2" />
-      </div>
-    </div>
-  )
-}
+import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 function EmptyState({ message, href, linkLabel }: { message: string; href: string; linkLabel: string }) {
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-6 py-10 text-center">
+    <Card padding="none" className="px-6 py-10 text-center">
       <p className="text-sm text-[#1C1C1A]/45 mb-3">{message}</p>
       <Link href={href} className="text-sm text-[#7B5E8A] hover:underline underline-offset-2">
         {linkLabel}
       </Link>
-    </div>
+    </Card>
   )
 }
 
@@ -154,27 +132,27 @@ export default function DashboardPage() {
                 </div>
 
                 {loading ? (
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 animate-pulse space-y-4">
+                  <Card className="animate-pulse space-y-4">
                     {[1,2,3,4,5].map(i => (
                       <div key={i} className="flex gap-3">
-                        <div className="w-7 h-7 rounded-lg bg-[#E8E3DA] flex-shrink-0" />
+                        <Skeleton className="w-7 h-7 rounded-lg flex-shrink-0" />
                         <div className="flex-1 space-y-2">
-                          <div className="h-3 bg-[#E8E3DA] rounded w-5/6" />
-                          <div className="h-3 bg-[#E8E3DA] rounded w-1/4" />
+                          <Skeleton className="h-3 w-5/6" />
+                          <Skeleton className="h-3 w-1/4" />
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </Card>
                 ) : filteredActivity.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-6 py-10 text-center">
+                  <Card padding="none" className="px-6 py-10 text-center">
                     <p className="text-sm text-[#1C1C1A]/45">
                       {activityFeed.length === 0
                         ? 'No activity yet — follow politicians and track bills to see updates here.'
                         : 'No items in this category yet.'}
                     </p>
-                  </div>
+                  </Card>
                 ) : (
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden max-h-[600px] overflow-y-auto">
+                  <Card padding="none" className="overflow-hidden max-h-[600px] overflow-y-auto">
                     {filteredActivity.map((item, idx) => {
                       const isVote = item.politician !== null
                       const dotColor = item.isAlert ? 'bg-[#B85C38]' : isVote ? 'bg-[#7B5E8A]/50' : 'bg-[#8A8A7A]/50'
@@ -208,7 +186,7 @@ export default function DashboardPage() {
                         </div>
                       )
                     })}
-                  </div>
+                  </Card>
                 )}
               </section>
 
@@ -224,17 +202,17 @@ export default function DashboardPage() {
                 </div>
 
                 {loading ? (
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 animate-pulse space-y-4">
+                  <Card padding="none" className="p-5 animate-pulse space-y-4">
                     {[1,2,3].map(i => (
                       <div key={i} className="flex items-center gap-3 pb-4 border-b border-[rgba(28,28,26,0.05)] last:border-0 last:pb-0">
-                        <div className="w-9 h-9 rounded-full bg-[#E8E3DA] flex-shrink-0" />
+                        <Skeleton className="w-9 h-9 rounded-full flex-shrink-0" />
                         <div className="flex-1 space-y-2">
-                          <div className="h-3.5 bg-[#E8E3DA] rounded w-3/4" />
-                          <div className="h-3 bg-[#E8E3DA] rounded w-1/2" />
+                          <Skeleton className="h-3.5 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
                         </div>
                       </div>
                     ))}
-                  </div>
+                  </Card>
                 ) : visiblePoliticians.length === 0 ? (
                   <EmptyState
                     message="No politicians followed yet."
@@ -242,7 +220,7 @@ export default function DashboardPage() {
                     linkLabel="Find your representatives →"
                   />
                 ) : (
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden max-h-[600px] overflow-y-auto">
+                  <Card padding="none" className="overflow-hidden max-h-[600px] overflow-y-auto">
                     {visiblePoliticians.map((pol, idx) => {
                       const badge = PARTY_STYLES[pol.party]
                       return (
@@ -287,7 +265,7 @@ export default function DashboardPage() {
                         </div>
                       )
                     })}
-                  </div>
+                  </Card>
                 )}
               </section>
 
@@ -302,15 +280,15 @@ export default function DashboardPage() {
                 </div>
 
                 {loading ? (
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 animate-pulse space-y-4">
+                  <Card padding="none" className="p-5 animate-pulse space-y-4">
                     {[1,2,3].map(i => (
                       <div key={i} className="space-y-2 pb-4 border-b border-[rgba(28,28,26,0.05)] last:border-0 last:pb-0">
-                        <div className="h-3 bg-[#E8E3DA] rounded w-1/3" />
-                        <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
-                        <div className="h-3.5 bg-[#E8E3DA] rounded w-4/5" />
+                        <Skeleton className="h-3 w-1/3" />
+                        <Skeleton className="h-3.5 w-full" />
+                        <Skeleton className="h-3.5 w-4/5" />
                       </div>
                     ))}
-                  </div>
+                  </Card>
                 ) : trackedBills.length === 0 ? (
                   <EmptyState
                     message="No bills tracked yet."
@@ -318,7 +296,7 @@ export default function DashboardPage() {
                     linkLabel="Browse bills →"
                   />
                 ) : (
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden max-h-[400px] overflow-y-auto">
+                  <Card padding="none" className="overflow-hidden max-h-[400px] overflow-y-auto">
                     {trackedBills.map((bill, idx) => {
                       const s = STATUS_STYLES[bill.status]
                       return (
@@ -339,7 +317,7 @@ export default function DashboardPage() {
                         </Link>
                       )
                     })}
-                  </div>
+                  </Card>
                 )}
               </section>
               </div>

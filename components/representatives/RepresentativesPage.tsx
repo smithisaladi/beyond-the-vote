@@ -10,6 +10,8 @@ import { useSearchPoliticians } from '@/hooks/useSearchPoliticians'
 import { useAuth } from '@/hooks/useAuth'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 function RepresentativesContent() {
   const router = useRouter()
@@ -105,7 +107,7 @@ function RepresentativesContent() {
             </div>
 
             {/* Unified search control */}
-            <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+            <Card padding="none">
               {/* Integrated tabs */}
               <div className="flex border-b border-[rgba(28,28,26,0.06)]">
                 <button
@@ -154,7 +156,7 @@ function RepresentativesContent() {
 
                   {/* Autocomplete dropdown */}
                   {showSuggestions && suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[rgba(28,28,26,0.12)] shadow-lg overflow-hidden z-20">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[rgba(28,28,26,0.12)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden z-20">
                       {suggestions.map((s, i) => (
                         <button
                           key={i}
@@ -187,7 +189,7 @@ function RepresentativesContent() {
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
 
           </div>
 
@@ -203,25 +205,25 @@ function RepresentativesContent() {
               {displayLoading && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {[1, 2, 3].map(i => (
-                    <div key={i} className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] p-6 animate-pulse">
+                    <Card key={i} shadow={false} className="animate-pulse">
                       <div className="flex flex-col items-center gap-4">
-                        <div className="w-20 h-20 rounded-full bg-[#E8E3DA]" />
+                        <Skeleton className="w-20 h-20 rounded-full" />
                         <div className="space-y-2 w-full text-center">
-                          <div className="h-4 bg-[#E8E3DA] rounded w-3/4 mx-auto" />
-                          <div className="h-3 bg-[#E8E3DA] rounded w-1/2 mx-auto" />
+                          <Skeleton className="h-4 w-3/4 mx-auto" />
+                          <Skeleton className="h-3 w-1/2 mx-auto" />
                         </div>
-                        <div className="h-3 bg-[#E8E3DA] rounded w-1/4 mx-auto" />
-                        <div className="h-9 bg-[#E8E3DA] rounded-lg w-full" />
+                        <Skeleton className="h-3 w-1/4 mx-auto" />
+                        <Skeleton className="h-9 rounded-lg w-full" />
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
 
               {displayError && !displayLoading && (
-                <div className="max-w-md mx-auto text-center bg-white rounded-xl border border-[rgba(28,28,26,0.08)] px-8 py-10">
+                <Card shadow={false} padding="none" className="max-w-md mx-auto text-center px-8 py-10">
                   <p className="text-sm text-[#1C1C1A]/60">{displayError}</p>
-                </div>
+                </Card>
               )}
 
               {!displayLoading && !displayError && displayRepresentatives.length === 0 && searchMode === 'name' && nameQuery.length >= 3 && (

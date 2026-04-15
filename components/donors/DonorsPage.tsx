@@ -12,6 +12,8 @@ import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { FEC_DISPLAY_CYCLES } from '@/lib/fec'
 import { formatTotal, toTitleCase } from '@/lib/format'
 import { PARTY_STYLES } from '@/lib/ui'
+import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 type Lean = { label: string; party: 'Democrat' | 'Republican' | null; pct: number }
 
@@ -60,21 +62,21 @@ function SearchIcon() {
 
 function CardSkeleton() {
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 animate-pulse">
+    <Card padding="none" className="p-5 animate-pulse">
       <div className="flex items-baseline justify-between mb-1">
         <div className="flex items-baseline gap-3">
-          <div className="h-4 w-4 bg-[#E8E3DA] rounded" />
-          <div className="h-4 w-48 bg-[#E8E3DA] rounded" />
+          <Skeleton className="h-4 w-4" />
+          <Skeleton className="h-4 w-48" />
         </div>
-        <div className="h-4 w-16 bg-[#E8E3DA] rounded" />
+        <Skeleton className="h-4 w-16" />
       </div>
-      <div className="h-3 bg-[#E8E3DA] rounded w-24 mb-3 ml-7" />
+      <Skeleton className="h-3 w-24 mb-3 ml-7" />
       <div className="border-t border-[rgba(28,28,26,0.06)] pt-3 ml-7 space-y-2">
-        <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
-        <div className="h-3.5 bg-[#E8E3DA] rounded w-5/6" />
-        <div className="h-3.5 bg-[#E8E3DA] rounded w-4/6" />
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-5/6" />
+        <Skeleton className="h-3.5 w-4/6" />
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -83,7 +85,7 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
 
   return (
     <Link href={`/donors/${contributor.cmteId}`} className="block group">
-      <article className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] group-hover:shadow-md group-hover:border-[#7B5E8A]/20 transition-all p-6 cursor-pointer">
+      <Card as="article" hoverable className="cursor-pointer">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             {/* Rank + Name */}
@@ -112,7 +114,7 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
             {lean && <LeanPill lean={lean} />}
           </div>
         </div>
-      </article>
+      </Card>
     </Link>
   )
 }
@@ -155,7 +157,7 @@ function DonorsContent() {
             </div>
 
             {/* Search card */}
-            <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+            <Card padding="none">
               <div className="flex items-center px-5 py-4 gap-3">
                 <span className="text-[#1C1C1A]/25 flex-shrink-0">
                   <SearchIcon />
@@ -175,7 +177,7 @@ function DonorsContent() {
                   </button>
                 )}
               </div>
-            </div>
+            </Card>
 
             {/* Contributor list */}
             <div className="mt-8">
@@ -187,7 +189,7 @@ function DonorsContent() {
                   ))}
                 </div>
               ) : error ? (
-                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-12 text-center">
+                <Card padding="xl" className="text-center">
                   <p className="text-[#1C1C1A]/40 text-sm mb-3">Failed to load contributors.</p>
                   <button
                     onClick={() => refetch()}
@@ -195,9 +197,9 @@ function DonorsContent() {
                   >
                     Try again
                   </button>
-                </div>
+                </Card>
               ) : contributors.length === 0 ? (
-                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-12 text-center">
+                <Card padding="xl" className="text-center">
                   <p className="text-[#1C1C1A]/40 text-sm">No organizations match your search.</p>
                   {query && (
                     <button
@@ -207,7 +209,7 @@ function DonorsContent() {
                       Clear search
                     </button>
                   )}
-                </div>
+                </Card>
               ) : (
                 <>
                   <div className="space-y-4">

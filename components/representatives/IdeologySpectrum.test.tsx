@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import React from 'react'
 import IdeologySpectrum from './IdeologySpectrum'
+import { PARTY_STYLES } from '@/lib/ui'
 
 describe('IdeologySpectrum', () => {
   it('renders "unavailable" when score is null', () => {
@@ -55,16 +56,22 @@ describe('IdeologySpectrum', () => {
     expect(dot).toHaveStyle({ left: '100%' })
   })
 
-  it('uses blue color for Democrat party', () => {
+  it('uses the Democrat party color for Democrat', () => {
     const { container } = render(<IdeologySpectrum score={-0.4} party="Democrat" />)
     const dot = container.querySelector('[title="Score: -0.400"]')
-    expect(dot).toHaveStyle({ background: '#3b82f6' })
+    expect(dot).toHaveStyle({ background: PARTY_STYLES.Democrat.hex })
   })
 
-  it('uses red color for Republican party', () => {
+  it('uses the Republican party color for Republican', () => {
     const { container } = render(<IdeologySpectrum score={0.4} party="Republican" />)
     const dot = container.querySelector('[title="Score: 0.400"]')
-    expect(dot).toHaveStyle({ background: '#ef4444' })
+    expect(dot).toHaveStyle({ background: PARTY_STYLES.Republican.hex })
+  })
+
+  it('uses the Independent party color for unknown / Independent', () => {
+    const { container } = render(<IdeologySpectrum score={0} party="Independent" />)
+    const dot = container.querySelector('[title="Score: 0.000"]')
+    expect(dot).toHaveStyle({ background: PARTY_STYLES.Independent.hex })
   })
 
   it('renders chamber median marker when provided', () => {

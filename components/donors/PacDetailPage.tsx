@@ -13,6 +13,8 @@ import { FEC_DISPLAY_CYCLES, getFecCommitteeUrl, getOpenSecretsUrl } from '@/lib
 import { formatTotal, toTitleCase } from '@/lib/format'
 import { partyAbbrev, toParty } from '@/lib/party'
 import type { Party } from '@/lib/types'
+import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
 
 const RECIPIENTS_PREVIEW = 30
 
@@ -28,25 +30,25 @@ function BackArrow() {
 function DetailSkeleton() {
   return (
     <div className="max-w-4xl mx-auto animate-pulse">
-      <div className="h-4 w-24 bg-[#E8E3DA] rounded mb-8" />
-      <div className="h-6 w-24 bg-[#E8E3DA] rounded-full mb-4" />
-      <div className="h-8 bg-[#E8E3DA] rounded w-2/3 mb-5" />
-      <div className="h-10 bg-[#E8E3DA] rounded w-40 mb-3" />
-      <div className="h-4 bg-[#E8E3DA] rounded w-2/3 mb-8" />
+      <Skeleton className="h-4 w-24 mb-8" />
+      <Skeleton className="h-6 w-24 rounded-full mb-4" />
+      <Skeleton className="h-8 w-2/3 mb-5" />
+      <Skeleton className="h-10 w-40 mb-3" />
+      <Skeleton className="h-4 w-2/3 mb-8" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5">
-            <div className="h-2.5 bg-[#E8E3DA] rounded w-16 mb-3" />
-            <div className="h-6 bg-[#E8E3DA] rounded w-24" />
-          </div>
+          <Card key={i} padding="none" className="p-5">
+            <Skeleton className="h-2.5 w-16 mb-3" />
+            <Skeleton className="h-6 w-24" />
+          </Card>
         ))}
       </div>
-      <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6">
-        <div className="h-5 bg-[#E8E3DA] rounded w-1/4 mb-5" />
+      <Card>
+        <Skeleton className="h-5 w-1/4 mb-5" />
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-4 bg-[#E8E3DA] rounded w-full mb-3" />
+          <Skeleton key={i} className="h-4 w-full mb-3" />
         ))}
-      </div>
+      </Card>
     </div>
   )
 }
@@ -120,7 +122,7 @@ function FundingCard({
   valueClassName?: string
 }) {
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-5 text-center">
+    <Card padding="none" className="p-5 text-center">
       <p className="text-[10px] text-[#1C1C1A]/50 uppercase tracking-wider mb-2 inline-flex items-center gap-1">
         {label}
         <InfoTooltip term={tooltip} />
@@ -134,7 +136,7 @@ function FundingCard({
       {sublabel && (
         <p className="text-[10px] text-[#1C1C1A]/38 mt-1">{sublabel}</p>
       )}
-    </div>
+    </Card>
   )
 }
 
@@ -224,12 +226,12 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
               <Link href="/donors" className="inline-flex items-center gap-1.5 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70 transition-colors mb-8">
                 <BackArrow /> Top Contributors
               </Link>
-              <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-12 text-center">
+              <Card padding="xl" className="text-center">
                 <p className="text-[#1C1C1A]/45 text-sm">{error ?? 'PAC not found.'}</p>
                 <Link href="/donors" className="mt-3 inline-block text-sm text-[#7B5E8A] hover:underline underline-offset-2">
                   Back to leaderboard
                 </Link>
-              </div>
+              </Card>
             </div>
           ) : (
             <div className="max-w-4xl mx-auto">
@@ -256,7 +258,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
 
               {/* AI Analysis — background + spending breakdown */}
               {(summaryLoading || pac.summary) && (
-                <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] p-6 mb-6">
+                <Card className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7B5E8A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M12 2L2 7l10 5 10-5-10-5z" />
@@ -267,12 +269,12 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                   </div>
                   {summaryLoading ? (
                     <div className="animate-pulse space-y-3">
-                      <div className="h-3.5 bg-[#E8E3DA] rounded w-full" />
-                      <div className="h-3.5 bg-[#E8E3DA] rounded w-11/12" />
-                      <div className="h-3.5 bg-[#E8E3DA] rounded w-4/5" />
-                      <div className="h-3.5 bg-[#E8E3DA] rounded w-full mt-4" />
-                      <div className="h-3.5 bg-[#E8E3DA] rounded w-10/12" />
-                      <div className="h-3.5 bg-[#E8E3DA] rounded w-3/4" />
+                      <Skeleton className="h-3.5 w-full" />
+                      <Skeleton className="h-3.5 w-11/12" />
+                      <Skeleton className="h-3.5 w-4/5" />
+                      <Skeleton className="h-3.5 w-full mt-4" />
+                      <Skeleton className="h-3.5 w-10/12" />
+                      <Skeleton className="h-3.5 w-3/4" />
                     </div>
                   ) : (
                     <>
@@ -286,7 +288,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                       </p>
                     </>
                   )}
-                </div>
+                </Card>
               )}
 
               {/* Funding breakdown row — zero-value cards hidden */}
@@ -320,11 +322,11 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                 </div>
 
                 {pac.recipients.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] px-6 py-10 text-center">
+                  <Card padding="none" className="px-6 py-10 text-center">
                     <p className="text-sm text-[#1C1C1A]/45">
                       No candidate recipients in this cycle range.
                     </p>
-                  </div>
+                  </Card>
                 ) : (
                   <>
                     {/* Sort + party filter controls */}
@@ -357,7 +359,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                       </button>
                     </div>
 
-                    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden">
+                    <Card padding="none" className="overflow-hidden">
                       <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2 border-b border-[rgba(28,28,26,0.06)]">
                         <span className="text-[10px] text-[#1C1C1A]/50 uppercase tracking-wider">Recipient</span>
                         <span className="text-[10px] text-[#1C1C1A]/50 uppercase tracking-wider min-w-[64px] text-right">Total Support</span>
@@ -376,7 +378,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                           ))}
                         </div>
                       )}
-                    </div>
+                    </Card>
 
                     {filteredRecipients.length > RECIPIENTS_PREVIEW && (
                       <div className="mt-3 text-center">

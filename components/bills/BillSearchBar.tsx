@@ -1,5 +1,7 @@
 'use client'
 
+import { Card } from '@/components/ui/Card'
+
 function SearchIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -16,7 +18,7 @@ interface BillSearchBarProps {
 
 export function BillSearchBar({ query, onQueryChange }: BillSearchBarProps) {
   return (
-    <div className="bg-white rounded-xl border border-[rgba(28,28,26,0.08)] shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
+    <Card padding="none">
       <div className="flex items-center px-5 py-4 gap-3">
         <span className="text-[#1C1C1A]/25 flex-shrink-0">
           <SearchIcon />
@@ -36,6 +38,6 @@ export function BillSearchBar({ query, onQueryChange }: BillSearchBarProps) {
           </button>
         )}
       </div>
-    </div>
+    </Card>
   )
 }
