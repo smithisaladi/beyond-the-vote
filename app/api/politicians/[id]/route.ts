@@ -85,6 +85,7 @@ interface TopContributorRow {
   pac_total: number
   grand_total: number
   cycle: number
+  cmte_id: string | null
 }
 
 interface FundingSummaryRow {
@@ -372,7 +373,7 @@ async function fetchRecentVotesFromDB(
     .filter(Boolean) as PoliticianVote[]
 }
 
-async function fetchSponsoredBills(bioguideId: string) {
+async function fetchSponsoredBills(bioguideId: string, supabase: any) {
   if (!CONGRESS_API_KEY) return []
   const res = await fetch(
     `${CONGRESS_BASE}/member/${bioguideId}/sponsored-legislation?format=json&limit=10&api_key=${CONGRESS_API_KEY}`,
@@ -380,22 +381,34 @@ async function fetchSponsoredBills(bioguideId: string) {
   )
   if (!res.ok) return []
   const data = await res.json()
-  return ((data.sponsoredLegislation ?? []) as CongressSponsoredBill[])
+  const bills = ((data.sponsoredLegislation ?? []) as CongressSponsoredBill[])
     .filter((b): b is CongressSponsoredBill & { congress: number; type: string; number: number } => !!(b.congress && b.type && b.number))
     .map((b) => ({
     id:     `${b.congress}-${b.type.toLowerCase()}-${b.number}`,
     name:   b.title ?? '',
     number: formatBillNumber(b.type, b.number),
-    status: mapBillStatus(b.latestAction?.text, b.introducedDate),
     date:   b.introducedDate
       ? new Date(b.introducedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       : '',
+    _fallbackStatus: mapBillStatus(b.latestAction?.text, b.introducedDate),
+  }))
+
+  // Look up statuses from DB (source of truth)
+  const billIds = bills.map((b) => b.id)
+  const { data: dbRows } = billIds.length > 0
+    ? await supabase.from('bills').select('bill_id, status').in('bill_id', billIds)
+    : { data: [] }
+  const statusMap = new Map<string, string>((dbRows ?? []).map((r: any) => [r.bill_id, r.status]))
+
+  return bills.map(({ _fallbackStatus, ...b }) => ({
+    ...b,
+    status: statusMap.get(b.id) ?? _fallbackStatus,
   }))
 }
 
 interface Donor { rank: number; name: string; amount: string; category: string; summary?: string }
 
-interface TopContributor { rank: number; orgName: string; total: string }
+interface TopContributor { rank: number; orgName: string; total: string; cmteId: string | null }
 
 interface FundingBreakdown {
   pac: number
@@ -463,7 +476,7 @@ async function fetchDonors(opts: {
 
     supabase
       .from('legislator_top_contributors')
-      .select('rank, org_name, individual_total, pac_total, grand_total, cycle')
+      .select('rank, org_name, individual_total, pac_total, grand_total, cycle, cmte_id')
       .eq('bioguide_id', bioguideId)
       .order('cycle', { ascending: false })
       .order('rank', { ascending: true })
@@ -501,16 +514,19 @@ async function fetchDonors(opts: {
 
   // Top contributors — merge across cycles by org name, sum totals, top 10
   const rawContribRows = topContributorsRes.status === 'fulfilled' ? ((topContributorsRes.value.data ?? []) as TopContributorRow[]) : []
-  const contribMerged = new Map<string, { orgName: string; total: number }>()
+  const contribMerged = new Map<string, { orgName: string; total: number; cmteId: string | null }>()
   for (const row of rawContribRows) {
     const orgName = (row.org_name ?? '').trim()
     if (!orgName) continue
     const existing = contribMerged.get(orgName)
     const total = Number(row.grand_total ?? 0)
+    const cmteId = row.cmte_id ?? null
     if (existing) {
       existing.total += total
+      // Rows arrive in cycle DESC order — keep the most recent non-null cmte_id we saw first.
+      if (!existing.cmteId && cmteId) existing.cmteId = cmteId
     } else {
-      contribMerged.set(orgName, { orgName, total })
+      contribMerged.set(orgName, { orgName, total, cmteId })
     }
   }
   const topContributors: TopContributor[] = [...contribMerged.values()]
@@ -520,6 +536,7 @@ async function fetchDonors(opts: {
       rank: i + 1,
       orgName: d.orgName,
       total: `$${Math.round(d.total).toLocaleString()}`,
+      cmteId: d.cmteId,
     }))
 
   // Funding breakdown — aggregate across available cycles
@@ -633,7 +650,7 @@ export async function GET(
     : null
 
   const [sponsoredRes, donorsRes, votesRes] = await Promise.allSettled([
-    fetchSponsoredBills(bioguideId),
+    fetchSponsoredBills(bioguideId, supabase),
     fetchDonors({ bioguideId, fecIds: legislator?.fec_ids ?? null, supabase }),
     // Senators → senate.gov XML; House members → DB
     senateMemberKey

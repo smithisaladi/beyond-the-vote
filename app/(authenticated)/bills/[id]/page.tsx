@@ -9,7 +9,7 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
 
   const { data: bill } = await supabase
     .from('bills')
-    .select('bill_id, bill_number, congress, title, summary, status, sponsor_name, sponsor_bioguide_id, sponsor_party, introduced_date, policy_area, congress_gov_url, last_action_text, last_action_date')
+    .select('bill_id, bill_number, congress, title, summary, status, sponsor_name, sponsor_bioguide_id, sponsor_party, introduced_date, policy_area, topics, congress_gov_url, last_action_text, last_action_date')
     .eq('bill_id', billId)
     .single()
 
@@ -47,6 +47,7 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
     } : null,
     cosponsors: [],
     policyArea: bill.policy_area ?? null,
+    topics: bill.topics ?? [],
     subjects: [],
     congressGovUrl: bill.congress_gov_url ?? '',
     actions: bill.last_action_text ? [{ date: bill.last_action_date ?? '', text: bill.last_action_text, type: '' }] : [],

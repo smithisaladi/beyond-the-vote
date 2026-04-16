@@ -17,21 +17,20 @@ function ordinal(n: number): string {
 
 async function enrichFromCongress(
   bioguideId: string
-): Promise<{ photo: string | null; since: string | null; website: string | null }> {
-  if (!CONGRESS_API_KEY || !bioguideId) return { photo: null, since: null, website: null }
+): Promise<{ since: string | null; website: string | null }> {
+  if (!CONGRESS_API_KEY || !bioguideId) return { since: null, website: null }
 
   const res = await fetch(
     `${CONGRESS_BASE}/member/${bioguideId}?format=json&api_key=${CONGRESS_API_KEY}`,
     { next: { revalidate: 3600 } }
   )
-  if (!res.ok) return { photo: null, since: null, website: null }
+  if (!res.ok) return { since: null, website: null }
 
   const data = await res.json()
   const member = data.member
   const firstTerm = member.terms?.item?.[0]
 
   return {
-    photo: member.depiction?.imageUrl ?? null,
     since: firstTerm?.startYear?.toString() ?? null,
     website: member.officialWebsiteUrl ?? null,
   }
@@ -135,7 +134,7 @@ export async function GET(request: NextRequest) {
           party: toParty(leg.bio?.party),
           state: stateCode,
           district: !isSenator ? ordinal(districtNumber) : undefined,
-          photo: enrich.photo ?? localData?.photo_url ?? null,
+          photo: localData?.photo_url ?? null,
           since: enrich.since,
           website: enrich.website ?? leg.contact?.url ?? null,
           phone: leg.contact?.phone ?? null,

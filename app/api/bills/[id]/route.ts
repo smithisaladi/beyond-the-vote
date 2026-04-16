@@ -19,12 +19,7 @@ function formatBillNumber(type: string, number: number): string {
   return `${formatBillType(type)} ${number}`
 }
 
-import { mapStatus as mapBillStatus } from '@/lib/bills'
-
-function mapStatus(actions: any[], introducedDate?: string) {
-  const latestText = actions?.[0]?.text ?? ''
-  return mapBillStatus(latestText, introducedDate)
-}
+import type { BillStatus } from '@/lib/bills'
 
 export async function GET(
   _request: NextRequest,
@@ -45,7 +40,7 @@ export async function GET(
   const supabase = await createClient()
 
   // Fetch Congress.gov data + local vote data in parallel
-  const [detailRes, actionsRes, summariesRes, dbVotesRes] = await Promise.allSettled([
+  const [detailRes, actionsRes, summariesRes, dbVotesRes, dbBillRes] = await Promise.allSettled([
     fetch(
       `${CONGRESS_BASE}/bill/${congress}/${type}/${number}?format=json&api_key=${CONGRESS_API_KEY}`,
       { next: { revalidate: 3600 } }
@@ -73,12 +68,20 @@ export async function GET(
       `)
       .eq('bill_id', id)
       .order('date', { ascending: false }),
+    supabase
+      .from('bills')
+      .select('topics, status')
+      .eq('bill_id', id)
+      .single(),
   ])
 
   const detailFetch  = detailRes.status   === 'fulfilled' ? detailRes.value   : null
   const actionsFetch = actionsRes.status  === 'fulfilled' ? actionsRes.value  : null
   const summaryFetch = summariesRes.status === 'fulfilled' ? summariesRes.value : null
   const dbVotes      = dbVotesRes.status  === 'fulfilled' ? dbVotesRes.value.data ?? [] : []
+  const dbBill       = dbBillRes.status   === 'fulfilled' ? dbBillRes.value.data : null
+  const dbTopics     = dbBill?.topics ?? []
+  const dbStatus     = (dbBill?.status as BillStatus | null) ?? null
 
   if (!detailFetch?.ok) {
     if (detailFetch?.status === 404) return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
@@ -161,7 +164,7 @@ export async function GET(
       title:  bill.title,
       congress,
       introducedDate: bill.introducedDate,
-      status: mapStatus(actions, bill.introducedDate),
+      status: dbStatus ?? 'Active',
       summary: latestSummary,
       sponsor: sponsor ? {
         name: sponsor.fullName, bioguideId: sponsor.bioguideId,
@@ -171,6 +174,7 @@ export async function GET(
         name: c.fullName, bioguideId: c.bioguideId, party: c.party, state: c.state,
       })),
       policyArea: bill.policyArea?.name ?? null,
+      topics: dbTopics,
       subjects: (bill.subjects?.legislativeSubjects ?? []).slice(0, 8).map((s: any) => s.name),
       congressGovUrl: `https://www.congress.gov/bill/${congress}th-congress/${type === 'hr' ? 'house-bill' : type === 's' ? 'senate-bill' : type}/${number}`,
       actions: actions
