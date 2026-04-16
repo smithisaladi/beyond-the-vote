@@ -205,15 +205,15 @@ function RepresentativesContent() {
               {displayLoading && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {[1, 2, 3].map(i => (
-                    <Card key={i} shadow={false} className="animate-pulse">
-                      <div className="flex flex-col items-center gap-4">
-                        <Skeleton className="w-20 h-20 rounded-full" />
-                        <div className="space-y-2 w-full text-center">
+                    <Card key={i} padding="md" shadow={false} className="animate-pulse">
+                      <div className="flex flex-col items-center gap-3">
+                        <Skeleton className="w-20 h-24 rounded-full" />
+                        <div className="space-y-1.5 w-full text-center">
                           <Skeleton className="h-4 w-3/4 mx-auto" />
                           <Skeleton className="h-3 w-1/2 mx-auto" />
                         </div>
-                        <Skeleton className="h-3 w-1/4 mx-auto" />
-                        <Skeleton className="h-9 rounded-lg w-full" />
+                        <Skeleton className="h-3 w-2/5 mx-auto" />
+                        <Skeleton className="h-7 rounded-lg w-full" />
                       </div>
                     </Card>
                   ))}

@@ -42,6 +42,7 @@ export interface TopContributor {
   rank: number
   orgName: string
   total: string
+  cmteId?: string | null
 }
 
 interface Committee {

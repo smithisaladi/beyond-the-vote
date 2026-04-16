@@ -7,7 +7,7 @@ const WIDTH = 1200
 const HEIGHT = 630
 
 const PARTY_COLORS: Record<string, string> = {
-  Democrat:    '#7B8FA8',
+  Democrat:    '#5E85A8',
   Republican:  '#A87B7B',
   Independent: '#8A8A7A',
 }
@@ -16,7 +16,7 @@ const STATUS_COLORS: Record<string, string> = {
   Active:    '#7B5E8A',
   Committee: '#8A8A7A',
   Stalled:   '#B85C38',
-  Passed:    '#6A9B7B',
+  Passed:    '#68B085',
   Failed:    '#B85C38',
 }
 

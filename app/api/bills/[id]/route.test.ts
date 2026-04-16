@@ -23,11 +23,20 @@ vi.mock('@/lib/bills', () => ({
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function buildSupabaseMock(voteData: unknown[] = [], voteError: unknown = null) {
+  const billChain: Record<string, unknown> = {}
+  billChain.select = vi.fn().mockReturnValue(billChain)
+  billChain.eq = vi.fn().mockReturnValue(billChain)
+  billChain.single = vi.fn().mockResolvedValue({ data: { topics: ['healthcare'] }, error: null })
+
+  const voteChain: Record<string, unknown> = {}
+  voteChain.select = vi.fn().mockReturnValue(voteChain)
+  voteChain.eq = vi.fn().mockReturnValue(voteChain)
+  voteChain.order = vi.fn().mockResolvedValue({ data: voteData, error: voteError })
+
   const mock: Record<string, unknown> = {}
-  mock.from = vi.fn().mockReturnValue(mock)
-  mock.select = vi.fn().mockReturnValue(mock)
-  mock.eq = vi.fn().mockReturnValue(mock)
-  mock.order = vi.fn().mockResolvedValue({ data: voteData, error: voteError })
+  mock.from = vi.fn().mockImplementation((table: string) =>
+    table === 'bills' ? billChain : voteChain
+  )
   return mock
 }
 

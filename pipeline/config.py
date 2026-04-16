@@ -170,15 +170,19 @@ VOTEVIEW_CHAMBER = {
 # Applied to latestAction.text (case-insensitive substring match).
 
 BILL_STATUS_RULES = [
-    ("became public law",   "Passed"),
-    ("signed by president", "Passed"),
-    ("enacted",             "Passed"),
-    ("passed senate",       "Active"),
-    ("passed house",        "Active"),
-    ("referred to",         "Committee"),
-    ("failed",              "Failed"),
-    ("vetoed",              "Failed"),
-    ("tabled",              "Stalled"),
+    ("became public law",      "Passed"),
+    ("signed by president",    "Passed"),
+    ("enacted",                "Passed"),
+    ("passed the senate",      "Passed"),
+    ("passed the house",       "Passed"),
+    ("presented to president", "Passed"),
+    ("failed",                 "Failed"),
+    ("defeated",               "Failed"),
+    ("vetoed",                 "Failed"),
+    ("rejected",               "Failed"),
+    ("referred to",            "Committee"),
+    ("committee",              "Committee"),
+    ("tabled",                 "Stalled"),
     ("postponed indefinitely", "Stalled"),
 ]
 
@@ -190,7 +194,7 @@ TOPIC_SLUG_MAP = {
     "animals":                     "environment",
     "armed forces and national security": "defense",
     "arts, culture, religion":     "culture",
-    "civil rights and liberties":  "civil-rights",
+    "civil rights and liberties":  "law",
     "commerce":                    "economy",
     "crime and law enforcement":   "criminal-justice",
     "economics and public finance": "economy",

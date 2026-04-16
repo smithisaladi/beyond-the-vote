@@ -69,6 +69,7 @@ export interface BillDetail {
   sponsor: Sponsor | null
   cosponsors: Cosponsor[]
   policyArea: string | null
+  topics: string[]
   subjects: string[]
   congressGovUrl: string
   actions: Action[]
@@ -115,6 +116,7 @@ export function useFetchBillDetail(id: string, initialBill?: BillDetail | null):
         setBill(prev => prev ? {
           ...prev,
           cosponsors: data.bill.cosponsors?.length > 0 ? data.bill.cosponsors : prev.cosponsors,
+          topics: data.bill.topics?.length > 0 ? data.bill.topics : prev.topics,
           subjects: data.bill.subjects?.length > 0 ? data.bill.subjects : prev.subjects,
           actions: data.bill.actions?.length > prev.actions.length ? data.bill.actions : prev.actions,
           sponsor: data.bill.sponsor ?? prev.sponsor,

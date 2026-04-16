@@ -44,7 +44,7 @@ function VoteBar({ yeas, nays, partyBreakdown }: { yeas: number; nays: number; p
   if (!partyBreakdown) {
     return (
       <div className="w-full h-4 rounded-full overflow-hidden flex">
-        <div className="bg-[#6A9B7B] h-full transition-all" style={{ width: `${yeaPct}%` }} />
+        <div className="bg-[#68B085] h-full transition-all" style={{ width: `${yeaPct}%` }} />
         <div className="bg-[#B85C38] h-full transition-all flex-1" />
       </div>
     )
@@ -52,12 +52,12 @@ function VoteBar({ yeas, nays, partyBreakdown }: { yeas: number; nays: number; p
 
   const { democrat: d, republican: r, independent: i } = partyBreakdown
   const segments = [
-    { label: 'Dem Yea',  count: d.yea, color: '#7B8FA8' },
+    { label: 'Dem Yea',  count: d.yea, color: '#5E85A8' },
     { label: 'Rep Yea',  count: r.yea, color: '#A87B7B' },
     { label: 'Ind Yea',  count: i.yea, color: '#8A8A7A' },
-    { label: 'Ind Nay',  count: i.nay, color: '#8A8A7A80' },
-    { label: 'Rep Nay',  count: r.nay, color: '#A87B7B80' },
-    { label: 'Dem Nay',  count: d.nay, color: '#7B8FA880' },
+    { label: 'Ind Nay',  count: i.nay, color: '#8A8A7A' },
+    { label: 'Rep Nay',  count: r.nay, color: '#A87B7B' },
+    { label: 'Dem Nay',  count: d.nay, color: '#5E85A8' },
   ]
 
   return (
@@ -95,7 +95,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
           )}
         </div>
         <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${
-          passed ? 'bg-[#6A9B7B]/[0.12] text-[#6A9B7B]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
+          passed ? 'bg-[#68B085]/[0.12] text-[#68B085]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
         }`}>
           {vote.result ?? (passed ? 'Passed' : 'Failed')}
         </span>
@@ -104,7 +104,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
       <VoteBar yeas={vote.yeas} nays={vote.nays} partyBreakdown={vote.partyBreakdown} />
 
       <div className="flex justify-between text-sm">
-        <span className="text-[#6A9B7B] font-medium">{vote.yeas} Yea</span>
+        <span className="text-[#68B085] font-medium">{vote.yeas} Yea</span>
         {total > 0 && <span className="text-[#1C1C1A]/38 text-xs">{total} total</span>}
         <span className="text-[#B85C38] font-medium">{vote.nays} Nay</span>
       </div>
@@ -157,7 +157,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
                           {m.state}
                         </span>
                         <span className={
-                          m.position === 'Yea'        ? 'text-[#6A9B7B] font-medium' :
+                          m.position === 'Yea'        ? 'text-[#68B085] font-medium' :
                           m.position === 'Nay'        ? 'text-[#B85C38] font-medium' :
                           'text-[#1C1C1A]/38'
                         }>{m.position}</span>

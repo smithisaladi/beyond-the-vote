@@ -34,7 +34,7 @@ export function PartyLean({ recipients, barClassName = 'w-24' }: Props) {
   const total = d + r + i
   const segments: Array<{ key: string; pct: number; className: string }> = []
   if (r > 0) segments.push({ key: 'R', pct: (r / total) * 100, className: 'bg-[#A87B7B]/70' })
-  if (d > 0) segments.push({ key: 'D', pct: (d / total) * 100, className: 'bg-[#7B8FA8]/70' })
+  if (d > 0) segments.push({ key: 'D', pct: (d / total) * 100, className: 'bg-[#5E85A8]/70' })
   if (i > 0) segments.push({ key: 'I', pct: (i / total) * 100, className: 'bg-[#8A8A7A]/70' })
 
   const parts: string[] = []

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 import re
+from datetime import datetime, timezone
 
 from config import BILL_STATUS_RULES, TOPIC_SLUG_MAP
 
@@ -158,6 +159,16 @@ def _derive_status(action_text: str, detail: dict) -> str:
     lower = action_text.lower()
     for keyword, status in BILL_STATUS_RULES:
         if keyword in lower:
+            if status == "Committee":
+                intro = detail.get("introducedDate")
+                if intro:
+                    try:
+                        intro_dt = datetime.fromisoformat(intro)
+                        months = (datetime.now(timezone.utc) - intro_dt.replace(tzinfo=timezone.utc)).days / 30
+                        if months > 6:
+                            return "Stalled"
+                    except (ValueError, TypeError):
+                        pass
             return status
     return "Active"
 

@@ -1,6 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
+import type { FecTermKey } from '@/lib/fec'
+import { toTitleCase as formatTitleCase, formatTotal } from '@/lib/format'
 
 interface Donor {
   rank: number
@@ -38,6 +41,7 @@ interface TopContributor {
   rank: number
   orgName: string
   total: string
+  cmteId?: string | null
 }
 
 interface DonorTabProps {
@@ -47,26 +51,82 @@ interface DonorTabProps {
   fecUrl?: string | null
 }
 
-// FEC data comes in ALL CAPS — convert to Title Case only if all-uppercase
-function toTitleCase(s: string): string {
-  const t = s.trim()
-  if (t !== t.toUpperCase()) return t
-  return t.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase())
+// Restore acronym casing on org names. The upstream pipeline title-cases
+// strings naively (e.g. "Microsoft Corp Pac"), stripping PAC / LLC / NRA /
+// AT&T / etc. Re-uppercasing then running the shared acronym-aware
+// toTitleCase from @/lib/format recovers the correct casing.
+function prettyOrgName(s: string): string {
+  return formatTitleCase(s.toUpperCase())
 }
 
-function formatTotal(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
-  return `$${n.toLocaleString()}`
-}
 
 const UNINFORMATIVE = new Set(['Other', 'N/A', 'None', 'Various', 'Unknown', 'Na'])
 
 function cleanList(list: Donor[]): Donor[] {
   return list
-    .map(d => ({ ...d, name: toTitleCase(d.name) }))
+    .map(d => ({ ...d, name: prettyOrgName(d.name) }))
     .filter(d => !UNINFORMATIVE.has(d.name))
     .slice(0, 6)
+}
+
+// Hairline top-rule + tiny serif-uppercase label (left) with optional right-side meta.
+// The editorial "section head" — used for geo, top contributors, and any future section.
+function SectionHeader({
+  children,
+  tooltipTerm,
+  right,
+}: {
+  children: React.ReactNode
+  tooltipTerm?: FecTermKey
+  right?: React.ReactNode
+}) {
+  return (
+    <div className="border-t border-[rgba(28,28,26,0.10)] pt-4 mb-4">
+      <div className="flex items-baseline justify-between gap-4">
+        <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide inline-flex items-center gap-1">
+          {children}
+          {tooltipTerm && <InfoTooltip term={tooltipTerm} />}
+        </p>
+        {right && (
+          <span
+            className="text-[#1C1C1A]/30 uppercase tracking-[0.08em] inline-flex items-center gap-1 flex-shrink-0"
+            style={{ fontSize: '0.5625rem' }}
+          >
+            {right}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// The dotted-leader primitive: [content] .................. [content]
+// A table-of-contents / ledger convention — the editorial signature move.
+function LedgerRow({
+  left,
+  right,
+  className = '',
+}: {
+  left: React.ReactNode
+  right: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div className={`flex items-baseline gap-1 ${className}`}>
+      <span className="shrink-0 max-w-[65%]">{left}</span>
+      <span
+        className="flex-1 min-w-4 self-end mb-[3px]"
+        style={{ borderBottom: '1px dotted rgba(28,28,26,0.18)' }}
+      />
+      <span className="shrink-0">{right}</span>
+    </div>
+  )
+}
+
+// Cycle label: "2023–2024" if the summary spans multiple cycles, else just the cycle.
+function cycleLabel(bd: FundingBreakdown): string {
+  if (bd.minCycle && bd.minCycle !== bd.cycle) return `${bd.minCycle}–${bd.cycle}`
+  return String(bd.cycle)
 }
 
 export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl }: DonorTabProps) {
@@ -91,184 +151,221 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
   const geoTotal = bd ? bd.inStateTotal + bd.outOfStateTotal : 0
   const hasGeo = bd !== null && geoTotal > 0
 
+  const fundingLegend: { color: string; label: string; pct: number }[] = bd
+    ? [
+        { color: 'bg-[#7B5E8A]',    label: 'PAC & Corporate',      pct: bd.pacPct },
+        { color: 'bg-[#7B5E8A]/45', label: 'Large Individual',     pct: bd.individualLargePct },
+        { color: 'bg-[#7B5E8A]/20', label: 'Small Donors (<$200)', pct: bd.individualSmallPct },
+        { color: 'bg-[#E8E3DA] border border-[rgba(28,28,26,0.08)]', label: 'Other', pct: bd.otherPct },
+      ]
+    : []
+
+  const visibleContributors = topContributors.slice(0, 5)
+
   return (
-    <div className="p-5">
+    <div className="px-6 py-6 sm:px-8">
 
-      {/* ── Funding Split ── */}
+      {/* ── §1 Funding Breakdown (custom eyebrow, hero total, stacked bar, ledger legend) ── */}
       {bd && (
-        <div className="grid grid-cols-4 gap-3 mb-7">
-          <div className="bg-[#7B5E8A]/5 rounded-lg p-4 border border-[#7B5E8A]/10">
-            <div
-              className="text-[#7B5E8A] mb-0.5"
-              style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
-            >
-              {Math.round(bd.pacPct)}%
-            </div>
-            <div className="text-[#1C1C1A]/70 text-xs inline-flex items-center gap-1">
-              PAC &amp; Corporate
-              <InfoTooltip term="pacAndCorporate" />
-            </div>
-          </div>
-
-          <div className="bg-[#E8E3DA]/40 rounded-lg p-4 border border-[rgba(28,28,26,0.08)]">
-            <div
-              className="text-[#1C1C1A]/70 mb-0.5"
-              style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
-            >
-              {Math.round(bd.individualLargePct)}%
-            </div>
-            <div className="text-[#1C1C1A]/60 text-xs inline-flex items-center gap-1">
-              Large Individual
-              <InfoTooltip term="largeIndividual" />
-            </div>
-          </div>
-
-          <div className="bg-[#E8E3DA]/40 rounded-lg p-4 border border-[rgba(28,28,26,0.08)]">
-            <div
-              className="text-[#1C1C1A]/70 mb-0.5"
-              style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
-            >
-              {Math.round(bd.individualSmallPct)}%
-            </div>
-            <div className="text-[#1C1C1A]/60 text-xs inline-flex items-center gap-1">
-              Small Donors (&lt;$200)
-              <InfoTooltip term="smallDonors" />
-            </div>
-          </div>
-
-          <div className="bg-[#E8E3DA]/40 rounded-lg p-4 border border-[rgba(28,28,26,0.08)]">
-            <div
-              className="text-[#1C1C1A]/70 mb-0.5"
-              style={{ fontSize: '2.25rem', fontWeight: 600, lineHeight: 1, fontFamily: 'var(--font-serif)' }}
-            >
-              {Math.round(bd.otherPct)}%
-            </div>
-            <div className="text-[#1C1C1A]/60 text-xs inline-flex items-center gap-1">
-              Other
-              <InfoTooltip term="otherFunding" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Geographic Breakdown (individual donations only) ── */}
-      {hasGeo && bd && (
-        <div className="mb-6 pb-6 border-b border-[rgba(28,28,26,0.06)]">
-          <div className="mb-3">
-            <p
-              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5 inline-flex items-center gap-1"
-              style={{ fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.08em' }}
-            >
-              Where individual dollars come from
-              <InfoTooltip term="inOutState" />
+        <div className="mb-8">
+          {/* Eyebrow row: title · cycle */}
+          <div className="flex items-baseline justify-between gap-4 mb-3">
+            <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide">
+              Funding Breakdown
             </p>
-            <p className="text-[#1C1C1A]/40 text-xs inline-flex items-center gap-1">
-              <span>Based on</span>
-              <span className="inline-flex items-center gap-0.5">
-                itemized individual contributions
-                <InfoTooltip term="itemized" />
-              </span>
-              <span>· PAC money excluded</span>
-            </p>
+            <span
+              className="text-[#1C1C1A]/30 uppercase tracking-[0.08em] tabular-nums flex-shrink-0"
+              style={{ fontSize: '0.5625rem' }}
+            >
+              Cycle {cycleLabel(bd)}
+            </span>
           </div>
 
-          <div className="flex h-2 rounded-full overflow-hidden bg-[#E8E3DA] mb-2.5">
-            {bd.inStatePct > 0 && (
-              <div
-                className="bg-[#7B5E8A]/60"
-                style={{ width: `${bd.inStatePct}%`, minWidth: bd.inStatePct > 0 ? 2 : 0 }}
-              />
+          {/* Hero total */}
+          <p
+            className="text-[#1C1C1A] tabular-nums leading-none"
+            style={{ fontFamily: 'var(--font-serif)', fontSize: '1.75rem', fontWeight: 600 }}
+          >
+            {formatTotal(bd.total)}
+          </p>
+          <p
+            className="text-[#1C1C1A]/35 uppercase tracking-[0.10em] mt-1.5 mb-4"
+            style={{ fontSize: '0.5625rem' }}
+          >
+            Total receipts
+          </p>
+
+          {/* Stacked bar — architectural corners */}
+          <div className="flex h-2 rounded-sm overflow-hidden bg-[#E8E3DA] mb-4">
+            {bd.pacPct > 0 && (
+              <div className="bg-[#7B5E8A]" style={{ width: `${bd.pacPct}%`, minWidth: 2 }} />
             )}
-            {bd.outOfStatePct > 0 && (
-              <div
-                className="bg-[#E8E3DA]"
-                style={{ width: `${bd.outOfStatePct}%`, minWidth: bd.outOfStatePct > 0 ? 2 : 0 }}
-              />
+            {bd.individualLargePct > 0 && (
+              <div className="bg-[#7B5E8A]/45" style={{ width: `${bd.individualLargePct}%`, minWidth: 2 }} />
+            )}
+            {bd.individualSmallPct > 0 && (
+              <div className="bg-[#7B5E8A]/20" style={{ width: `${bd.individualSmallPct}%`, minWidth: 2 }} />
+            )}
+            {bd.otherPct > 0 && (
+              <div className="bg-[#E8E3DA]" style={{ width: `${bd.otherPct}%`, minWidth: 2 }} />
             )}
           </div>
 
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#7B5E8A]/60" />
-              <span className="text-[#7B5E8A] font-medium">In-state</span>
-              <span className="text-[#1C1C1A]/60">
-                {Math.round(bd.inStatePct)}% · {formatTotal(bd.inStateTotal)}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#E8E3DA] border border-[rgba(28,28,26,0.08)]" />
-              <span className="text-[#1C1C1A]/70 font-medium">Out-of-state</span>
-              <span className="text-[#1C1C1A]/60">
-                {Math.round(bd.outOfStatePct)}% · {formatTotal(bd.outOfStateTotal)}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Top Contributors (OpenSecrets-style: individuals + PACs combined) ── */}
-      {hasContributors && (
-        <div className="mb-6">
-          <div className="mb-3">
-            <p
-              className="text-[#1C1C1A]/50 uppercase tracking-wide mb-0.5 inline-flex items-center gap-1"
-              style={{ fontSize: '0.6875rem', fontWeight: 500, letterSpacing: '0.08em' }}
-            >
-              Top Contributors
-              <InfoTooltip term="topContributors" />
-            </p>
-            <p className="text-[#1C1C1A]/40 text-xs">
-              Employee donations &amp; PAC contributions by organization
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            {topContributors.slice(0, 5).map((c, i) => (
-              <div
-                key={i}
-                className={`rounded-lg px-3 py-2.5 border ${
-                  i === 0
-                    ? 'bg-[#F5F0E8] border-[rgba(28,28,26,0.06)]'
-                    : 'bg-white border-[rgba(28,28,26,0.04)]'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span
-                    className="text-[#1C1C1A] text-sm truncate"
-                    style={{ fontWeight: i === 0 ? 500 : 400 }}
-                  >
-                    {c.orgName}
+          {/* Legend as stacked ledger rows with dotted leaders */}
+          <div className="space-y-2">
+            {fundingLegend.map(row => (
+              <LedgerRow
+                key={row.label}
+                left={
+                  <span className="inline-flex items-center gap-2 text-xs text-[#1C1C1A]/60 truncate">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${row.color}`} />
+                    <span className="truncate">{row.label}</span>
                   </span>
+                }
+                right={
                   <span
-                    className={`flex-shrink-0 ${i === 0 ? 'text-[#7B5E8A]' : 'text-[#1C1C1A]/70'}`}
-                    style={{
-                      fontSize: i === 0 ? '1rem' : '0.875rem',
-                      fontWeight: 600,
-                      fontFamily: i === 0 ? 'var(--font-serif)' : undefined,
-                    }}
+                    className="text-xs text-[#1C1C1A] tabular-nums"
+                    style={{ fontFamily: 'var(--font-serif)' }}
                   >
-                    {c.total}
+                    {Math.round(row.pct)}%
                   </span>
-                </div>
-              </div>
+                }
+              />
             ))}
           </div>
         </div>
       )}
 
-      {/* ── Footer ── */}
-      {fecUrl && (
-        <div className="mt-6 pt-3 border-t border-[rgba(28,28,26,0.06)]">
-          <a
-            href={fecUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-[#1C1C1A]/30 hover:text-[#7B5E8A] transition-colors"
+      {/* ── §2 Geographic breakdown: two-column stat pair ── */}
+      {hasGeo && bd && (
+        <div className="mb-8">
+          <SectionHeader
+            right={
+              <>
+                <span className="inline-flex items-center gap-0.5">
+                  Itemized
+                  <InfoTooltip term="itemized" />
+                </span>
+                <span>· PAC excluded</span>
+              </>
+            }
           >
-            Data via FEC →
-          </a>
-          <p className="text-[10px] text-[#1C1C1A]/25 mt-1.5">
-            Source: FEC bulk filings. Combines employee donations &amp; PAC contributions by organization.
+            Geographic Breakdown
+          </SectionHeader>
+
+          <div className="flex gap-6">
+            {/* In-state (accent) */}
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-[#7B5E8A] tabular-nums leading-none"
+                style={{ fontFamily: 'var(--font-serif)', fontSize: '1.875rem', fontWeight: 600 }}
+              >
+                {Math.round(bd.inStatePct)}%
+              </p>
+              <p
+                className="text-[#1C1C1A]/50 uppercase tracking-[0.08em] mt-2"
+                style={{ fontSize: '0.625rem' }}
+              >
+                In-state
+              </p>
+              <p className="text-xs text-[#1C1C1A]/35 tabular-nums mt-0.5">
+                {formatTotal(bd.inStateTotal)}
+              </p>
+            </div>
+
+            {/* Out-of-state (neutral) */}
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-[#1C1C1A]/70 tabular-nums leading-none"
+                style={{ fontFamily: 'var(--font-serif)', fontSize: '1.875rem', fontWeight: 600 }}
+              >
+                {Math.round(bd.outOfStatePct)}%
+              </p>
+              <p
+                className="text-[#1C1C1A]/50 uppercase tracking-[0.08em] mt-2"
+                style={{ fontSize: '0.625rem' }}
+              >
+                Out-of-state
+              </p>
+              <p className="text-xs text-[#1C1C1A]/35 tabular-nums mt-0.5">
+                {formatTotal(bd.outOfStateTotal)}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── §3 Top Contributors: the centerpiece ── */}
+      {hasContributors && (
+        <div>
+          <SectionHeader tooltipTerm="topContributors" right="By organization">
+            Top Contributors
+          </SectionHeader>
+          <p
+            className="text-[#1C1C1A]/35 -mt-2 mb-2"
+            style={{ fontSize: '0.6875rem' }}
+          >
+            Employee donations & PAC contributions by organization
+          </p>
+
+          <ul className="divide-y divide-[rgba(28,28,26,0.05)]">
+            {visibleContributors.map(c => {
+              const row = (
+                <div className="flex items-center justify-between gap-3 py-2.5">
+                  <span
+                    className={`text-sm text-[#1C1C1A] leading-snug truncate ${
+                      c.cmteId ? 'group-hover:text-[#7B5E8A] transition-colors' : ''
+                    }`}
+                  >
+                    {prettyOrgName(c.orgName)}
+                  </span>
+                  <span
+                    className="flex-shrink-0 text-base font-medium text-[#1C1C1A] tabular-nums"
+                    style={{ fontFamily: 'var(--font-serif)' }}
+                  >
+                    {c.total}
+                  </span>
+                </div>
+              )
+
+              return (
+                <li key={`${c.rank}-${c.orgName}`}>
+                  {c.cmteId ? (
+                    <Link href={`/donors/${c.cmteId}`} className="block group">
+                      {row}
+                    </Link>
+                  ) : (
+                    row
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* ── §4 Footer ── */}
+      {fecUrl && (
+        <div className="mt-6 pt-4 border-t border-[rgba(28,28,26,0.10)]">
+          <div className="flex items-baseline justify-between gap-4">
+            <p
+              className="text-[#1C1C1A]/25 uppercase tracking-[0.10em]"
+              style={{ fontSize: '0.5625rem', fontFamily: 'var(--font-serif)' }}
+            >
+              Source · FEC
+            </p>
+            <a
+              href={fecUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#1C1C1A]/40 hover:text-[#7B5E8A] transition-colors uppercase tracking-[0.08em]"
+              style={{ fontSize: '0.5625rem' }}
+            >
+              View filing →
+            </a>
+          </div>
+          <p className="text-[#1C1C1A]/25 mt-1.5" style={{ fontSize: '0.625rem' }}>
+            FEC bulk filings. Combines employee donations &amp; PAC contributions by organization.
           </p>
         </div>
       )}

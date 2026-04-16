@@ -92,16 +92,22 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       style={{ width }}
     >
       {/* Brand */}
-      <div className="border-b border-[#C4BCB0] flex items-center" style={{ minHeight: 64, padding: collapsed ? '0 12px' : '0 20px' }}>
+      <div
+        className="border-b border-[#C4BCB0] flex items-center justify-center"
+        style={{ minHeight: 64, padding: collapsed ? '0' : '0 16px' }}
+      >
         {collapsed ? (
-          <span
-            className="text-base font-semibold text-[#1C1C1A] tracking-tight select-none"
-            style={{ fontFamily: 'var(--font-serif)' }}
-          >
-            B
-          </span>
+          <Link href="/" aria-label="Beyond the Vote — home" className="flex items-center justify-center w-full">
+            <span
+              className="text-2xl font-bold tracking-tight select-none leading-none"
+              style={{ fontFamily: 'var(--font-serif)' }}
+            >
+              <span className="text-[#1C1C1A]">B</span>
+              <span className="text-[#7B5E8A]">V</span>
+            </span>
+          </Link>
         ) : (
-          <Link href="/" className="flex items-center">
+          <Link href="/" className="flex items-center justify-center w-full">
             <span
               className="text-xl font-semibold text-[#1C1C1A] tracking-tight whitespace-nowrap"
               style={{ fontFamily: 'var(--font-serif)' }}

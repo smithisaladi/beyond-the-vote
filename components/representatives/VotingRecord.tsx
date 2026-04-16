@@ -104,7 +104,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
             </span>
 
             <span className={`flex items-center gap-1 font-medium whitespace-nowrap ${
-              v.position === 'Yea'       ? 'text-[#6A9B7B]' :
+              v.position === 'Yea'       ? 'text-[#68B085]' :
               v.position === 'Nay'       ? 'text-[#B85C38]' :
               'text-[#1C1C1A]/45'
             }`}>
@@ -116,7 +116,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
 
             <span title={v.withParty ? 'Voted with party' : 'Voted against party'}>
               {v.withParty
-                ? <CheckCircle size={14} strokeWidth={1.8} className="text-[#6A9B7B]" />
+                ? <CheckCircle size={14} strokeWidth={1.8} className="text-[#68B085]" />
                 : <XCircle    size={14} strokeWidth={1.8} className="text-[#1C1C1A]/38" />}
             </span>
           </div>

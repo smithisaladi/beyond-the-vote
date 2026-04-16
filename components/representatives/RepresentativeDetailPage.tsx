@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { SignInModal } from '@/components/auth/SignInModal'
@@ -15,6 +15,7 @@ import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { isFinalPassageVote } from '@/lib/votes'
 import { formatBillId } from '@/lib/bills'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 
@@ -132,9 +133,20 @@ function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment[] }) {
 
 export default function RepresentativeDetailPage({ id, initialPolitician }: { id: string; initialPolitician?: Politician | null }) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
 
-  const [activeTab, setActiveTab] = useState<Tab>('votes')
+  const tabParam = searchParams.get('tab')
+  const activeTab: Tab = tabParam === 'bills' || tabParam === 'donors' ? tabParam : 'votes'
+  const setActiveTab = useCallback((tab: Tab) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (tab === 'votes') params.delete('tab')
+    else params.set('tab', tab)
+    const qs = params.toString()
+    router.replace(`${pathname}${qs ? `?${qs}` : ''}`, { scroll: false })
+  }, [router, pathname, searchParams])
   const [voteFilter, setVoteFilter] = useState<'final' | 'all'>('final')
+  const [voteLimits, setVoteLimits] = useState<{ final: number; all: number }>({ final: 10, all: 10 })
   const [photoError, setPhotoError] = useState(false)
   const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
 
@@ -304,64 +316,103 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
 
                     {/* Votes */}
                     {activeTab === 'votes' && (() => {
+                      const allVotes = politician.votes ?? []
+                      const totalCount = allVotes.length
                       const filteredVotes = voteFilter === 'all'
-                        ? (politician.votes ?? [])
-                        : (politician.votes ?? []).filter(v => isFinalPassageVote(v.question))
+                        ? allVotes
+                        : allVotes.filter(v => isFinalPassageVote(v.question))
                       return (
                         <>
-                          {(politician.votes?.length ?? 0) > 0 && (
-                            <div className="px-6 pt-4 pb-2 flex items-center gap-2">
-                              {(['final', 'all'] as const).map(f => (
-                                <button
-                                  key={f}
-                                  onClick={() => setVoteFilter(f)}
-                                  className={`text-xs px-3 py-1 rounded-full border transition-colors ${
-                                    voteFilter === f
-                                      ? 'bg-[#7B5E8A] text-white border-[#7B5E8A]'
-                                      : 'border-[rgba(28,28,26,0.12)] text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70'
-                                  }`}
-                                >
-                                  {f === 'final' ? 'Final Passage' : 'All Votes'}
-                                </button>
-                              ))}
+                          {totalCount > 0 && (
+                            <div className="px-6 pt-4 pb-3 flex items-center justify-center gap-3">
+                              <span className="text-[10px] uppercase tracking-[0.14em] text-[#1C1C1A]/38 font-medium select-none">
+                                Filter
+                              </span>
+                              <div
+                                role="tablist"
+                                aria-label="Filter votes"
+                                className="flex items-center gap-1"
+                              >
+                                {(['final', 'all'] as const).map(f => {
+                                  const active = voteFilter === f
+                                  return (
+                                    <button
+                                      key={f}
+                                      role="tab"
+                                      aria-selected={active}
+                                      onClick={() => setVoteFilter(f)}
+                                      className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
+                                        active
+                                          ? 'bg-[#7B5E8A]/10 text-[#7B5E8A] border-[#7B5E8A]/20'
+                                          : 'text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70 border-transparent'
+                                      }`}
+                                    >
+                                      {f === 'final' ? 'Final' : 'All'}
+                                    </button>
+                                  )
+                                })}
+                              </div>
                             </div>
                           )}
                           {filteredVotes.length === 0 ? (
                             <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">
                               {voteFilter === 'final' ? 'No final passage votes found.' : 'No recent votes found.'}
                             </p>
-                          ) : filteredVotes.map(v => {
-                            const question = v.question?.replace(/^On /i, '') ?? ''
-                            const displayTitle = v.billTitle
-                              ? `${question}: ${v.billTitle}`
-                              : v.billId ? `${question}: ${formatBillId(v.billId)}` : v.bill
+                          ) : (() => {
+                            const limit = voteLimits[voteFilter]
+                            const visibleVotes = filteredVotes.slice(0, limit)
+                            const hasMore = filteredVotes.length > limit
+                            const remaining = filteredVotes.length - limit
                             return (
-                            <div key={v.id} className="px-6 py-4">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  {v.billId ? (
-                                    <Link
-                                      href={`/bills/${v.billId}`}
-                                      className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] hover:underline transition-colors"
+                              <>
+                                {visibleVotes.map(v => {
+                                  const question = v.question?.replace(/^On /i, '') ?? ''
+                                  const displayTitle = v.billTitle
+                                    ? `${question}: ${v.billTitle}`
+                                    : v.billId ? `${question}: ${formatBillId(v.billId)}` : v.bill
+                                  return (
+                                    <div key={v.id} className="px-6 py-4">
+                                      <div className="flex items-center justify-between">
+                                        <div>
+                                          {v.billId ? (
+                                            <Link
+                                              href={`/bills/${v.billId}`}
+                                              className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] hover:underline transition-colors"
+                                            >
+                                              {displayTitle}
+                                            </Link>
+                                          ) : (
+                                            <p className="text-sm text-[#1C1C1A]">{displayTitle}</p>
+                                          )}
+                                          <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
+                                        </div>
+                                        <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
+                                          v.vote === 'Yea' ? 'bg-[#68B085]/[0.12] text-[#68B085]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
+                                        }`}>
+                                          {v.vote}
+                                        </span>
+                                      </div>
+                                      {(v.donorAlignments?.length ?? 0) > 0 && (
+                                        <DonorAlignmentPanel alignments={v.donorAlignments} />
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                                {hasMore && (
+                                  <div className="px-6 py-4 flex justify-center">
+                                    <button
+                                      onClick={() =>
+                                        setVoteLimits(prev => ({ ...prev, [voteFilter]: prev[voteFilter] + 10 }))
+                                      }
+                                      className="text-xs font-medium text-[#7B5E8A] hover:text-[#6A4F78] border border-[#7B5E8A]/30 rounded-lg px-4 py-2 hover:bg-[#7B5E8A]/5 transition-colors"
                                     >
-                                      {displayTitle}
-                                    </Link>
-                                  ) : (
-                                    <p className="text-sm text-[#1C1C1A]">{displayTitle}</p>
-                                  )}
-                                  <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
-                                </div>
-                                <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
-                                  v.vote === 'Yea' ? 'bg-[#6A9B7B]/[0.12] text-[#6A9B7B]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
-                                }`}>
-                                  {v.vote}
-                                </span>
-                              </div>
-                              {(v.donorAlignments?.length ?? 0) > 0 && (
-                                <DonorAlignmentPanel alignments={v.donorAlignments} />
-                              )}
-                            </div>
-                          )})}
+                                      Load {Math.min(10, remaining)} more
+                                    </button>
+                                  </div>
+                                )}
+                              </>
+                            )
+                          })()}
                         </>
                       )
                     })()}
@@ -421,15 +472,28 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
 
                     {politician.stats.ideologyScore !== null && (
                       <div>
-                        <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide mb-3">Ideology Score</p>
-                        <div className="relative h-1.5 bg-gradient-to-r from-[#7B8FA8] to-[#A87B7B] rounded-full mb-2">
+                        <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide mb-3 flex items-center gap-1">
+                          Ideology Score
+                          <InfoTooltip
+                            label="About the ideology score"
+                            content={
+                              <>
+                                <p className="text-[11px] font-semibold text-[#1C1C1A] mb-0.5">DW-NOMINATE</p>
+                                Score from roll-call votes: <span className="font-mono">−1</span> (most progressive) to <span className="font-mono">+1</span> (most conservative).
+                                {' '}
+                                <a href="https://voteview.com/about" target="_blank" rel="noopener noreferrer" className="text-[#7B5E8A] hover:underline">Source: VoteView</a>
+                              </>
+                            }
+                          />
+                        </p>
+                        <div className="relative h-1.5 bg-gradient-to-r from-[#5E85A8] to-[#A87B7B] rounded-full mb-2">
                           <div
                             className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-[#7B5E8A] rounded-full shadow-sm"
                             style={{ left: `calc(${((politician.stats.ideologyScore + 1) / 2) * 100}% - 6px)` }}
                           />
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-xs text-[#7B8FA8]">Progressive</span>
+                          <span className="text-xs text-[#5E85A8]">Progressive</span>
                           <span className="text-xs text-[#A87B7B]">Conservative</span>
                         </div>
                       </div>

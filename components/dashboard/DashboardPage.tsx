@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { LogOut, UserMinus } from 'lucide-react'
@@ -9,6 +9,7 @@ import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { createClient } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { useDashboard } from '@/hooks/useDashboard'
+import { useActivitySeen } from '@/hooks/useActivitySeen'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -77,6 +78,11 @@ export default function DashboardPage() {
     if (activityTab === 'bills') return item.politician === null
     return true
   })
+
+  // Track which activity items the user hasn't seen yet. Uses the full feed
+  // (not the filtered view) so switching tabs doesn't change the "seen" cursor.
+  const maxActivityTimestamp = useMemo(() => activityFeed.reduce((acc, a) => Math.max(acc, a.timestamp), 0), [activityFeed])
+  const { isNew } = useActivitySeen(user, maxActivityTimestamp)
 
   return (
     <div className="relative flex-1 flex flex-col min-h-screen overflow-hidden">
@@ -155,9 +161,16 @@ export default function DashboardPage() {
                   <Card padding="none" className="overflow-hidden max-h-[600px] overflow-y-auto">
                     {filteredActivity.map((item, idx) => {
                       const isVote = item.politician !== null
-                      const dotColor = item.isAlert ? 'bg-[#B85C38]' : isVote ? 'bg-[#7B5E8A]/50' : 'bg-[#8A8A7A]/50'
-                      const rowClass = `flex items-start gap-3.5 px-6 py-4 transition-all duration-150 ${
-                        idx < filteredActivity.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''
+                      const unread = isNew(item.timestamp)
+                      const dotColor = item.isAlert
+                        ? 'bg-[#B85C38]'
+                        : isVote
+                          ? unread ? 'bg-[#7B5E8A]' : 'bg-[#7B5E8A]/50'
+                          : unread ? 'bg-[#8A8A7A]' : 'bg-[#8A8A7A]/50'
+                      const rowClass = `flex items-start gap-3.5 pl-[22px] pr-6 py-4 border-l-2 transition-all duration-150 ${
+                        unread ? 'border-[#7B5E8A] bg-[#7B5E8A]/[0.04]' : 'border-transparent'
+                      } ${
+                        idx < filteredActivity.length - 1 ? 'border-b border-b-[rgba(28,28,26,0.05)]' : ''
                       } ${item.href ? 'hover:bg-[#F5F0E8]/60 cursor-pointer' : ''}`
                       const inner = (
                         <>
@@ -193,7 +206,7 @@ export default function DashboardPage() {
               {/* Right column: Following + Tracked Bills */}
               <div className="min-w-0 flex flex-col gap-8">
               <section>
-                <div className="flex items-baseline justify-between mb-5">
+                <div className="flex items-center justify-between mb-5 min-h-[34px]">
                   <div className="flex items-baseline gap-2.5">
                     <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Following</h2>
                     {!loading && <span className="text-sm text-[#1C1C1A]/38" style={{ fontFamily: 'var(--font-serif)' }}>{visiblePoliticians.length}</span>}
@@ -220,7 +233,7 @@ export default function DashboardPage() {
                     linkLabel="Find your representatives →"
                   />
                 ) : (
-                  <Card padding="none" className="overflow-hidden max-h-[600px] overflow-y-auto">
+                  <Card padding="none" className="overflow-hidden max-h-[340px] overflow-y-auto">
                     {visiblePoliticians.map((pol, idx) => {
                       const badge = PARTY_STYLES[pol.party]
                       return (

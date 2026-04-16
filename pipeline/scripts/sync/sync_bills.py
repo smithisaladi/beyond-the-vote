@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).parents[2]))
 
 from config import BILL_PAGE_SIZE, CONGRESS_API_BASE, CONGRESS_SESSIONS, UPSERT_BATCH
 from load import get_watermark, log_run_end, log_run_start, upsert
-from transform.bills import transform_bill
+from transform.bills import make_bill_id, transform_bill
 from utils import api_get, batch, get_supabase
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -126,10 +126,16 @@ def run() -> None:
                 break
 
             db_rows: list[dict] = []
+            skipped = 0
             for bill_stub in bills_list:
                 bill_type = bill_stub.get("type", "")
                 number = bill_stub.get("number", "")
                 if not bill_type or not number:
+                    continue
+
+                bill_id = make_bill_id(congress, bill_type, number)
+                if bill_id not in voted_ids:
+                    skipped += 1
                     continue
 
                 detail = fetch_bill_detail(congress, bill_type, number, api_key)
@@ -149,8 +155,6 @@ def run() -> None:
                 row = transform_bill(detail)
                 if not row:
                     continue
-                if row["bill_id"] not in voted_ids:
-                    continue
                 db_rows.append(row)
 
             if db_rows:
@@ -158,7 +162,7 @@ def run() -> None:
                     upsert("bills", chunk)
                 total_upserted += len(db_rows)
 
-            log.info("Page offset=%d: fetched %d stubs, upserted %d voted bills", offset, len(bills_list), len(db_rows))
+            log.info("Page offset=%d: %d stubs, %d skipped (no votes), %d upserted", offset, len(bills_list), skipped, len(db_rows))
 
             offset += BILL_PAGE_SIZE
             if len(bills_list) < BILL_PAGE_SIZE:

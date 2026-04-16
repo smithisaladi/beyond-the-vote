@@ -119,9 +119,9 @@ describe('GET /api/bills', () => {
       const supabaseMock = buildQueryMock([], 0)
       mockCreateClient.mockResolvedValue(supabaseMock)
 
-      const res = await GET(makeReq({ topics: 'healthcare,gun-policy' }))
+      const res = await GET(makeReq({ topics: 'healthcare,economy' }))
       expect(res.status).toBe(200)
-      expect(supabaseMock.overlaps).toHaveBeenCalledWith('topics', ['healthcare', 'gun-policy'])
+      expect(supabaseMock.overlaps).toHaveBeenCalledWith('topics', ['healthcare', 'economy'])
     })
   })
 
