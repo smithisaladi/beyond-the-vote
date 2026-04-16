@@ -31,6 +31,15 @@ export const CARD_HOVER_CLASS =
 /** Skeleton placeholder fill. Pair with `animate-pulse` on an ancestor. */
 export const SKELETON_BG = 'bg-[#E8E3DA]'
 
+/** Returns Tailwind badge classes for a vote result string (passed/failed/neutral). */
+export function resultBadge(result: string | null): string | null {
+  if (!result) return null
+  const r = result.toLowerCase()
+  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#68B085]/[0.12] text-[#68B085]'
+  if (r.includes('fail') || r.includes('rejected')) return 'bg-[#B85C38]/[0.12] text-[#B85C38]'
+  return 'bg-[#8A8A7A]/[0.12] text-[#8A8A7A]'
+}
+
 export function getUserInitials(user: User): string {
   const meta = user.user_metadata as UserMetadata | undefined
   const name = meta?.full_name
