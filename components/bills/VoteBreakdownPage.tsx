@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
-import { PARTY_STYLES } from '@/lib/ui'
+import { PARTY_STYLES, resultBadge } from '@/lib/ui'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton as SkeletonBox } from '@/components/ui/Skeleton'
@@ -15,13 +15,6 @@ import type { Party } from '@/lib/types'
 const FILTERS = ['All', 'Yea', 'Nay', 'Not Voting'] as const
 type Filter = (typeof FILTERS)[number]
 
-function resultBadge(result: string | null) {
-  if (!result) return null
-  const r = result.toLowerCase()
-  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#68B085]/[0.12] text-[#68B085]'
-  if (r.includes('fail') || r.includes('rejected')) return 'bg-[#B85C38]/[0.12] text-[#B85C38]'
-  return 'bg-[#8A8A7A]/[0.12] text-[#8A8A7A]'
-}
 
 function formatDate(dateStr: string) {
   try {

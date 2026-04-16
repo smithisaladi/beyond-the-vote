@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import type { FecTermKey } from '@/lib/fec'
-import { toTitleCase as formatTitleCase } from '@/lib/format'
+import { toTitleCase as formatTitleCase, formatTotal } from '@/lib/format'
 
 interface Donor {
   rank: number
@@ -59,11 +59,6 @@ function prettyOrgName(s: string): string {
   return formatTitleCase(s.toUpperCase())
 }
 
-function formatTotal(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
-  if (n >= 1_000) return `$${Math.round(n / 1_000)}K`
-  return `$${n.toLocaleString()}`
-}
 
 const UNINFORMATIVE = new Set(['Other', 'N/A', 'None', 'Various', 'Unknown', 'Na'])
 

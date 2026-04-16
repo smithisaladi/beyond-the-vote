@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { LogOut, UserMinus } from 'lucide-react'
@@ -81,7 +81,7 @@ export default function DashboardPage() {
 
   // Track which activity items the user hasn't seen yet. Uses the full feed
   // (not the filtered view) so switching tabs doesn't change the "seen" cursor.
-  const maxActivityTimestamp = activityFeed.reduce((acc, a) => Math.max(acc, a.timestamp), 0)
+  const maxActivityTimestamp = useMemo(() => activityFeed.reduce((acc, a) => Math.max(acc, a.timestamp), 0), [activityFeed])
   const { isNew } = useActivitySeen(user, maxActivityTimestamp)
 
   return (

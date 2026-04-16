@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { PARTY_STYLES } from '@/lib/ui'
+import { PARTY_STYLES, resultBadge } from '@/lib/ui'
 import type { Vote } from '@/hooks/useFetchBillDetail'
 
 function formatShortDate(dateStr: string) {
@@ -12,13 +12,6 @@ function formatShortDate(dateStr: string) {
   }
 }
 
-function resultBadge(result: string | null) {
-  if (!result) return null
-  const r = result.toLowerCase()
-  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#68B085]/[0.12] text-[#68B085]'
-  if (r.includes('fail') || r.includes('rejected')) return 'bg-[#B85C38]/[0.12] text-[#B85C38]'
-  return 'bg-[#8A8A7A]/[0.12] text-[#8A8A7A]'
-}
 
 function VoteEntryContent({ vote }: { vote: Vote }) {
   const yeas = vote.yeas ?? 0
