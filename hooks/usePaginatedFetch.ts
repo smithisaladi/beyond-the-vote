@@ -65,8 +65,10 @@ export function usePaginatedFetch<T>({
         if (err instanceof DOMException && err.name === 'AbortError') return
         setError(err instanceof Error ? err.message : errorFallback)
       } finally {
-        setLoading(false)
-        setLoadingMore(false)
+        if (!signal?.aborted) {
+          setLoading(false)
+          setLoadingMore(false)
+        }
       }
     },
     // buildParams identity is not stable; we gate re-runs on resetKey instead.
