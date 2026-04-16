@@ -53,12 +53,12 @@ export function useActivitySeen(user: User | null, currentMaxTimestamp: number) 
       setBaseline(iso ? new Date(iso).getTime() : null)
     })()
 
+    let committed = false
     const commit = () => {
+      if (committed) return
       const ts = maxRef.current
       if (ts <= 0) return
-      // Fire-and-forget: we intentionally don't await so the user can leave the
-      // page without waiting on the network. The service role is not needed;
-      // RLS restricts this to the authenticated user's own row.
+      committed = true
       supabase
         .from('profiles')
         .update({ activity_last_seen_at: new Date(ts).toISOString() })
