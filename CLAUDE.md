@@ -66,7 +66,7 @@ Political transparency app — track legislators, bills, votes, and campaign fin
 | Card border | `rgba(28,28,26,0.08)` | Card/divider borders |
 | Card shadow | `0_1px_4px_rgba(0,0,0,0.06)` | Subtle card elevation |
 | Error/Nay | `#B85C38` | Warnings, nay votes, stalled/failed |
-| Success/Passed | `#6A9B7B` | Passed bills |
+| Success/Passed | `#68B085` | Passed bills |
 
 ### Text Opacity Hierarchy
 
@@ -80,13 +80,13 @@ All text uses `text-[#1C1C1A]` with opacity — never use `text-gray-*`:
 
 | Style | Colors |
 |-------|--------|
-| Democrat | `#7B8FA8` — `PARTY_STYLES.Democrat` |
+| Democrat | `#5E85A8` — `PARTY_STYLES.Democrat` |
 | Republican | `#A87B7B` — `PARTY_STYLES.Republican` |
 | Independent | `#8A8A7A` — `PARTY_STYLES.Independent` |
 | Active | `#7B5E8A` — `STATUS_STYLES.Active` |
 | Committee | `#8A8A7A` — `STATUS_STYLES.Committee` |
 | Stalled/Failed | `#B85C38` — `STATUS_STYLES.Stalled` / `STATUS_STYLES.Failed` |
-| Passed | `#6A9B7B` — `STATUS_STYLES.Passed` |
+| Passed | `#68B085` — `STATUS_STYLES.Passed` |
 
 ### Typography
 
