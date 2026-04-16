@@ -373,7 +373,7 @@ async function fetchRecentVotesFromDB(
     .filter(Boolean) as PoliticianVote[]
 }
 
-async function fetchSponsoredBills(bioguideId: string, supabase: any) {
+async function fetchSponsoredBills(bioguideId: string, supabase: Awaited<ReturnType<typeof createClient>>) {
   if (!CONGRESS_API_KEY) return []
   const res = await fetch(
     `${CONGRESS_BASE}/member/${bioguideId}/sponsored-legislation?format=json&limit=10&api_key=${CONGRESS_API_KEY}`,
@@ -398,7 +398,7 @@ async function fetchSponsoredBills(bioguideId: string, supabase: any) {
   const { data: dbRows } = billIds.length > 0
     ? await supabase.from('bills').select('bill_id, status').in('bill_id', billIds)
     : { data: [] }
-  const statusMap = new Map<string, string>((dbRows ?? []).map((r: any) => [r.bill_id, r.status]))
+  const statusMap = new Map<string, string>((dbRows ?? []).map((r: { bill_id: string; status: string }) => [r.bill_id, r.status]))
 
   return bills.map(({ _fallbackStatus, ...b }) => ({
     ...b,
@@ -658,7 +658,7 @@ export async function GET(
       : fetchRecentVotesFromDB(bioguideId, supabase),
   ])
 
-  const recentVotesApiRes = votesRes
+
 
   // If not in DB yet, fall back to Congress.gov
   if (!legislator && CONGRESS_API_KEY) {
@@ -788,7 +788,7 @@ export async function GET(
       _sources: {
         profile:     sourceStatus(legislatorRes),
         ideology:    sourceStatus(scoresRes),
-        votes:       sourceStatus(recentVotesApiRes),
+        votes:       sourceStatus(votesRes),
         committees:  sourceStatus(committeesRes),
         legislation: sourceStatus(sponsoredRes),
         donors:      sourceStatus(donorsRes),
