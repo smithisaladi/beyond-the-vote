@@ -98,7 +98,10 @@ def run() -> None:
         # Determine watermark
         watermark = get_watermark(SCRIPT)
         if watermark:
-            from_dt = watermark
+            # Congress.gov requires YYYY-MM-DDTHH:MM:SSZ — strip fractional
+            # seconds and normalise +00:00 → Z
+            dt = datetime.fromisoformat(watermark)
+            from_dt = dt.strftime("%Y-%m-%dT%H:%M:%SZ")
             log.info("Watermark: %s", from_dt)
         else:
             from_dt = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
