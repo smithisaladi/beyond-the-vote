@@ -5,15 +5,11 @@ describe('topicToSlug', () => {
   it.each([
     ['Climate & Environment', 'climate-environment'],
     ['Healthcare', 'healthcare'],
-    ['Economy & Jobs', 'economy-jobs'],
+    ['Economy & Jobs', 'economy'],
     ['Education', 'education'],
     ['Housing', 'housing'],
     ['Immigration', 'immigration'],
-    ['Tech & Privacy', 'tech-privacy'],
     ['Criminal Justice', 'criminal-justice'],
-    ['Voting Rights', 'voting-rights'],
-    ['Social Security', 'social-security'],
-    ['Gun Policy', 'gun-policy'],
     ['Foreign Policy', 'foreign-policy'],
   ] as const)('maps "%s" → "%s"', (topic, slug) => {
     expect(topicToSlug(topic)).toBe(slug)

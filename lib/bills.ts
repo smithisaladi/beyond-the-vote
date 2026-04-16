@@ -10,6 +10,7 @@ export function mapStatus(latestActionText?: string, introducedDate?: string): B
   if (
     action.includes('became public law') ||
     action.includes('signed by president') ||
+    action.includes('enacted') ||
     action.includes('passed the senate') ||
     action.includes('passed the house') ||
     action.includes('presented to president')
@@ -20,6 +21,10 @@ export function mapStatus(latestActionText?: string, introducedDate?: string): B
     action.includes('vetoed') ||
     action.includes('rejected')
   ) return 'Failed'
+  if (
+    action.includes('tabled') ||
+    action.includes('postponed indefinitely')
+  ) return 'Stalled'
   if (action.includes('referred to') || action.includes('committee')) {
     if (introducedDate) {
       const monthsAgo = (Date.now() - new Date(introducedDate).getTime()) / (1000 * 60 * 60 * 24 * 30)

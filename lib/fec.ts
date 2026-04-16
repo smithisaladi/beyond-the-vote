@@ -32,68 +32,68 @@ export type FecTermKey =
 
 export const FEC_GLOSSARY: Record<FecTermKey, { term: string; body: string }> = {
   pac: {
-    term: 'PAC (Political Action Committee)',
-    body: 'An organized group that pools money from members, employees, or donors to support or oppose political candidates. Examples include corporate PACs, union PACs, and ideological groups.',
+    term: 'PAC',
+    body: 'Political Action Committee \u2014 a group that pools donations to support or oppose candidates.',
   },
   fec: {
-    term: 'FEC (Federal Election Commission)',
-    body: 'The U.S. agency that collects and publishes campaign-finance filings. All numbers on this page come from FEC bulk data.',
+    term: 'FEC',
+    body: 'Federal Election Commission \u2014 the agency that publishes all campaign-finance data.',
   },
   cycle: {
     term: 'Election cycle',
-    body: 'The two-year federal election period. Congressional fundraising is reported cycle by cycle; totals here cover the cycles shown.',
+    body: 'A two-year fundraising period aligned to federal elections.',
   },
   fecCycle: {
-    term: 'FEC · 2023\u20132026',
-    body: 'Numbers come from Federal Election Commission bulk filings covering the 2023\u20132024 and 2025\u20132026 congressional cycles \u2014 the last four years of campaign-finance activity.',
+    term: 'FEC \u00b7 2023\u20132026',
+    body: 'Covers the last four years of FEC campaign-finance filings.',
   },
   direct: {
     term: 'Direct contribution',
-    body: 'Money donated straight to the candidate\u2019s own campaign fund. FEC limits apply \u2014 currently $5,000 per election per PAC.',
+    body: 'Money given straight to a candidate\u2019s campaign, capped at $5,000 per PAC per election.',
   },
   ie: {
-    term: 'Independent Expenditure (IE)',
-    body: 'Money a PAC spends on ads, mail, or media supporting or opposing a candidate, without coordinating with the candidate\u2019s campaign. Not subject to contribution caps \u2014 which is why IE totals can dwarf direct contributions.',
+    term: 'Independent expenditure',
+    body: 'PAC spending on ads or outreach for/against a candidate, with no coordination or cap.',
   },
   ieFor: {
-    term: 'IE Support',
-    body: 'Independent expenditures spent to promote a candidate \u2014 ads, mailers, canvassing \u2014 without coordinating with their campaign. Not capped by FEC limits.',
+    term: 'IE \u2014 Support',
+    body: 'Outside spending to promote a candidate, with no coordination or cap.',
   },
   ieAgainst: {
-    term: 'IE Against',
-    body: 'Independent expenditures spent to attack or oppose a candidate. Paid for by the PAC, not coordinated with any rival campaign, and not capped.',
+    term: 'IE \u2014 Opposition',
+    body: 'Outside spending to oppose a candidate, with no coordination or cap.',
   },
   itemized: {
-    term: 'Itemized contributions',
-    body: 'Individual donations over $200 that campaigns must report by donor name, address, and employer. Smaller gifts are reported only in aggregate \u2014 so donor-by-donor analysis only covers the $200+ bucket.',
+    term: 'Itemized donations',
+    body: 'Donations over $200 that must be reported by name \u2014 smaller gifts only appear as a lump sum.',
   },
   smallDonors: {
-    term: 'Small donors (under $200)',
-    body: 'Individuals who gave less than $200 in total. FEC rules don\u2019t require campaigns to report them by name, so we only see the lump-sum total.',
+    term: 'Small donors',
+    body: 'Donors who gave under $200 total \u2014 names aren\u2019t required to be reported.',
   },
   largeIndividual: {
     term: 'Large individual donors',
-    body: 'People who gave more than $200 \u2014 the threshold at which the FEC requires campaigns to name them. A higher share here usually signals a campaign drawing from wealthier, more engaged donors.',
+    body: 'Donors who gave over $200 \u2014 the threshold where campaigns must report names.',
   },
   pacAndCorporate: {
-    term: 'PAC & Corporate money',
-    body: 'Funds from organized political committees: corporate PACs, trade associations, unions, and ideological groups. Note that U.S. law bars corporations from giving directly \u2014 this money flows through their affiliated PACs.',
+    term: 'PAC & corporate',
+    body: 'Money from PACs tied to corporations, trade groups, unions, and ideological organizations.',
   },
   otherFunding: {
     term: 'Other funding',
-    body: 'Transfers from party committees, self-funded loans, and miscellaneous sources that don\u2019t fit the PAC or individual-donor categories.',
+    body: 'Party transfers, self-funded loans, and other miscellaneous sources.',
   },
   topContributors: {
-    term: 'Top Contributors',
-    body: 'Each row combines two things under one organization name: the company\u2019s affiliated PAC AND personal donations from its employees and their families. Corporations themselves cannot legally donate \u2014 this is the OpenSecrets convention for attribution.',
+    term: 'Top contributors',
+    body: 'An organization\u2019s PAC donations plus personal donations from its employees, grouped under one name.',
   },
   inOutState: {
     term: 'In-state vs. out-of-state',
-    body: 'Where this candidate\u2019s itemized individual donors live. A high out-of-state share often reflects national donor networks or high-profile races.',
+    body: 'Where a candidate\u2019s individual donors live.',
   },
   connectedOrg: {
     term: 'Connected organization',
-    body: 'The company, union, or trade group the PAC is affiliated with. The PAC raises money from that organization\u2019s members or employees.',
+    body: 'The company, union, or trade group that sponsors this PAC.',
   },
 }
 
