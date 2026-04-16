@@ -15,7 +15,7 @@ function formatShortDate(dateStr: string) {
 function resultBadge(result: string | null) {
   if (!result) return null
   const r = result.toLowerCase()
-  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#6A9B7B]/[0.12] text-[#6A9B7B]'
+  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#68B085]/[0.12] text-[#68B085]'
   if (r.includes('fail') || r.includes('rejected')) return 'bg-[#B85C38]/[0.12] text-[#B85C38]'
   return 'bg-[#8A8A7A]/[0.12] text-[#8A8A7A]'
 }
@@ -32,32 +32,34 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
     { key: 'dy', count: pb.democrat.yea, color: PARTY_STYLES.Democrat.hex },
     { key: 'ry', count: pb.republican.yea, color: PARTY_STYLES.Republican.hex },
     { key: 'iy', count: pb.independent.yea, color: PARTY_STYLES.Independent.hex },
-    { key: 'in', count: pb.independent.nay, color: `${PARTY_STYLES.Independent.hex}80` },
-    { key: 'rn', count: pb.republican.nay, color: `${PARTY_STYLES.Republican.hex}80` },
-    { key: 'dn', count: pb.democrat.nay, color: `${PARTY_STYLES.Democrat.hex}80` },
+    { key: 'in', count: pb.independent.nay, color: PARTY_STYLES.Independent.hex },
+    { key: 'rn', count: pb.republican.nay, color: PARTY_STYLES.Republican.hex },
+    { key: 'dn', count: pb.democrat.nay, color: PARTY_STYLES.Democrat.hex },
   ] : null
 
   return (
     <>
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-[#1C1C1A]/60">{vote.chamber}</span>
-          <span className="text-xs text-[#1C1C1A]/30">{formatShortDate(vote.date)}</span>
+      <div className="flex items-center justify-between gap-3 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xs font-medium text-[#1C1C1A]/60 shrink-0">{vote.chamber}</span>
+          {vote.question && (
+            <>
+              <span className="text-xs text-[#1C1C1A]/20 shrink-0">·</span>
+              <span className="text-xs text-[#1C1C1A]/55 truncate">{vote.question}</span>
+            </>
+          )}
         </div>
         {vote.result && badge && (
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge}`}>
+          <span className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full ${badge}`}>
             {vote.result}
           </span>
         )}
       </div>
 
-      {vote.question && (
-        <p className="text-xs text-[#1C1C1A]/50 mb-2">{vote.question}</p>
-      )}
-
       {hasData && total > 0 ? (
-        <div className="space-y-1.5">
-          <div className="flex h-2.5 rounded-full overflow-hidden bg-[#E8E3DA]">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[#1C1C1A]/70 font-medium shrink-0 tabular-nums">{yeas} Yea</span>
+          <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-[#E8E3DA]">
             {segments
               ? segments.map(s => s.count > 0 && (
                   <div key={s.key} className="h-full" style={{ width: `${(s.count / total) * 100}%`, background: s.color }} />
@@ -68,14 +70,15 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
                 </>
             }
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-[#1C1C1A]/70 font-medium">{yeas} Yea</span>
-            <span className="text-[#1C1C1A]/45 font-medium">{nays} Nay</span>
-          </div>
+          <span className="text-xs text-[#1C1C1A]/70 font-medium shrink-0 tabular-nums">{nays} Nay</span>
         </div>
       ) : (
         <p className="text-xs text-[#1C1C1A]/30">Vote data unavailable</p>
       )}
+
+      <p className="text-[10.5px] text-[#1C1C1A]/32 text-right mt-2 tabular-nums">
+        {formatShortDate(vote.date)}
+      </p>
     </>
   )
 }

@@ -30,7 +30,7 @@ export default function IdeologySpectrum({
   const pct   = toPercent(score)
 
   const partyColor =
-    party?.toLowerCase().includes('democrat')   ? '#7B8FA8' :
+    party?.toLowerCase().includes('democrat')   ? '#5E85A8' :
     party?.toLowerCase().includes('republican') ? '#A87B7B' :
     '#8A8A7A'
 
@@ -43,7 +43,7 @@ export default function IdeologySpectrum({
       </div>
 
       <div className="relative h-3 rounded-full overflow-hidden"
-           style={{ background: 'linear-gradient(to right, #7B8FA8, #8A8A7A, #A87B7B)' }}>
+           style={{ background: 'linear-gradient(to right, #5E85A8, #8A8A7A, #A87B7B)' }}>
 
         {/* Chamber median marker */}
         {chamberMedian !== null && chamberMedian !== undefined && (

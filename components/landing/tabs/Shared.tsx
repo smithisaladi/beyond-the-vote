@@ -152,7 +152,7 @@ export function MockRepCard({ name, title, party, state, vote }: {
           <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-1.5">Latest vote</p>
           <div className="flex items-start justify-between gap-2">
             <p className="text-xs text-[#1C1C1A]/70 leading-snug flex-1">{vote.bill}</p>
-            <span className={`text-[11px] font-semibold flex-shrink-0 ${vote.position === 'Yea' ? 'text-[#6A9B7B]' : 'text-[#B85C38]'}`}>
+            <span className={`text-[11px] font-semibold flex-shrink-0 ${vote.position === 'Yea' ? 'text-[#68B085]' : 'text-[#B85C38]'}`}>
               {vote.position}
             </span>
           </div>
@@ -189,7 +189,7 @@ export function MockDonorCard({ rank, name, total, lean, recipients }: {
 }) {
   const leanStyle = lean === 'Mixed'
     ? { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]', dot: 'bg-[#8A8A7A]' }
-    : { bg: PARTY_STYLES[lean].bg, text: PARTY_STYLES[lean].text, dot: lean === 'Democrat' ? 'bg-[#7B8FA8]' : 'bg-[#A87B7B]' }
+    : { bg: PARTY_STYLES[lean].bg, text: PARTY_STYLES[lean].text, dot: lean === 'Democrat' ? 'bg-[#5E85A8]' : 'bg-[#A87B7B]' }
   return (
     <Card padding="none" className="p-5">
       <div className="flex items-start justify-between gap-3 mb-2">

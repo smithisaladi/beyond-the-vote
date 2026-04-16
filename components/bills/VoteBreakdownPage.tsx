@@ -12,14 +12,13 @@ import { useFetchBillDetail } from '@/hooks/useFetchBillDetail'
 import type { Vote, MemberPosition } from '@/hooks/useFetchBillDetail'
 import type { Party } from '@/lib/types'
 
-const PARTY_CODE: Record<string, Party> = { D: 'Democrat', R: 'Republican', I: 'Independent' }
 const FILTERS = ['All', 'Yea', 'Nay', 'Not Voting'] as const
 type Filter = (typeof FILTERS)[number]
 
 function resultBadge(result: string | null) {
   if (!result) return null
   const r = result.toLowerCase()
-  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#6A9B7B]/[0.12] text-[#6A9B7B]'
+  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#68B085]/[0.12] text-[#68B085]'
   if (r.includes('fail') || r.includes('rejected')) return 'bg-[#B85C38]/[0.12] text-[#B85C38]'
   return 'bg-[#8A8A7A]/[0.12] text-[#8A8A7A]'
 }
@@ -44,10 +43,12 @@ function VoteBreakdownSkeleton() {
       <SkeletonBox className="h-5 w-28" />
       <Card padding="none" className="p-6 sm:p-8 space-y-4">
         <div className="flex gap-3">
+          <SkeletonBox className="h-4 w-20" />
           <SkeletonBox className="h-5 w-16 rounded-full" />
           <SkeletonBox className="h-5 w-24 rounded-full" />
         </div>
         <SkeletonBox className="h-7 w-2/3" />
+        <SkeletonBox className="h-4 w-1/2" />
         <SkeletonBox className="h-3 rounded-full w-full" />
       </Card>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
@@ -59,7 +60,7 @@ function VoteBreakdownSkeleton() {
 }
 
 function MemberRow({ m }: { m: MemberPosition }) {
-  const ps = PARTY_STYLES[PARTY_CODE[m.party] ?? 'Independent']
+  const ps = PARTY_STYLES[m.party as Party] ?? PARTY_STYLES.Independent
   return (
     <div className="flex items-center justify-between py-2 border-b border-[rgba(28,28,26,0.04)] last:border-0">
       <Link
@@ -103,7 +104,7 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
   const filtered = useMemo(() => {
     let list = vote.memberPositions ?? []
     if (filter !== 'All') list = list.filter(m => m.position === filter)
-    if (partyFilter !== 'All') list = list.filter(m => (PARTY_CODE[m.party] ?? 'Independent') === partyFilter)
+    if (partyFilter !== 'All') list = list.filter(m => m.party === partyFilter)
     return list
   }, [filter, partyFilter, vote.memberPositions])
 
@@ -125,15 +126,15 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
           <path d="M19 12H5M12 5l-7 7 7 7" />
         </svg>
         <span className="font-mono text-[#1C1C1A]/38">{billNumber}</span>
-        <span className="text-[#1C1C1A]/20">·</span>
-        <span className="text-[#1C1C1A]/38 truncate max-w-xs">{billTitle}</span>
       </Link>
 
-      {/* Header card: meta + question + bar */}
+      {/* Header card: meta + title + question + bar */}
       <Card padding="none" className="p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-5">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-3">
+              <span className="text-xs font-mono text-[#1C1C1A]/40 tracking-wide">{billNumber}</span>
+              <span className="text-xs text-[#1C1C1A]/20">·</span>
               <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full ${
                 vote.chamber === 'Senate' ? 'bg-[#7B5E8A]/[0.12] text-[#7B5E8A]' : 'bg-[#8A8A7A]/[0.12] text-[#8A8A7A]'
               }`}>
@@ -147,13 +148,17 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
               )}
             </div>
 
+            <h1
+              className="text-xl sm:text-2xl text-[#1C1C1A] leading-snug tracking-tight"
+              style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
+            >
+              {billTitle}
+            </h1>
+
             {vote.question && (
-              <h1
-                className="text-xl sm:text-2xl text-[#1C1C1A] leading-snug tracking-tight"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-              >
+              <p className="mt-2 text-sm text-[#1C1C1A]/55 leading-relaxed">
                 {vote.question}
-              </h1>
+              </p>
             )}
           </div>
 

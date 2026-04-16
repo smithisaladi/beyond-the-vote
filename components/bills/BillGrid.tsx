@@ -70,7 +70,7 @@ function BillCard({
             </div>
 
             {/* Title */}
-            <h2 className="text-lg text-[#1C1C1A] leading-snug mb-2 group-hover:text-[#7B5E8A] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
+            <h2 className="text-base text-[#1C1C1A] leading-snug mb-2 group-hover:text-[#7B5E8A] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
               {bill.title}
             </h2>
 

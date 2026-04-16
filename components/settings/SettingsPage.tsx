@@ -132,7 +132,7 @@ export default function SettingsPage() {
                     >
                       {nameState.loading ? 'Saving…' : 'Save'}
                     </button>
-                    {nameState.success && <span className="text-sm text-[#6A9B7B]">Saved</span>}
+                    {nameState.success && <span className="text-sm text-[#68B085]">Saved</span>}
                   </div>
                 </form>
               </div>
@@ -184,7 +184,7 @@ export default function SettingsPage() {
                     >
                       {passwordState.loading ? 'Updating…' : 'Update password'}
                     </button>
-                    {passwordState.success && <span className="text-sm text-[#6A9B7B]">Password updated</span>}
+                    {passwordState.success && <span className="text-sm text-[#68B085]">Password updated</span>}
                   </div>
                 </form>
               </div>

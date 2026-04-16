@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useTrackedBills } from '@/hooks/useTrackedBills'
 import { useFetchBillDetail, type BillDetail } from '@/hooks/useFetchBillDetail'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
+import { slugToTopic } from '@/lib/topics'
 import { PartyBadge } from '@/components/shared/PartyBadge'
 import BillVoteTally from '@/components/bills/BillVoteTally'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -165,11 +166,11 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                       <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${STATUS_STYLES[bill.status].bg} ${STATUS_STYLES[bill.status].text}`}>
                         {bill.status}
                       </span>
-                      {bill.policyArea && (
+                      {bill.topics.length > 0 && (
                         <>
                           <span className="text-xs text-[#1C1C1A]/20">·</span>
                           <span className="text-xs font-medium text-[#7B5E8A] bg-[#7B5E8A]/[0.12] px-2.5 py-0.5 rounded-full">
-                            {bill.policyArea}
+                            {slugToTopic(bill.topics[0]) ?? bill.topics[0]}
                           </span>
                         </>
                       )}
@@ -258,6 +259,14 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                     </Card>
                   )}
 
+                  {/* Votes */}
+                  {bill.votes.length > 0 && (
+                    <Card>
+                      <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
+                      <BillVoteTally votes={bill.votes} billId={id} />
+                    </Card>
+                  )}
+
                   {/* Co-sponsors */}
                   {bill.cosponsors.length > 0 && (
                     <Card>
@@ -318,14 +327,6 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
 
                 {/* Right column */}
                 <div className="space-y-6">
-
-                  {/* Votes */}
-                  {bill.votes.length > 0 && (
-                    <Card>
-                      <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
-                      <BillVoteTally votes={bill.votes} billId={id} />
-                    </Card>
-                  )}
 
                   {/* Status timeline */}
                   {bill.actions.length > 0 && (
