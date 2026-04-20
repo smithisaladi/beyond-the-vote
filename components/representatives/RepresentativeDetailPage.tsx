@@ -14,6 +14,7 @@ import { DonorTab } from '@/components/representatives/DonorTab'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { isFinalPassageVote } from '@/lib/votes'
 import { formatBillId } from '@/lib/bills'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { Card } from '@/components/ui/Card'
@@ -174,8 +175,9 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
       <DotGridBackground id="dot-grid-rep-detail" />
 
       <div className="relative z-10 flex flex-col flex-1">
+        <PageHeader title="Politicians" />
 
-        <main className="flex-1 px-6 pt-10 pb-8">
+        <main className="flex-1 px-6 pt-24 pb-8">
           {loading ? (
             <ProfileSkeleton />
           ) : error ? (
