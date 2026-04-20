@@ -12,6 +12,7 @@ import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
 import { PartyBadge } from '@/components/shared/PartyBadge'
 import BillVoteTally from '@/components/bills/BillVoteTally'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -121,8 +122,9 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
       <DotGridBackground id="dot-grid-bill-detail" />
 
       <div className="relative z-10 flex flex-col flex-1">
+        <PageHeader title="Bills Tracker" />
 
-        <main className="flex-1 px-6 pt-10 pb-8">
+        <main className="flex-1 px-6 pt-24 pb-8">
           {loading ? (
             <DetailSkeleton />
           ) : error ? (
