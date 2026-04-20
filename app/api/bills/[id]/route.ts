@@ -5,6 +5,17 @@ import { formatBillType } from '@/lib/format'
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
 
+const CONGRESS_GOV_TYPE: Record<string, string> = {
+  hr: 'house-bill',
+  s: 'senate-bill',
+  hjres: 'house-joint-resolution',
+  sjres: 'senate-joint-resolution',
+  hconres: 'house-concurrent-resolution',
+  sconres: 'senate-concurrent-resolution',
+  hres: 'house-resolution',
+  sres: 'senate-resolution',
+}
+
 function parseId(id: string): { congress: number; type: string; number: number } | null {
   const parts = id.split('-')
   if (parts.length < 3) return null
@@ -176,7 +187,7 @@ export async function GET(
       policyArea: bill.policyArea?.name ?? null,
       topics: dbTopics,
       subjects: (bill.subjects?.legislativeSubjects ?? []).slice(0, 8).map((s: any) => s.name),
-      congressGovUrl: `https://www.congress.gov/bill/${congress}th-congress/${type === 'hr' ? 'house-bill' : type === 's' ? 'senate-bill' : type}/${number}`,
+      congressGovUrl: `https://www.congress.gov/bill/${congress}th-congress/${CONGRESS_GOV_TYPE[type] ?? type}/${number}`,
       actions: actions
         .reduce((acc: any[], a: any) => {
           const key = `${a.actionDate}|${a.text}`

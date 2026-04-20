@@ -30,6 +30,7 @@ export function useSignInForm(onClose: () => void) {
       setError(error.message)
       setLoading(false)
     } else {
+      setLoading(false)
       handleClose()
       const redirect = new URLSearchParams(window.location.search).get('redirect')
       if (redirect) {

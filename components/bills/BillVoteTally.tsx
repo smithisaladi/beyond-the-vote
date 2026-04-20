@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { PARTY_STYLES, resultBadge } from '@/lib/ui'
+import { parseLocalDate } from '@/lib/format'
 import type { Vote } from '@/hooks/useFetchBillDetail'
 
 function formatShortDate(dateStr: string) {
   try {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    return parseLocalDate(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   } catch {
     return dateStr
   }
@@ -76,13 +77,14 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
   )
 }
 
-function VoteEntry({ vote, showBorder, billId }: { vote: Vote; showBorder: boolean; billId: string }) {
+function VoteEntry({ vote, showBorder, billId, fromParam }: { vote: Vote; showBorder: boolean; billId: string; fromParam?: string | null }) {
   const base = showBorder ? 'pt-5 border-t border-[rgba(28,28,26,0.06)]' : ''
+  const fromQs = fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''
 
   if (vote.id) {
     return (
       <Link
-        href={`/bills/${billId}/votes/${encodeURIComponent(vote.id)}`}
+        href={`/bills/${billId}/votes/${encodeURIComponent(vote.id)}${fromQs}`}
         className={`block -mx-2 px-2 py-1 -my-1 rounded-lg hover:bg-[#7B5E8A]/[0.04] transition-colors cursor-pointer ${base}`}
       >
         <VoteEntryContent vote={vote} />
@@ -97,13 +99,13 @@ function VoteEntry({ vote, showBorder, billId }: { vote: Vote; showBorder: boole
   )
 }
 
-export default function BillVoteTally({ votes, billId }: { votes: Vote[]; billId: string }) {
+export default function BillVoteTally({ votes, billId, fromParam }: { votes: Vote[]; billId: string; fromParam?: string | null }) {
   if (!votes || votes.length === 0) return null
 
   return (
     <div className="space-y-5">
       {votes.map((v, i) => (
-        <VoteEntry key={v.id ?? i} vote={v} showBorder={i > 0} billId={billId} />
+        <VoteEntry key={v.id ?? i} vote={v} showBorder={i > 0} billId={billId} fromParam={fromParam} />
       ))}
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { useTopicPreferences } from '@/hooks/useTopicPreferences'
 import { useTopicBills, type TopicFeedItem } from '@/hooks/useTopicBills'
@@ -64,6 +64,9 @@ export function useDashboard(user: User | null): {
   const [activity, setActivity] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Stable key derived from trackedBills Set to avoid reference-inequality re-renders
+  const trackedBillsKey = useMemo(() => Array.from(trackedBills).sort().join(','), [trackedBills])
+
   // Derive followedTopics array and capped feed items
   const followedTopics = Array.from(selectedTopics) as Topic[]
   const topicFeedItems = topicBills.slice(0, 6)
@@ -85,7 +88,7 @@ export function useDashboard(user: User | null): {
     async function load() {
       const [followedResult, trackedResult] = await Promise.allSettled([
         fetch('/api/dashboard/followed', { signal }),
-        trackedBills.size > 0
+        trackedBillsKey !== ''
           ? fetch('/api/dashboard/tracked-bills', { signal })
           : Promise.resolve(null),
       ])
@@ -144,7 +147,7 @@ export function useDashboard(user: User | null): {
         }
 
         if (!signal.aborted) setTrackedBillDetails(trackedList)
-      } else if (!signal.aborted && trackedBills.size === 0) {
+      } else if (!signal.aborted && trackedBillsKey === '') {
         setTrackedBillDetails([])
       }
 
@@ -157,7 +160,7 @@ export function useDashboard(user: User | null): {
 
     load().catch(err => console.error('[dashboard] load failed:', err))
     return () => controller.abort()
-  }, [user, trackedBills])
+  }, [user, trackedBillsKey])
 
   return {
     followedPoliticians,

@@ -63,11 +63,19 @@ export default function DashboardPage() {
     if (!user || unfollowing.has(politicianId)) return
     setUnfollowing(prev => new Set([...prev, politicianId]))
     const supabase = createClient()
-    await supabase
+    const { error } = await supabase
       .from('followed_politicians')
       .delete()
       .eq('user_id', user.id)
       .eq('politician_id', politicianId)
+    if (error) {
+      // Revert optimistic removal
+      setUnfollowing(prev => {
+        const next = new Set(prev)
+        next.delete(politicianId)
+        return next
+      })
+    }
   }
 
   // Filter out unfollowed politicians optimistically (no page reload needed)
@@ -311,7 +319,7 @@ export default function DashboardPage() {
                 ) : (
                   <Card padding="none" className="overflow-hidden max-h-[400px] overflow-y-auto">
                     {trackedBills.map((bill, idx) => {
-                      const s = STATUS_STYLES[bill.status]
+                      const s = STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active
                       return (
                         <Link
                           key={bill.id}

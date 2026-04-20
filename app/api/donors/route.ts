@@ -22,7 +22,8 @@ export async function GET(req: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (q) {
-      query = query.ilike('cmte_name', `%${q}%`)
+      const escaped = q.replace(/[%_\\]/g, '\\$&')
+      query = query.ilike('cmte_name', `%${escaped}%`)
     }
 
     const { data, error, count } = await query
@@ -36,17 +37,21 @@ export async function GET(req: NextRequest) {
     let rankMap: Map<string, number> | null = null
     if (q && rows.length > 0) {
       rankMap = new Map<string, number>()
-      const amountRankCache = new Map<number, number>()
-      for (const row of rows) {
-        const amount = Number(row.total_contributions)
-        if (!amountRankCache.has(amount)) {
+      const uniqueAmounts = [...new Set(rows.map(r => Number(r.total_contributions)))]
+
+      const rankResults = await Promise.all(
+        uniqueAmounts.map(async (amount) => {
           const { count: higherCount } = await supabase
             .from('contributor_leaderboard_cache')
             .select('*', { count: 'exact', head: true })
             .gt('total_contributions', amount)
-          amountRankCache.set(amount, (higherCount ?? 0) + 1)
-        }
-        rankMap.set(row.cmte_id as string, amountRankCache.get(amount)!)
+          return { amount, rank: (higherCount ?? 0) + 1 }
+        })
+      )
+
+      const amountRankMap = new Map(rankResults.map(r => [r.amount, r.rank]))
+      for (const row of rows) {
+        rankMap.set(row.cmte_id as string, amountRankMap.get(Number(row.total_contributions)) ?? (offset + 1))
       }
     }
 

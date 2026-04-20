@@ -13,6 +13,16 @@ export function useSignUpForm(onClose: () => void) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const handleClose = () => {
+    onClose()
+    setName('')
+    setEmail('')
+    setPassword('')
+    setConfirmPassword('')
+    setError('')
+    setLoading(false)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (password !== confirmPassword) {
@@ -32,7 +42,7 @@ export function useSignUpForm(onClose: () => void) {
       setError(error.message)
       setLoading(false)
     } else {
-      onClose()
+      handleClose()
       router.refresh()
     }
   }
@@ -51,6 +61,7 @@ export function useSignUpForm(onClose: () => void) {
     confirmPassword, setConfirmPassword,
     error,
     loading,
+    handleClose,
     handleSubmit,
     handleGoogleSignUp,
   }

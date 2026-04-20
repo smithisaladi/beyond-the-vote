@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { SignInModal } from '@/components/auth/SignInModal'
 import { SignUpModal } from '@/components/auth/SignUpModal'
@@ -10,6 +10,7 @@ import { useTrackedBills } from '@/hooks/useTrackedBills'
 import { useFetchBillDetail, type BillDetail } from '@/hooks/useFetchBillDetail'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
+import { parseLocalDate } from '@/lib/format'
 import { PartyBadge } from '@/components/shared/PartyBadge'
 import BillVoteTally from '@/components/bills/BillVoteTally'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -75,7 +76,11 @@ function PartyTag({ party }: { party: string }) {
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export default function BillDetailPage({ id, initialBill }: { id: string; initialBill?: BillDetail | null }) {
-  const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromParam = searchParams.get('from')
+  // If navigated from a rep page, back goes there; otherwise back to /bills
+  const backHref = fromParam?.startsWith('/representatives/') ? fromParam : '/bills'
+  const backLabel = fromParam?.startsWith('/representatives/') ? 'Back to representative' : 'Back to bills'
 
   const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
   const [showAllCosponsors, setShowAllCosponsors] = useState(false)
@@ -95,7 +100,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
 
   const formatDate = (dateStr: string) => {
     try {
-      return new Date(dateStr).toLocaleDateString('en-US', {
+      return parseLocalDate(dateStr).toLocaleDateString('en-US', {
         month: 'long',
         day: 'numeric',
         year: 'numeric',
@@ -107,7 +112,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
 
   const formatShortDate = (dateStr: string) => {
     try {
-      return new Date(dateStr).toLocaleDateString('en-US', {
+      return parseLocalDate(dateStr).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -124,7 +129,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
       <div className="relative z-10 flex flex-col flex-1">
         <PageHeader title="Bills Tracker" />
 
-        <main className="flex-1 px-6 pt-24 pb-8">
+        <main className="flex-1 px-6 pt-16 pb-8">
           {loading ? (
             <DetailSkeleton />
           ) : error ? (
@@ -134,12 +139,12 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   <p className="text-[#1C1C1A]/40 mb-4">
                     {error === 'Bill not found' ? 'This bill could not be found.' : 'Failed to load bill details.'}
                   </p>
-                  <button
-                    onClick={() => router.back()}
+                  <Link
+                    href={backHref}
                     className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
                   >
-                    ← Back to bills
-                  </button>
+                    ← {backLabel}
+                  </Link>
                 </div>
               </div>
             </div>
@@ -147,15 +152,15 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
             <div className="max-w-4xl mx-auto space-y-6">
 
               {/* Back link */}
-              <button
-                onClick={() => router.back()}
+              <Link
+                href={backHref}
                 className="inline-flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 12H5M12 5l-7 7 7 7" />
                 </svg>
-                Back to results
-              </button>
+                {backLabel}
+              </Link>
 
               {/* Header card */}
               <Card padding="none" className="p-6 sm:p-8">
@@ -165,7 +170,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                     <div className="flex items-center gap-2 flex-wrap mb-3">
                       <span className="text-xs font-mono text-[#1C1C1A]/40 tracking-wide">{bill.number}</span>
                       <span className="text-xs text-[#1C1C1A]/20">·</span>
-                      <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${STATUS_STYLES[bill.status].bg} ${STATUS_STYLES[bill.status].text}`}>
+                      <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${(STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active).bg} ${(STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active).text}`}>
                         {bill.status}
                       </span>
                       {bill.topics.length > 0 && (
@@ -265,7 +270,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {bill.votes.length > 0 && (
                     <Card>
                       <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
-                      <BillVoteTally votes={bill.votes} billId={id} />
+                      <BillVoteTally votes={bill.votes} billId={id} fromParam={fromParam} />
                     </Card>
                   )}
 

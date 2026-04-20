@@ -84,6 +84,7 @@ export function usePaginatedFetch<T>({
   }, [fetchPage])
 
   const loadMore = () => {
+    if (loadingMore) return
     const next = offset + pageSize
     setOffset(next)
     fetchPage(next, true)

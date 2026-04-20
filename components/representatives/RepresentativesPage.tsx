@@ -181,7 +181,7 @@ function RepresentativesContent() {
                       type="text"
                       value={nameQuery}
                       onChange={(e) => setNameQuery(e.target.value)}
-                      placeholder="Search by name (e.g. Elizabeth Warren)"
+                      placeholder="Search by name"
                       className="flex-1 bg-transparent outline-none text-[15px] text-[#1C1C1A] placeholder:text-[#1C1C1A]/35"
                       autoComplete="off"
                       autoFocus

@@ -10,7 +10,7 @@ import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { FEC_DISPLAY_CYCLES } from '@/lib/fec'
-import { formatTotal, toTitleCase } from '@/lib/format'
+import { formatTotal } from '@/lib/format'
 import { PARTY_STYLES } from '@/lib/ui'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -95,7 +95,7 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
                 className="text-lg text-[#1C1C1A] leading-snug group-hover:text-[#7B5E8A] transition-colors"
                 style={{ fontFamily: 'var(--font-serif)' }}
               >
-                {toTitleCase(contributor.cmteName)}
+                {contributor.cmteName}
               </h2>
             </div>
             <span className="text-xs text-[#1C1C1A]/38 pl-7">

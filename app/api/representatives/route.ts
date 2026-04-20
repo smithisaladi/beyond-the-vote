@@ -2,18 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseSearchParams, RepresentativesParams } from '@/lib/api-validation'
 import { toParty } from '@/lib/party'
+import { ordinal } from '@/lib/format'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const GEOCODIO_API_KEY = process.env.GEOCODIO_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
 const GEOCODIO_BASE = 'https://api.geocod.io/v1.7'
-
-function ordinal(n: number): string {
-  if (n === 0) return 'At-Large'
-  const s = ['th', 'st', 'nd', 'rd']
-  const v = n % 100
-  return n + (s[(v - 20) % 10] || s[v] || s[0]) + ' District'
-}
 
 async function enrichFromCongress(
   bioguideId: string

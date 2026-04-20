@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { CheckCircle, XCircle, MinusCircle } from 'lucide-react'
+import Link from 'next/link'
+import { parseLocalDate } from '@/lib/format'
 
 interface BillVote {
   billId:    string
@@ -84,12 +86,12 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
             className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-start py-3 text-sm"
           >
             <div className="space-y-0.5 min-w-0">
-              <a
+              <Link
                 href={`/bills/${v.billId}`}
                 className="text-[#1C1C1A] hover:text-[#7B5E8A] transition-colors truncate block"
               >
                 {v.billId.toUpperCase().replace(/-/g, ' ').replace(/(\d+) (\w+) (\d+)/, '$1 $2. $3')}
-              </a>
+              </Link>
               {v.question && (
                 <div className="text-xs text-[#1C1C1A]/38 truncate">{v.question}</div>
               )}
@@ -100,7 +102,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
             </div>
 
             <span className="text-[#1C1C1A]/32 whitespace-nowrap text-xs">
-              {new Date(v.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              {parseLocalDate(v.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
 
             <span className={`flex items-center gap-1 font-medium whitespace-nowrap ${

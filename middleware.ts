@@ -6,7 +6,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (pathname.startsWith('/api/')) {
-    const ip = request.headers.get('x-forwarded-for') ?? (request as any).ip ?? 'unknown'
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = (forwarded ? forwarded.split(',')[0].trim() : null) ?? (request as any).ip ?? 'unknown'
     if (!rateLimit(ip)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
     }

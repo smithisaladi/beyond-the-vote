@@ -21,16 +21,23 @@ export function useSearchPoliticians(query: string): {
       setLoading(false)
       return
     }
+    const controller = new AbortController()
     setLoading(true)
     setError(null)
-    fetch(`/api/politicians/search?q=${encodeURIComponent(debouncedQuery)}`)
+    fetch(`/api/politicians/search?q=${encodeURIComponent(debouncedQuery)}`, { signal: controller.signal })
       .then(async (res) => {
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? 'Search failed')
         setResults(data.politicians ?? [])
       })
-      .catch((err) => { setError(err.message); setResults([]) })
-      .finally(() => setLoading(false))
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setError(err.message); setResults([])
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
   }, [debouncedQuery])
 
   return { results, loading, error }

@@ -71,8 +71,8 @@ describe('GET /api/donors/[cmteId]', () => {
 
     const json = await res.json()
     expect(json.cmteId).toBe('C00123456')
-    expect(json.name).toBe('Test Pac')
-    expect(json.connectedOrg).toBe('Test Org')
+    expect(json.name).toBe('TEST PAC')
+    expect(json.connectedOrg).toBe('TEST ORG')
     expect(json.totalContributions).toBe(50000)
     expect(json.recipients).toHaveLength(1)
     expect(json.recipients[0].bioguideId).toBe('D000001')

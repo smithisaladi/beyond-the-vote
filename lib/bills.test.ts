@@ -51,6 +51,11 @@ describe('mapStatus', () => {
     expect(mapStatus('Passed the Senate; failed cloture in House.')).toBe('Passed')
   })
 
+  it('does not false-positive on substring match for "passed the senate"', () => {
+    // "passed the senate" appears but not at the start — should not be Passed
+    expect(mapStatus('Referred to committee after it passed the senate health subcommittee')).not.toBe('Passed')
+  })
+
   it('handles boundary: exactly 6 months (> 6 = Stalled)', () => {
     // 6 months ≈ 180 days. At exactly 6 months monthsAgo ≈ 6, which is NOT > 6.
     vi.useFakeTimers()

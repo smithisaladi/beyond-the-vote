@@ -21,12 +21,13 @@ export function useTopicBills(topics: Set<Topic>, perTopicLimit = 10): {
   useEffect(() => {
     if (!topicKey) { setItems([]); return }
 
+    const controller = new AbortController()
     setLoading(true)
     const topicList = topicKey.split(',') as Topic[]
 
     const fetches = topicList.map(async (topic) => {
       try {
-        const res = await fetch(`/api/bills/by-topic?slug=${topicToSlug(topic)}&limit=${perTopicLimit}`)
+        const res = await fetch(`/api/bills/by-topic?slug=${topicToSlug(topic)}&limit=${perTopicLimit}`, { signal: controller.signal })
         if (!res.ok) return []
         const data = await res.json()
         return (data.bills ?? []).map((b: TopicFeedItem['bill']) => ({ topic, bill: b }))
@@ -36,6 +37,7 @@ export function useTopicBills(topics: Set<Topic>, perTopicLimit = 10): {
     })
 
     Promise.all(fetches).then((results) => {
+      if (controller.signal.aborted) return
       const seen = new Set<string>()
       const merged = (results.flat() as TopicFeedItem[]).filter((item) => {
         if (seen.has(item.bill.id)) return false
@@ -45,6 +47,8 @@ export function useTopicBills(topics: Set<Topic>, perTopicLimit = 10): {
       setItems(merged)
       setLoading(false)
     })
+
+    return () => controller.abort()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [topicKey, perTopicLimit])
 

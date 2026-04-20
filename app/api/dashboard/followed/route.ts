@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { ordinal } from '@/lib/format'
 
 /**
  * Lightweight batch endpoint for the dashboard's followed-politicians section.
@@ -99,7 +100,7 @@ export async function GET() {
       party: l.party,
       state: l.state_full,
       photo: l.photo_url ?? null,
-      district: l.district ? `${l.district}th District` : null,
+      district: l.district != null ? ordinal(Number(l.district)) : null,
       latestVote: latestVoteMap.get(l.bioguide_id) ?? null,
     }))
 
