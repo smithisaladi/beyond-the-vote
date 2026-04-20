@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import DATA_PROCESSED_FEC, FEC_CYCLES, INDUSTRY_KEYWORDS, UPSERT_BATCH
+from config import DATA_PROCESSED_FEC, FEC_CYCLES, ORG_TYPE_LABELS, CMTE_TYPE_LABELS, CMTE_DSGN_LABELS, UPSERT_BATCH
 from load import log_run_end, log_run_start, upsert
 from utils import batch, duckdb_connect, get_supabase
 
@@ -60,16 +60,24 @@ def load_legislators() -> dict[str, dict]:
 
 # ── Industry classification ───────────────────────────────────────────────────
 
-def classify_industry(*names: str | None) -> str:
-    """Classify industry from one or more name fields (connected_org_nm, cmte_nm).
-    First match across all provided names wins."""
-    for name in names:
-        if not name:
-            continue
-        lower = name.lower()
-        for keyword, industry in INDUSTRY_KEYWORDS:
-            if keyword in lower:
-                return industry
+def classify_industry(org_tp: str | None = None, cmte_tp: str | None = None,
+                      cmte_dsgn: str | None = None) -> str:
+    """Classify a committee using FEC org_tp, cmte_tp, and cmte_dsgn codes.
+
+    Priority: org_tp (most specific) → cmte_dsgn → cmte_tp → 'Other'.
+    """
+    if org_tp and org_tp.strip():
+        label = ORG_TYPE_LABELS.get(org_tp.strip())
+        if label:
+            return label
+    if cmte_dsgn and cmte_dsgn.strip():
+        label = CMTE_DSGN_LABELS.get(cmte_dsgn.strip())
+        if label:
+            return label
+    if cmte_tp and cmte_tp.strip():
+        label = CMTE_TYPE_LABELS.get(cmte_tp.strip())
+        if label:
+            return label
     return "Other"
 
 
@@ -112,15 +120,15 @@ def _register_csvs(conn, cycle: int) -> None:
             if name == "candidates":
                 conn.execute(f"CREATE VIEW {name} AS SELECT '' as cand_id, '' as cand_pcc WHERE false")
             elif name == "cand_summary":
-                conn.execute(f"CREATE VIEW {name} AS SELECT '' as cand_id, 0.0 as ttl_receipts, 0.0 as ttl_indiv_contrib, 0.0 as other_pol_cmte_contrib WHERE false")
+                conn.execute(f"CREATE VIEW {name} AS SELECT '' as cand_id, 0.0 as ttl_receipts, 0.0 as ttl_indiv_contrib, 0.0 as other_pol_cmte_contrib, 0.0 as pol_pty_contrib, 0.0 as cand_contrib WHERE false")
             elif name == "indiv":
-                conn.execute(f"CREATE VIEW {name} AS SELECT '' as cmte_id, '' as state, 0.0 as transaction_amt WHERE false")
+                conn.execute(f"CREATE VIEW {name} AS SELECT '' as cmte_id, '' as state, 0.0 as transaction_amt, '' as employer WHERE false")
             elif name == "pac":
                 conn.execute(f"CREATE VIEW {name} AS SELECT '' as cmte_id, '' as cand_id, 0.0 as transaction_amt WHERE false")
             elif name == "ie":
                 conn.execute(f"CREATE VIEW {name} AS SELECT '' as cmte_id, '' as cand_id, '' as sup_opp, 0.0 as transaction_amt WHERE false")
             elif name == "committees":
-                conn.execute(f"CREATE VIEW {name} AS SELECT '' as cmte_id, '' as cmte_nm, '' as cand_id, '' as connected_org_nm WHERE false")
+                conn.execute(f"CREATE VIEW {name} AS SELECT '' as cmte_id, '' as cmte_nm, '' as cand_id, '' as connected_org_nm, '' as org_tp, '' as cmte_tp, '' as cmte_dsgn WHERE false")
             continue
         conn.execute(
             f"CREATE VIEW {name} AS SELECT * FROM read_csv('{path}', delim='|', header=true, ignore_errors=true)"
@@ -239,23 +247,23 @@ def _fetch_individual_totals(conn) -> dict[str, dict]:
 
 
 def _fetch_industry_data(conn) -> list[tuple]:
-    """PAC contributions grouped by bioguide_id + connected_org_nm + cmte_nm for industry classification."""
+    """PAC contributions grouped by bioguide_id + FEC codes for industry classification."""
     return conn.execute("""
-        SELECT m.bioguide_id, cm.connected_org_nm, cm.cmte_nm,
+        SELECT m.bioguide_id, cm.org_tp, cm.cmte_tp, cm.cmte_dsgn,
                SUM(CAST(p.transaction_amt AS DOUBLE)) AS total
         FROM pac p
         JOIN cmte_to_bioguide m ON p.cmte_id = m.cmte_id
         JOIN committees cm ON p.cmte_id = cm.cmte_id
-        GROUP BY m.bioguide_id, cm.connected_org_nm, cm.cmte_nm
+        GROUP BY m.bioguide_id, cm.org_tp, cm.cmte_tp, cm.cmte_dsgn
     """).fetchall()
 
 
 def _classify_industry_totals(industry_data: list[tuple]) -> dict[str, dict[str, float]]:
-    """Apply Python-side industry keyword classification."""
+    """Classify PAC contributions by FEC committee codes."""
 
     result: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
-    for bioguide_id, org_name, cmte_nm, total in industry_data:
-        industry = classify_industry(org_name, cmte_nm)
+    for bioguide_id, org_tp, cmte_tp, cmte_dsgn, total in industry_data:
+        industry = classify_industry(org_tp, cmte_tp, cmte_dsgn)
         result[bioguide_id][industry] += total
     return {bid: dict(ind_map) for bid, ind_map in result.items()}
 
@@ -293,7 +301,7 @@ def _compute_top_pacs(conn, cycle: int) -> list[dict]:
                 ON p.bioguide_id = i.bioguide_id AND p.cmte_id = i.cmte_id
         ),
         ranked AS (
-            SELECT c.*, cm.cmte_nm, cm.connected_org_nm,
+            SELECT c.*, cm.cmte_nm, cm.connected_org_nm, cm.org_tp, cm.cmte_tp, cm.cmte_dsgn,
                    ROW_NUMBER() OVER (PARTITION BY c.bioguide_id ORDER BY c.total_support DESC) AS rank
             FROM combined c
             LEFT JOIN committees cm ON c.cmte_id = cm.cmte_id
@@ -315,7 +323,7 @@ def _compute_top_pacs(conn, cycle: int) -> list[dict]:
             "cmte_id":             row_dict["cmte_id"],
             "cmte_name":           row_dict.get("cmte_nm"),
             "connected_org":       row_dict.get("connected_org_nm"),
-            "industry":            classify_industry(row_dict.get("connected_org_nm"), row_dict.get("cmte_nm")),
+            "industry":            classify_industry(row_dict.get("org_tp"), row_dict.get("cmte_tp"), row_dict.get("cmte_dsgn")),
             "direct_contribution": round(row_dict.get("direct_contribution", 0), 2),
             "ie_for":              round(row_dict.get("ie_for", 0), 2),
             "ie_against":          round(row_dict.get("ie_against", 0), 2),
@@ -350,20 +358,20 @@ def _compute_top_contributors(conn, cycle: int) -> list[dict]:
     rows = conn.execute(f"""
         WITH indiv_by_employer AS (
             SELECT m.bioguide_id,
-                   regexp_replace(UPPER(TRIM(i.employer)), '\s+', ' ', 'g') AS org_name,
+                   regexp_replace(UPPER(TRIM(i.employer)), '\\s+', ' ', 'g') AS org_name,
                    SUM(CAST(i.transaction_amt AS DOUBLE)) AS individual_total
             FROM indiv i
             JOIN cmte_to_bioguide m ON i.cmte_id = m.cmte_id
             WHERE i.employer IS NOT NULL
               AND TRIM(i.employer) != ''
               AND UPPER(TRIM(i.employer)) NOT IN ({non_emp_list})
-            GROUP BY m.bioguide_id, regexp_replace(UPPER(TRIM(i.employer)), '\s+', ' ', 'g')
+            GROUP BY m.bioguide_id, regexp_replace(UPPER(TRIM(i.employer)), '\\s+', ' ', 'g')
         ),
         pac_direct_by_org AS (
             SELECT f.bioguide_id,
                    regexp_replace(UPPER(TRIM(
                        COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm)
-                   )), '\s+', ' ', 'g') AS org_name,
+                   )), '\\s+', ' ', 'g') AS org_name,
                    SUM(CAST(p.transaction_amt AS DOUBLE)) AS amt,
                    ARG_MAX(p.cmte_id, CAST(p.transaction_amt AS DOUBLE)) AS top_cmte_id
             FROM pac p
@@ -372,13 +380,13 @@ def _compute_top_contributors(conn, cycle: int) -> list[dict]:
             WHERE COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm) IS NOT NULL
             GROUP BY f.bioguide_id, regexp_replace(UPPER(TRIM(
                 COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm)
-            )), '\s+', ' ', 'g')
+            )), '\\s+', ' ', 'g')
         ),
         ie_by_org AS (
             SELECT f.bioguide_id,
                    regexp_replace(UPPER(TRIM(
                        COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm)
-                   )), '\s+', ' ', 'g') AS org_name,
+                   )), '\\s+', ' ', 'g') AS org_name,
                    SUM(CASE WHEN ie.sup_opp = 'S'
                        THEN CAST(ie.transaction_amt AS DOUBLE) ELSE 0 END) AS amt,
                    ARG_MAX(ie.cmte_id, CAST(ie.transaction_amt AS DOUBLE)) AS top_cmte_id
@@ -388,7 +396,7 @@ def _compute_top_contributors(conn, cycle: int) -> list[dict]:
             WHERE COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm) IS NOT NULL
             GROUP BY f.bioguide_id, regexp_replace(UPPER(TRIM(
                 COALESCE(NULLIF(TRIM(cm.connected_org_nm), ''), cm.cmte_nm)
-            )), '\s+', ' ', 'g')
+            )), '\\s+', ' ', 'g')
         ),
         pac_by_org AS (
             SELECT

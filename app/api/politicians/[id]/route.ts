@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getIdeologyLabel } from '@/lib/ideology'
 import { mapStatus as mapBillStatusFull } from '@/lib/bills'
-import { formatBillType } from '@/lib/format'
+import { formatBillType, ordinal } from '@/lib/format'
 
 const CONGRESS_API_KEY  = process.env.CONGRESS_API_KEY ?? ''
 const CONGRESS_BASE     = 'https://api.congress.gov/v3'
@@ -696,7 +696,7 @@ export async function GET(
         title: latestTerm.memberType ?? (isSenate ? 'U.S. Senator' : 'U.S. Representative'),
         party: normalizedParty as 'Democrat' | 'Republican' | 'Independent',
         state: latestTerm.stateName ?? '', stateCode: latestTerm.stateCode ?? '',
-        district: latestTerm.district ? `${latestTerm.district}th District` : undefined,
+        district: latestTerm.district != null ? ordinal(Number(latestTerm.district)) : undefined,
         since: firstTerm.startYear?.toString() ?? null,
         photo: member.depiction?.imageUrl ?? null,
         photoCredit: member.depiction?.attribution ?? null,
@@ -758,7 +758,7 @@ export async function GET(
       party:       legislator.party as 'Democrat' | 'Republican' | 'Independent',
       state:       legislator.state_full,
       stateCode:   legislator.state,
-      district:    legislator.district ? `${legislator.district}th District` : undefined,
+      district:    legislator.district != null ? ordinal(Number(legislator.district)) : undefined,
       since:       (() => { const terms = legislator.raw_json?.terms ?? []; const firstStart = terms[0]?.start ?? legislator.term_start; return firstStart ? new Date(firstStart).getFullYear().toString() : null })(),
       photo:       legislator.photo_url,
       photoCredit: null,

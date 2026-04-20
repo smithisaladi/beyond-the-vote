@@ -13,7 +13,7 @@ export default function RepresentativeDetailLoading() {
     <div className="relative flex flex-col min-h-screen overflow-hidden">
       <div className="relative z-10 flex flex-col flex-1">
         <main className="flex-1 px-6 pt-10 pb-8">
-          <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
+          <div className="max-w-5xl mx-auto space-y-6 animate-pulse">
             {/* Back-link */}
             <Skeleton className="h-5 w-28" />
 

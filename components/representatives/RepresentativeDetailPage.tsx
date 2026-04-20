@@ -41,7 +41,7 @@ function Initials({ name }: { name: string }) {
 
 function ProfileSkeleton() {
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
+    <div className="max-w-5xl mx-auto space-y-6 animate-pulse">
       <Skeleton className="h-5 w-28" />
       <Card padding="none" className="p-6 sm:p-8">
         <div className="flex gap-6">
@@ -62,17 +62,17 @@ function ProfileSkeleton() {
   )
 }
 
-function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
+function ErrorState({ message }: { message: string }) {
   return (
     <div className="flex-1 flex items-center justify-center px-6">
       <div className="text-center">
         <p className="text-[#1C1C1A]/40 mb-4">{message}</p>
-        <button
-          onClick={onBack}
+        <Link
+          href="/representatives"
           className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
         >
-          ← Back to results
-        </button>
+          ← Back to representatives
+        </Link>
       </div>
     </div>
   )
@@ -167,7 +167,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
   const tabs: { key: Tab; label: string }[] = [
     { key: 'votes', label: 'Recent Votes' },
     { key: 'bills', label: 'Sponsored Bills' },
-    { key: 'donors', label: 'Top Donors' },
+    { key: 'donors', label: 'Donor Profile' },
   ]
 
   return (
@@ -177,27 +177,26 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
       <div className="relative z-10 flex flex-col flex-1">
         <PageHeader title="Politicians" />
 
-        <main className="flex-1 px-6 pt-24 pb-8">
+        <main className="flex-1 px-6 pt-16 pb-8">
           {loading ? (
             <ProfileSkeleton />
           ) : error ? (
             <ErrorState
               message={error === 'Politician not found' ? 'Representative not found.' : 'Failed to load representative data.'}
-              onBack={() => router.back()}
             />
           ) : !politician ? null : (
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-5xl mx-auto space-y-6">
 
               {/* Back link */}
-              <button
-                onClick={() => router.back()}
+              <Link
+                href="/representatives"
                 className="flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 12H5M12 5l-7 7 7 7" />
                 </svg>
-                Back to results
-              </button>
+                Back to representatives
+              </Link>
 
               {/* Hero card */}
               <Card padding="none" className="p-6 sm:p-8">
@@ -378,7 +377,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
                                         <div>
                                           {v.billId ? (
                                             <Link
-                                              href={`/bills/${v.billId}`}
+                                              href={`/bills/${v.billId}?from=/representatives/${id}`}
                                               className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] hover:underline transition-colors"
                                             >
                                               {displayTitle}
@@ -424,7 +423,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
                       (politician.bills?.length ?? 0) === 0 ? (
                         <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">No sponsored bills found.</p>
                       ) : politician.bills.map(b => (
-                        <Link key={b.id} href={`/bills/${b.id}`} className="flex items-center justify-between px-6 py-4 hover:bg-[#F5F0E8]/60 transition-colors">
+                        <Link key={b.id} href={`/bills/${b.id}?from=/representatives/${id}`} className="flex items-center justify-between px-6 py-4 hover:bg-[#F5F0E8]/60 transition-colors">
                           <div className="min-w-0 flex-1 mr-4">
                             <p className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] transition-colors line-clamp-2" title={b.name}>{b.name}</p>
                             <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{b.number} · {b.date}</p>

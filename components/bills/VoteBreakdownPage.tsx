@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect, use } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
 import { PARTY_STYLES, resultBadge } from '@/lib/ui'
@@ -72,7 +72,7 @@ function MemberRow({ m }: { m: MemberPosition }) {
 
 type DropdownId = 'position' | 'party' | null
 
-function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; billId: string; billNumber: string; billTitle: string }) {
+function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote: Vote; billId: string; billNumber: string; billTitle: string; fromParam: string | null }) {
   const [filter, setFilter] = useState<Filter>('All')
   const [partyFilter, setPartyFilter] = useState<Party | 'All'>('All')
   const [openDropdown, setOpenDropdown] = useState<DropdownId>(null)
@@ -112,7 +112,7 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <Link
-        href={`/bills/${billId}`}
+        href={`/bills/${billId}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`}
         className="inline-flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -326,7 +326,9 @@ function VoteContent({ vote, billId, billNumber, billTitle }: { vote: Vote; bill
 
 export default function VoteBreakdownPage({ params }: { params: Promise<{ id: string; voteId: string }> }) {
   const { id, voteId } = use(params)
-  const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromParam = searchParams.get('from')
+  const billBackHref = `/bills/${id}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`
   const { bill, loading, error } = useFetchBillDetail(id)
 
   const vote = bill?.votes.find(v => v.id === decodeURIComponent(voteId)) ?? null
@@ -342,22 +344,22 @@ export default function VoteBreakdownPage({ params }: { params: Promise<{ id: st
             <div className="max-w-4xl mx-auto flex items-center justify-center py-24">
               <div className="text-center">
                 <p className="text-[#1C1C1A]/40 mb-4">Failed to load vote details.</p>
-                <button onClick={() => router.back()} className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]">
-                  ← Go back
-                </button>
+                <Link href={billBackHref} className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]">
+                  ← Back to bill
+                </Link>
               </div>
             </div>
           ) : !vote ? (
             <div className="max-w-4xl mx-auto flex items-center justify-center py-24">
               <div className="text-center">
                 <p className="text-[#1C1C1A]/40 mb-4">Vote not found.</p>
-                <Link href={`/bills/${id}`} className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]">
+                <Link href={billBackHref} className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]">
                   ← Back to bill
                 </Link>
               </div>
             </div>
           ) : (
-            <VoteContent vote={vote} billId={id} billNumber={bill.number} billTitle={bill.title} />
+            <VoteContent vote={vote} billId={id} billNumber={bill.number} billTitle={bill.title} fromParam={fromParam} />
           )}
         </main>
       </div>

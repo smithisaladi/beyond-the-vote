@@ -11,8 +11,8 @@ export function mapStatus(latestActionText?: string, introducedDate?: string): B
     action.includes('became public law') ||
     action.includes('signed by president') ||
     action.includes('enacted') ||
-    action.includes('passed the senate') ||
-    action.includes('passed the house') ||
+    action.startsWith('passed the senate') ||
+    action.startsWith('passed the house') ||
     action.includes('presented to president')
   ) return 'Passed'
   if (

@@ -64,32 +64,32 @@ export const FEC_GLOSSARY: Record<FecTermKey, { term: string; body: string }> = 
     body: 'Outside spending to oppose a candidate, with no coordination or cap.',
   },
   itemized: {
-    term: 'Itemized donations',
-    body: 'Donations over $200 that must be reported by name \u2014 smaller gifts only appear as a lump sum.',
+    term: 'Why only itemized?',
+    body: 'Campaigns only have to name donors who give more than $200. Smaller donations are lumped together, so we can\u2019t tell where they came from geographically.',
   },
   smallDonors: {
-    term: 'Small donors',
-    body: 'Donors who gave under $200 total \u2014 names aren\u2019t required to be reported.',
+    term: 'Small donors (under $200)',
+    body: 'Everyday supporters giving small amounts. A high percentage here can signal broad grassroots support rather than reliance on wealthy backers.',
   },
   largeIndividual: {
     term: 'Large individual donors',
-    body: 'Donors who gave over $200 \u2014 the threshold where campaigns must report names.',
+    body: 'People who gave over $200 \u2014 the point at which campaigns must disclose their names. These donors often have more direct access to the candidate.',
   },
   pacAndCorporate: {
-    term: 'PAC & corporate',
-    body: 'Money from PACs tied to corporations, trade groups, unions, and ideological organizations.',
+    term: 'PAC & corporate money',
+    body: 'Funds from Political Action Committees linked to corporations, unions, or trade groups. A high share may indicate strong ties to organized interest groups.',
   },
   otherFunding: {
-    term: 'Other funding',
-    body: 'Party transfers, self-funded loans, and other miscellaneous sources.',
+    term: 'Other sources',
+    body: 'Includes party transfers, the candidate\u2019s own money, and miscellaneous sources that don\u2019t fit the main categories.',
   },
   topContributors: {
-    term: 'Top contributors',
-    body: 'An organization\u2019s PAC donations plus personal donations from its employees, grouped under one name.',
+    term: 'How this is calculated',
+    body: 'We combine an organization\u2019s PAC donations with personal donations from its employees. The totals show who has the biggest financial relationship with this legislator.',
   },
   inOutState: {
-    term: 'In-state vs. out-of-state',
-    body: 'Where a candidate\u2019s individual donors live.',
+    term: 'Why this matters',
+    body: 'Legislators funded mostly by out-of-state donors may be responding to national interests rather than the concerns of the people they represent.',
   },
   connectedOrg: {
     term: 'Connected organization',

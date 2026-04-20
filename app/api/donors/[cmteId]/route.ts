@@ -115,8 +115,8 @@ export async function GET(
     }))
 
     const pacData = {
-      name: toTitleCase(row.cmte_name ?? ''),
-      connectedOrg: row.connected_org ? toTitleCase(row.connected_org) : null,
+      name: row.cmte_name ?? '',
+      connectedOrg: row.connected_org ?? null,
       totalContributions: Number(row.total_contributions),
       recipientCount: Number(row.recipient_count),
       recipients,
@@ -131,7 +131,10 @@ export async function GET(
         directTotal: Number(row.direct_total),
         ieForTotal: Number(row.ie_for_total),
         ieAgainstTotal: Number(row.ie_against_total),
-        recipients: row.recipients ?? [],
+        recipients: (row.recipients ?? []).map((r: Recipient) => ({
+          ...r,
+          name: toTitleCase(r.name ?? ''),
+        })),
       })
     }
 

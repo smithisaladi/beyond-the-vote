@@ -10,7 +10,7 @@ import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { PARTY_STYLES } from '@/lib/ui'
 import { FEC_DISPLAY_CYCLES, getFecCommitteeUrl, getOpenSecretsUrl } from '@/lib/fec'
-import { formatTotal, toTitleCase } from '@/lib/format'
+import { formatTotal } from '@/lib/format'
 import { partyAbbrev, toParty } from '@/lib/party'
 import type { Party } from '@/lib/types'
 import { Card } from '@/components/ui/Card'
@@ -246,12 +246,12 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                   className="text-2xl sm:text-3xl text-[#1C1C1A] mb-2 leading-[1.15] tracking-[-0.01em]"
                   style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
                 >
-                  {toTitleCase(pac.name)}
+                  {pac.name}
                 </h1>
 
                 {pac.connectedOrg && (
                   <p className="text-sm text-[#1C1C1A]/50">
-                    Affiliated with {toTitleCase(pac.connectedOrg)}
+                    Affiliated with {pac.connectedOrg}
                   </p>
                 )}
               </div>
@@ -276,7 +276,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                       <Skeleton className="h-3.5 w-10/12" />
                       <Skeleton className="h-3.5 w-3/4" />
                     </div>
-                  ) : (
+                  ) : pac.summary ? (
                     <>
                       <div className="text-sm text-[#1C1C1A]/70 leading-relaxed space-y-3">
                         {pac.summary.split('\n\n').map((paragraph, i) => (
@@ -287,7 +287,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                         AI-generated from FEC data and general knowledge. Not an official analysis.
                       </p>
                     </>
-                  )}
+                  ) : null}
                 </Card>
               )}
 
@@ -402,7 +402,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                   href={getFecCommitteeUrl(cmteId)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`View ${toTitleCase(pac.name)} on the FEC website (opens in new tab)`}
+                  aria-label={`View ${pac.name} on the FEC website (opens in new tab)`}
                   className="inline-flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#7B5E8A] transition-colors"
                 >
                   View on FEC <ExternalLink size={11} strokeWidth={1.8} aria-hidden="true" />
@@ -412,7 +412,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
                   href={getOpenSecretsUrl(cmteId)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`View ${toTitleCase(pac.name)} on OpenSecrets (opens in new tab)`}
+                  aria-label={`View ${pac.name} on OpenSecrets (opens in new tab)`}
                   className="inline-flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#7B5E8A] transition-colors"
                 >
                   View on OpenSecrets <ExternalLink size={11} strokeWidth={1.8} aria-hidden="true" />

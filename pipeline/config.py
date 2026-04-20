@@ -222,157 +222,29 @@ TOPIC_SLUG_MAP = {
     "water resources development": "climate-environment",
 }
 
-# ── Industry keyword buckets ──────────────────────────────────────────────────
-# Matched against connected_org_nm (case-insensitive substring).
-# First match wins — order matters.
+# ── FEC Organization Type → Category ─────────────────────────────────────────
+# Based on the FEC `org_tp` field in the committee master file.
+# See: https://www.fec.gov/campaign-finance-data/committee-type-code-descriptions/
 
-INDUSTRY_KEYWORDS: list[tuple[str, str]] = [
-    # Finance / Banking / Crypto
-    ("crypto", "Finance & Investment"),
-    ("bitcoin", "Finance & Investment"),
-    ("blockchain", "Finance & Investment"),
-    ("digital asset", "Finance & Investment"),
-    ("coinbase", "Finance & Investment"),
-    ("ripple", "Finance & Investment"),
-    ("bank", "Finance & Investment"),
-    ("financial", "Finance & Investment"),
-    ("capital", "Finance & Investment"),
-    ("invest", "Finance & Investment"),
-    ("securities", "Finance & Investment"),
-    ("asset management", "Finance & Investment"),
-    ("hedge fund", "Finance & Investment"),
-    ("private equity", "Finance & Investment"),
-    ("credit", "Finance & Investment"),
-    ("lending", "Finance & Investment"),
-    ("brokerage", "Finance & Investment"),
-    ("mutual fund", "Finance & Investment"),
-    ("goldman", "Finance & Investment"),
-    ("morgan stanley", "Finance & Investment"),
-    ("jp morgan", "Finance & Investment"),
-    ("jpmorgan", "Finance & Investment"),
-    ("citigroup", "Finance & Investment"),
-    ("citadel", "Finance & Investment"),
-    ("blackrock", "Finance & Investment"),
-    ("fidelity", "Finance & Investment"),
-    ("vanguard", "Finance & Investment"),
-    # Real Estate
-    ("real estate", "Real Estate"),
-    ("realty", "Real Estate"),
-    ("housing", "Real Estate"),
-    ("mortgage", "Real Estate"),
-    ("homebuilder", "Real Estate"),
-    # Energy / Oil & Gas
-    ("oil", "Energy & Oil"),
-    ("gas", "Energy & Oil"),
-    ("petroleum", "Energy & Oil"),
-    ("energy", "Energy & Oil"),
-    ("coal", "Energy & Oil"),
-    ("pipeline", "Energy & Oil"),
-    ("refin", "Energy & Oil"),
-    ("exxon", "Energy & Oil"),
-    ("chevron", "Energy & Oil"),
-    ("conocophillips", "Energy & Oil"),
-    # Tech
-    ("technology", "Technology"),
-    ("tech", "Technology"),
-    ("software", "Technology"),
-    ("internet", "Technology"),
-    ("telecom", "Technology"),
-    ("communications", "Technology"),
-    ("google", "Technology"),
-    ("alphabet", "Technology"),
-    ("microsoft", "Technology"),
-    ("apple inc", "Technology"),
-    ("meta platforms", "Technology"),
-    ("facebook", "Technology"),
-    ("oracle", "Technology"),
-    ("cisco", "Technology"),
-    ("intel", "Technology"),
-    # Healthcare / Pharma
-    ("health", "Healthcare & Pharma"),
-    ("pharma", "Healthcare & Pharma"),
-    ("medical", "Healthcare & Pharma"),
-    ("hospital", "Healthcare & Pharma"),
-    ("biotech", "Healthcare & Pharma"),
-    ("drug", "Healthcare & Pharma"),
-    ("pfizer", "Healthcare & Pharma"),
-    ("johnson & johnson", "Healthcare & Pharma"),
-    ("abbott", "Healthcare & Pharma"),
-    ("merck", "Healthcare & Pharma"),
-    ("amgen", "Healthcare & Pharma"),
-    # Defense / Aerospace
-    ("defense", "Defense & Aerospace"),
-    ("aerospace", "Defense & Aerospace"),
-    ("lockheed", "Defense & Aerospace"),
-    ("raytheon", "Defense & Aerospace"),
-    ("boeing", "Defense & Aerospace"),
-    ("northrop", "Defense & Aerospace"),
-    ("general dynamics", "Defense & Aerospace"),
-    ("l3harris", "Defense & Aerospace"),
-    ("bae systems", "Defense & Aerospace"),
-    # Agriculture
-    ("agri", "Agriculture"),
-    ("farm", "Agriculture"),
-    ("crop", "Agriculture"),
-    ("grain", "Agriculture"),
-    ("cattle", "Agriculture"),
-    ("dairy", "Agriculture"),
-    ("cargill", "Agriculture"),
-    # Labor / Unions
-    ("union", "Labor & Unions"),
-    ("workers", "Labor & Unions"),
-    ("teamsters", "Labor & Unions"),
-    ("afl-cio", "Labor & Unions"),
-    ("seiu", "Labor & Unions"),
-    ("ibew", "Labor & Unions"),
-    ("laborers", "Labor & Unions"),
-    ("carpenters", "Labor & Unions"),
-    ("plumbers", "Labor & Unions"),
-    ("firefighter", "Labor & Unions"),
-    ("teachers", "Labor & Unions"),
-    # Legal
-    ("law firm", "Legal"),
-    ("attorneys", "Legal"),
-    ("lawyers", "Legal"),
-    ("legal", "Legal"),
-    # Retail / Consumer
-    ("retail", "Retail & Consumer"),
-    ("consumer", "Retail & Consumer"),
-    ("walmart", "Retail & Consumer"),
-    ("amazon", "Retail & Consumer"),
-    ("costco", "Retail & Consumer"),
-    # Insurance
-    ("insurance", "Insurance"),
-    ("underwriter", "Insurance"),
-    # Transportation
-    ("transport", "Transportation"),
-    ("railroad", "Transportation"),
-    ("airline", "Transportation"),
-    ("trucking", "Transportation"),
-    ("auto", "Transportation"),
-    ("shipping", "Transportation"),
-    ("freight", "Transportation"),
-    # Construction / Manufacturing
-    ("construction", "Construction & Manufacturing"),
-    ("manufactur", "Construction & Manufacturing"),
-    ("engineer", "Construction & Manufacturing"),
-    ("contractor", "Construction & Manufacturing"),
-    # Education
-    ("education", "Education"),
-    ("university", "Education"),
-    ("college", "Education"),
-    ("school", "Education"),
-    # Ideological / Single-Issue
-    ("planned parenthood", "Ideological / Single-Issue"),
-    ("nra", "Ideological / Single-Issue"),
-    ("sierra club", "Ideological / Single-Issue"),
-    ("emily's list", "Ideological / Single-Issue"),
-    ("emilys list", "Ideological / Single-Issue"),
-    ("club for growth", "Ideological / Single-Issue"),
-    ("pro-life", "Ideological / Single-Issue"),
-    ("pro-choice", "Ideological / Single-Issue"),
-    ("environment", "Ideological / Single-Issue"),
-    ("liberty", "Ideological / Single-Issue"),
-    ("freedom", "Ideological / Single-Issue"),
-    ("patriot", "Ideological / Single-Issue"),
-]
+ORG_TYPE_LABELS: dict[str, str] = {
+    "C": "Corporate",
+    "L": "Labor",
+    "M": "Membership Organization",
+    "T": "Trade Association",
+    "V": "Cooperative",
+    "W": "Corporate (Non-Stock)",
+}
+
+# Committee type → category for committees without org_tp
+CMTE_TYPE_LABELS: dict[str, str] = {
+    "O": "Super PAC",
+    "U": "Super PAC",
+    "D": "Leadership PAC",
+    "X": "Party Committee",
+    "Y": "Party Committee",
+}
+
+# Committee designation codes
+CMTE_DSGN_LABELS: dict[str, str] = {
+    "D": "Leadership PAC",
+}

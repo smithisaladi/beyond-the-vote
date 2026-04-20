@@ -31,6 +31,7 @@ export function useTrackedBills(userId: string | null) {
     if (!userId) return
     const supabase = createClient()
     const isTracked = trackedBills.has(billId)
+    const prev = new Set(trackedBills) // capture before mutation
     const next = new Set(trackedBills)
     isTracked ? next.delete(billId) : next.add(billId)
     setTrackedBills(next) // optimistic
@@ -40,7 +41,7 @@ export function useTrackedBills(userId: string | null) {
       : await supabase.from('tracked_bills').insert({ user_id: userId, bill_id: billId })
 
     if (err) {
-      setTrackedBills(new Set(trackedBills)) // revert
+      setTrackedBills(prev) // revert to captured state
       setError(err.message)
     }
   }

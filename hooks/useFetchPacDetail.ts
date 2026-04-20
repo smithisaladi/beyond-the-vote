@@ -37,6 +37,7 @@ export function useFetchPacDetail(cmteId: string) {
     let cancelled = false
     setLoading(true)
     setError(null)
+    setSummaryLoading(false)
 
     fetch(`/api/donors/${encodeURIComponent(cmteId)}`)
       .then(async (res) => {

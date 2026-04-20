@@ -34,11 +34,13 @@ export function useFetchRepresentatives(address: string) {
       setRepresentatives([])
       return
     }
+    const controller = new AbortController()
     setLoading(true)
     setError('')
-    fetch(`/api/representatives?address=${encodeURIComponent(address)}`)
+    fetch(`/api/representatives?address=${encodeURIComponent(address)}`, { signal: controller.signal })
       .then(res => res.json())
       .then(data => {
+        if (controller.signal.aborted) return
         if (data.error) {
           setError(ERROR_MESSAGES[data.error] ?? ERROR_MESSAGES.geocode_failed)
           setRepresentatives([])
@@ -46,8 +48,14 @@ export function useFetchRepresentatives(address: string) {
           setRepresentatives(data.representatives ?? [])
         }
       })
-      .catch(() => setError(ERROR_MESSAGES.geocode_failed))
-      .finally(() => setLoading(false))
+      .catch((err) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        setError(ERROR_MESSAGES.geocode_failed)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
   }, [address])
 
   return { representatives, loading, error }

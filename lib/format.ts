@@ -54,6 +54,14 @@ export function toTitleCase(s: string): string {
   })
 }
 
+/** Format a district number as an ordinal string, e.g. "1st District", "At-Large". */
+export function ordinal(n: number): string {
+  if (n === 0) return 'At-Large'
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0]) + ' District'
+}
+
 /** Abbreviate money for dense list views: $1.2M, $340K, $850. */
 export function formatTotal(n: number): string {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`
@@ -68,4 +76,15 @@ const BILL_TYPE_LABELS: Record<string, string> = {
 
 export function formatBillType(type: string): string {
   return BILL_TYPE_LABELS[type.toLowerCase()] ?? type.toUpperCase()
+}
+
+/**
+ * Parse a date-only string (YYYY-MM-DD) as local time instead of UTC.
+ * Prevents the off-by-one-day bug where `new Date('2024-01-15')` shows Jan 14 in US timezones.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return new Date(dateStr + 'T00:00:00')
+  }
+  return new Date(dateStr)
 }
