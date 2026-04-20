@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Search, MapPin, User } from 'lucide-react'
 import { RepresentativeCard } from '@/components/representatives/RepresentativeCard'
+import { SignInModal } from '@/components/auth/SignInModal'
+import { SignUpModal } from '@/components/auth/SignUpModal'
 import { useMapboxAutocomplete } from '@/hooks/useMapboxAutocomplete'
 import { useFetchRepresentatives } from '@/hooks/useFetchRepresentatives'
 import { useSearchPoliticians } from '@/hooks/useSearchPoliticians'
@@ -25,6 +27,7 @@ function RepresentativesContent() {
   const [inputFocused, setInputFocused] = useState(false)
   const [searchMode, setSearchMode] = useState<'address' | 'name'>(modeParam === 'address' ? 'address' : 'name')
   const [nameQuery, setNameQuery] = useState(nameParam)
+  const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
   const hasResults = addressParam.length > 0
 
   // Resolve display address (shortened form for the input after submission)
@@ -241,7 +244,7 @@ function RepresentativesContent() {
                       key={rep.id}
                       {...rep}
                       userId={userId}
-                      onSignInRequired={() => router.push('/login')}
+                      onSignInRequired={() => setAuthModal('signin')}
                     />
                   ))}
                 </div>
@@ -249,6 +252,17 @@ function RepresentativesContent() {
             </div>
           )}
       </main>
+
+      <SignInModal
+        isOpen={authModal === 'signin'}
+        onClose={() => setAuthModal(null)}
+        onSwitchToSignUp={() => setAuthModal('signup')}
+      />
+      <SignUpModal
+        isOpen={authModal === 'signup'}
+        onClose={() => setAuthModal(null)}
+        onSwitchToSignIn={() => setAuthModal('signin')}
+      />
     </div>
   )
 }
