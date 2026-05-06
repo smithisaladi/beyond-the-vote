@@ -1,32 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import type { BillStatus as Status } from '@/lib/bills'
 import type { BillSummary } from '@/lib/types/bills'
+import type { BillRow, LegislatorLite } from '@/lib/types/supabase-rows'
 import { hybridBillSearch } from '@/lib/queries/hybrid-bill-search'
 import { parseSearchParams, BillsParams } from '@/lib/api-validation'
 import { toParty } from '@/lib/party'
 
-async function enrichBillsWithSponsors(bills: any[], supabase: any) {
+async function enrichBillsWithSponsors(
+  bills: BillRow[],
+  supabase: SupabaseClient,
+): Promise<BillRow[]> {
   const missingIds = [...new Set(
-    bills.filter((r: any) => r.sponsor_bioguide_id && (!r.sponsor_party || !r.sponsor_name))
-      .map((r: any) => r.sponsor_bioguide_id as string)
+    bills
+      .filter(r => r.sponsor_bioguide_id && (!r.sponsor_party || !r.sponsor_name))
+      .map(r => r.sponsor_bioguide_id as string)
   )]
   if (missingIds.length === 0) return bills
   const { data: legRows } = await supabase
     .from('legislators')
     .select('bioguide_id, full_name, party')
     .in('bioguide_id', missingIds)
-  const legMap = new Map<string, any>((legRows ?? []).map((l: any) => [l.bioguide_id, l]))
-  return bills.map((b: any) => ({
+  const legMap = new Map<string, LegislatorLite>(
+    ((legRows ?? []) as LegislatorLite[]).map(l => [l.bioguide_id, l])
+  )
+  return bills.map(b => ({
     ...b,
-    sponsor_party: b.sponsor_party ?? legMap.get(b.sponsor_bioguide_id)?.party,
-    sponsor_name: b.sponsor_name ?? legMap.get(b.sponsor_bioguide_id)?.full_name,
+    sponsor_party: b.sponsor_party ?? legMap.get(b.sponsor_bioguide_id ?? '')?.party ?? null,
+    sponsor_name: b.sponsor_name ?? legMap.get(b.sponsor_bioguide_id ?? '')?.full_name ?? null,
   }))
 }
 
 export const revalidate = 300
 
-function mapRowToBill(row: any): BillSummary {
+function mapRowToBill(row: BillRow): BillSummary {
   return {
     id:                 row.bill_id,
     number:             row.bill_number ?? row.bill_id,
@@ -70,9 +78,11 @@ export async function GET(request: NextRequest) {
         statusFilter: status || null,
         topicFilters: topicSlugs.length > 0 ? topicSlugs : null,
         billIds:      billIds.length > 0 ? billIds : null,
-      }) as any[]
+      })
 
-      const enriched = await enrichBillsWithSponsors(results, supabase)
+      // HybridBillSearchRow is structurally compatible with BillRow (status: string | null);
+      // mapRowToBill narrows status with `as Status`.
+      const enriched = await enrichBillsWithSponsors(results as unknown as BillRow[], supabase)
 
       // If we got a full page, signal there may be more results
       const estimatedTotal = enriched.length + offset + (enriched.length === limit ? 1 : 0)
@@ -115,7 +125,7 @@ export async function GET(request: NextRequest) {
 
     if (error) throw new Error(error.message)
 
-    const rows = await enrichBillsWithSponsors((data ?? []) as any[], supabase)
+    const rows = await enrichBillsWithSponsors((data ?? []) as BillRow[], supabase)
 
     return NextResponse.json({
       bills: rows.map(mapRowToBill),

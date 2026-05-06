@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { formatBillType } from '@/lib/format'
+import type {
+  CongressBillResponse,
+  CongressBillAction,
+  CongressBillSummary,
+  CongressBillCosponsor,
+  CongressBillSubject,
+} from '@/lib/types/congress'
+import type {
+  BillVoteSummaryRow,
+  BillVotePositionRow,
+} from '@/lib/types/supabase-rows'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
@@ -89,7 +100,7 @@ export async function GET(
   const detailFetch  = detailRes.status   === 'fulfilled' ? detailRes.value   : null
   const actionsFetch = actionsRes.status  === 'fulfilled' ? actionsRes.value  : null
   const summaryFetch = summariesRes.status === 'fulfilled' ? summariesRes.value : null
-  const dbVotes      = dbVotesRes.status  === 'fulfilled' ? dbVotesRes.value.data ?? [] : []
+  const dbVotes: BillVoteSummaryRow[] = dbVotesRes.status  === 'fulfilled' ? (dbVotesRes.value.data ?? []) as unknown as BillVoteSummaryRow[] : []
   const dbBill       = dbBillRes.status   === 'fulfilled' ? dbBillRes.value.data : null
   const dbTopics     = dbBill?.topics ?? []
   const dbStatus     = (dbBill?.status as BillStatus | null) ?? null
@@ -99,12 +110,12 @@ export async function GET(
     return NextResponse.json({ error: 'Congress.gov API error' }, { status: detailFetch?.status ?? 502 })
   }
 
-  const detailData    = await detailFetch.json()
+  const detailData    = await detailFetch.json() as CongressBillResponse
   const bill          = detailData.bill
   const actionsData   = actionsFetch?.ok ? await actionsFetch.json() : {}
-  const actions: any[] = actionsData.actions ?? []
+  const actions: CongressBillAction[] = actionsData.actions ?? []
   const summariesData = summaryFetch?.ok ? await summaryFetch.json() : {}
-  const summaries: any[] = summariesData.summaries ?? []
+  const summaries: CongressBillSummary[] = summariesData.summaries ?? []
   const rawSummary = summaries.at(-1)?.text?.replace(/<[^>]+>/g, '') ?? ''
   const latestSummary = rawSummary
     .replace(/&amp;/g, '&')
@@ -118,13 +129,13 @@ export async function GET(
     .trim()
 
   const sponsor    = bill.sponsors?.[0]
-  const cosponsors: any[] = Array.isArray(bill.cosponsors)
+  const cosponsors: CongressBillCosponsor[] = Array.isArray(bill.cosponsors)
     ? bill.cosponsors
     : (bill.cosponsors?.cosponsor ?? [])
 
   // Prefer DB vote data (has party breakdown + member positions), fall back to raw actions
   const votes = dbVotes.length > 0
-    ? dbVotes.map((v: any) => ({
+    ? dbVotes.map((v: BillVoteSummaryRow) => ({
         id:       v.id,
         date:     v.date,
         chamber:  v.chamber,
@@ -140,7 +151,7 @@ export async function GET(
           republican:  { yea: v.yea_republican  ?? 0, nay: v.nay_republican  ?? 0 },
           independent: { yea: v.yea_independent ?? 0, nay: v.nay_independent ?? 0 },
         },
-        memberPositions: (v.bill_vote_positions ?? []).map((pos: any) => ({
+        memberPositions: (v.bill_vote_positions ?? []).map((pos: BillVotePositionRow) => ({
           bioguideId: pos.bioguide_id,
           name:       pos.legislators?.full_name ?? '',
           party:      pos.legislators?.party ?? '',
@@ -151,8 +162,8 @@ export async function GET(
         sourceUrl: v.source_url ?? null,
       }))
     : actions
-        .filter((a: any) => a.recordedVotes?.length > 0)
-        .map((a: any) => ({
+        .filter((a: CongressBillAction) => (a.recordedVotes?.length ?? 0) > 0)
+        .map((a: CongressBillAction) => ({
           id:             null,
           date:           a.actionDate,
           chamber:        a.actionCode?.startsWith('H') ? 'House' : 'Senate',
@@ -181,21 +192,21 @@ export async function GET(
         name: sponsor.fullName, bioguideId: sponsor.bioguideId,
         party: sponsor.party, state: sponsor.state, district: sponsor.district ?? null,
       } : null,
-      cosponsors: cosponsors.slice(0, 10).map((c: any) => ({
+      cosponsors: cosponsors.slice(0, 10).map((c: CongressBillCosponsor) => ({
         name: c.fullName, bioguideId: c.bioguideId, party: c.party, state: c.state,
       })),
       policyArea: bill.policyArea?.name ?? null,
       topics: dbTopics,
-      subjects: (bill.subjects?.legislativeSubjects ?? []).slice(0, 8).map((s: any) => s.name),
+      subjects: (bill.subjects?.legislativeSubjects ?? []).slice(0, 8).map((s: CongressBillSubject) => s.name),
       congressGovUrl: `https://www.congress.gov/bill/${congress}th-congress/${CONGRESS_GOV_TYPE[type] ?? type}/${number}`,
       actions: actions
-        .reduce((acc: any[], a: any) => {
+        .reduce((acc: CongressBillAction[], a: CongressBillAction) => {
           const key = `${a.actionDate}|${a.text}`
-          if (!acc.some((x: any) => `${x.actionDate}|${x.text}` === key)) acc.push(a)
+          if (!acc.some((x: CongressBillAction) => `${x.actionDate}|${x.text}` === key)) acc.push(a)
           return acc
         }, [])
         .slice(0, 10)
-        .map((a: any) => ({
+        .map((a: CongressBillAction) => ({
           date: a.actionDate, text: a.text, type: a.type,
         })),
       votes,
