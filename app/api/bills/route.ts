@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { BillStatus as Status } from '@/lib/bills'
+import type { BillSummary } from '@/lib/types/bills'
 import { hybridBillSearch } from '@/lib/queries/hybrid-bill-search'
 import { parseSearchParams, BillsParams } from '@/lib/api-validation'
 import { toParty } from '@/lib/party'
@@ -25,20 +26,7 @@ async function enrichBillsWithSponsors(bills: any[], supabase: any) {
 
 export const revalidate = 300
 
-interface Bill {
-  id: string
-  number: string
-  title: string
-  sponsor: string
-  party: 'Democrat' | 'Republican' | 'Independent'
-  status: Status
-  topics: string[]
-  lastAction: string
-  lastActionTimestamp: number
-  summary: string
-}
-
-function mapRowToBill(row: any): Bill {
+function mapRowToBill(row: any): BillSummary {
   return {
     id:                 row.bill_id,
     number:             row.bill_number ?? row.bill_id,

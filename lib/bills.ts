@@ -1,4 +1,5 @@
-export type BillStatus = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
+import type { BillStatus } from './types/bills'
+export type { BillStatus }
 
 /**
  * Derives a display status from Congress.gov latestAction text and introducedDate.
