@@ -1,6 +1,6 @@
 // lib/integrations/congress/sponsored-bills.ts
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { mapStatus as mapBillStatusFull } from '@/lib/bills'
+import { mapStatus } from '@/lib/bills'
 import { formatBillType } from '@/lib/format'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
@@ -16,14 +16,6 @@ interface CongressSponsoredBill {
   policyArea?: { name?: string }
 }
 
-function formatBillNumber(type: string, number: number): string {
-  return `${formatBillType(type)} ${number}`
-}
-
-function mapBillStatus(action?: string, introducedDate?: string) {
-  return mapBillStatusFull(action, introducedDate)
-}
-
 export async function fetchSponsoredBills(bioguideId: string, supabase: SupabaseClient) {
   if (!CONGRESS_API_KEY) return []
   const res = await fetch(
@@ -37,11 +29,11 @@ export async function fetchSponsoredBills(bioguideId: string, supabase: Supabase
     .map((b) => ({
     id:     `${b.congress}-${b.type.toLowerCase()}-${b.number}`,
     name:   b.title ?? '',
-    number: formatBillNumber(b.type, b.number),
+    number: `${formatBillType(b.type)} ${b.number}`,
     date:   b.introducedDate
       ? new Date(b.introducedDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
       : '',
-    _fallbackStatus: mapBillStatus(b.latestAction?.text, b.introducedDate),
+    _fallbackStatus: mapStatus(b.latestAction?.text, b.introducedDate),
   }))
 
   // Look up statuses from DB (source of truth)

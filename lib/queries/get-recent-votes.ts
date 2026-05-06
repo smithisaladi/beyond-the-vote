@@ -74,7 +74,7 @@ export async function fetchRecentVotesFromDB(
           : '',
         vote:            row.position as 'Yea' | 'Nay',
         question:        summary.question ?? null,
-        donorAlignments: [] as never[],
+        donorAlignments: [],
       }
     })
     .filter(Boolean) as PoliticianVote[]

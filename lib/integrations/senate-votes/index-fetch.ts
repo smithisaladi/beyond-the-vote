@@ -1,7 +1,5 @@
 // lib/integrations/senate-votes/index-fetch.ts
-
-const SENATE_VOTE_BASE  = 'https://www.senate.gov/legislative/LIS/roll_call_votes'
-const SENATE_INDEX_BASE = 'https://www.senate.gov/legislative/LIS/roll_call_lists'
+import { SENATE_VOTE_BASE, SENATE_INDEX_BASE } from './sessions'
 
 // Try the senate.gov index XML first; fall back to parallel probing.
 // NOTE: senate.gov returns HTTP 200 with an HTML error page for missing votes,

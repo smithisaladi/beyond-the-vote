@@ -1,10 +1,8 @@
 // lib/integrations/senate-votes/fetch-recent.ts
 import type { PoliticianVote } from '@/lib/types/politicians'
-import { senateSessions } from './sessions'
+import { senateSessions, SENATE_VOTE_BASE } from './sessions'
 import { maxSenateVoteNumber } from './index-fetch'
 import { parseSenateVoteXml, type SenateMemberKey } from './xml-parser'
-
-const SENATE_VOTE_BASE = 'https://www.senate.gov/legislative/LIS/roll_call_votes'
 
 export async function fetchRecentVotesForSenator(key: SenateMemberKey): Promise<PoliticianVote[] | null> {
   const sessions = senateSessions()
