@@ -1,112 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import type { Party } from '@/lib/types'
+import type { Politician } from '@/lib/types/politicians'
 
-export interface DonorAlignment {
-  donorName: string
-  donorAmount: number | null
-  donorLikelyPosition: 'support' | 'oppose' | 'neutral'
-  voteAligns: boolean
-  explanation: string
-}
-
-interface PoliticianVote {
-  id: string
-  bill: string
-  billId: string | null
-  billTitle: string
-  date: string
-  vote: 'Yea' | 'Nay'
-  question: string | null
-  donorAlignments: DonorAlignment[]
-}
-
-interface PoliticianBill {
-  id: string
-  name: string
-  number: string
-  status: 'Passed' | 'Pending' | 'Failed'
-  date: string
-}
-
-interface Donor {
-  rank: number
-  name: string
-  amount: string
-  category: string
-  summary?: string
-}
-
-export interface TopContributor {
-  rank: number
-  orgName: string
-  total: string
-  cmteId?: string | null
-}
-
-interface Committee {
-  name: string
-  url: string | null
-  title: string | null
-}
-
-interface FundingBreakdown {
-  pac: number
-  pacPct: number
-  individualLarge: number
-  individualLargePct: number
-  individualSmall: number
-  individualSmallPct: number
-  partyContributions: number
-  partyContributionsPct: number
-  selfFunded: number
-  selfFundedPct: number
-  other: number
-  otherPct: number
-  total: number
-  superPacFor: number
-  superPacAgainst: number
-  inStateTotal: number
-  outOfStateTotal: number
-  inStatePct: number
-  outOfStatePct: number
-  cycle: number
-  minCycle?: number
-}
-
-export interface Politician {
-  id: string
-  bioguideId: string
-  name: string
-  title: string
-  party: Party
-  state: string
-  stateCode: string
-  district?: string
-  since: string | null
-  photo: string | null
-  photoCredit: string | null
-  website: string | null
-  address: string | null
-  phone: string | null
-  fecUrl: string | null
-  nextElectionYear: number | null
-  stats: {
-    yearsInOffice: number
-    attendance: number | null
-    ideologyScore: number | null
-  }
-  votes: PoliticianVote[]
-  bills: PoliticianBill[]
-  donors: Donor[]
-  pacDonors: Donor[]
-  topContributors: TopContributor[]
-  fundingBreakdown?: FundingBreakdown | null
-  committees: Committee[]
-  donorAlignmentSyncedAt?: string | null
-  donorAlignmentIsStale?: boolean
-}
+export type {
+  Politician,
+  PoliticianStats,
+  PoliticianVote,
+  PoliticianBill,
+  DonorAlignment,
+  Donor,
+  TopContributor,
+  Committee,
+  FundingBreakdown,
+} from '@/lib/types/politicians'
 
 export function useFetchPoliticianDetail(id: string, initialPolitician?: Politician | null): {
   politician: Politician | null

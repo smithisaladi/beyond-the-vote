@@ -1,80 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import type { BillDetail } from '@/lib/types/bills'
 
-type BillDetailStatus = 'Active' | 'Committee' | 'Stalled' | 'Passed' | 'Failed'
-
-interface Sponsor {
-  name: string
-  bioguideId: string
-  party: string
-  state: string
-  district: string | null
-}
-
-interface Cosponsor {
-  name: string
-  bioguideId: string
-  party: string
-  state: string
-}
-
-interface Action {
-  date: string
-  text: string
-  type: string
-}
-
-interface PartyBreakdown {
-  democrat:    { yea: number; nay: number }
-  republican:  { yea: number; nay: number }
-  independent: { yea: number; nay: number }
-}
-
-interface MemberPosition {
-  bioguideId: string
-  name:       string
-  party:      string
-  state:      string
-  photoUrl:   string | null
-  position:   string
-}
-
-interface Vote {
-  id:              string | null
-  date:            string
-  chamber:         'House' | 'Senate'
-  question:        string | null
-  result:          string | null
-  required:        string | null
-  yeas:            number | null
-  nays:            number | null
-  present:         number | null
-  notVoting:       number | null
-  partyBreakdown:  PartyBreakdown | null
-  memberPositions: MemberPosition[]
-  sourceUrl:       string | null
-}
-
-export type { PartyBreakdown, MemberPosition, Vote }
-
-export interface BillDetail {
-  id: string
-  number: string
-  title: string
-  congress: number
-  introducedDate: string
-  status: BillDetailStatus
-  summary: string
-  sponsor: Sponsor | null
-  cosponsors: Cosponsor[]
-  policyArea: string | null
-  topics: string[]
-  subjects: string[]
-  congressGovUrl: string
-  actions: Action[]
-  votes: Vote[]
-}
+export type {
+  BillVote as Vote,
+  BillVoteMemberPosition as MemberPosition,
+  PartyBreakdown,
+  BillDetail,
+} from '@/lib/types/bills'
 
 export function useFetchBillDetail(id: string, initialBill?: BillDetail | null): {
   bill: BillDetail | null

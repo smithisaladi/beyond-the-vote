@@ -77,6 +77,7 @@ export default async function BillPage({ params }: { params: Promise<{ id: strin
       })),
       sourceUrl: v.source_url ?? null,
     })),
+    _hasDetailedVotes: votes.length > 0,
   } : null
 
   return <BillDetailPage id={billId} initialBill={initialBill} />

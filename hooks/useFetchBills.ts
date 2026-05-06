@@ -1,8 +1,10 @@
 'use client'
 
 import { useCallback } from 'react'
-import type { Party, BillStatus } from '@/lib/types'
+import type { BillSummary } from '@/lib/types/bills'
 import { usePaginatedFetch } from '@/hooks/usePaginatedFetch'
+
+export type { BillSummary as Bill }
 
 const PAGE_SIZE = 20
 
@@ -12,19 +14,6 @@ export interface BillFilters {
   dateFilter?: 'all' | 'month' | 'year'
   sort?: 'newest' | 'oldest'
   trackedBillIds?: string[]
-}
-
-export interface Bill {
-  id: string
-  number: string
-  title: string
-  sponsor: string
-  party: Party
-  status: BillStatus
-  topics: string[]
-  lastAction: string
-  lastActionTimestamp: number
-  summary: string
 }
 
 export function useFetchBills(debouncedQuery: string, filters?: BillFilters) {
@@ -50,7 +39,7 @@ export function useFetchBills(debouncedQuery: string, filters?: BillFilters) {
     [debouncedQuery, statusKey, topicsKey, dateKey, sortKey, billIdsKey]
   )
 
-  const { data, ...rest } = usePaginatedFetch<Bill>({
+  const { data, ...rest } = usePaginatedFetch<BillSummary>({
     endpoint: '/api/bills',
     buildParams,
     responseKey: 'bills',
