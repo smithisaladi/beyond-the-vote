@@ -16,9 +16,6 @@ export interface BillRow {
   sponsor_party: string | null
 }
 
-/** Shape returned by hybridBillSearch (RRF combined FTS+trigram). */
-export type BillSearchRow = BillRow
-
 /** Subset of `legislators` columns used for sponsor enrichment. */
 export interface LegislatorLite {
   bioguide_id: string
@@ -52,6 +49,12 @@ export interface BillVoteSummaryRow {
 export interface BillVotePositionRow {
   bioguide_id: string
   position: string
+  /**
+   * Joined `legislators` row. Supabase's nested-relation inference types this
+   * as an array because `legislators` is a parent table; in practice the FK is
+   * single-row, so we model it as `{...} | null`. This mismatch is why the
+   * fetch site uses an `as unknown as BillVoteSummaryRow[]` bridge.
+   */
   legislators?: {
     full_name: string | null
     party: string | null

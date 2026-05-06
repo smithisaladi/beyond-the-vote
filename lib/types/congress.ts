@@ -12,6 +12,24 @@ export interface CongressBillResponse {
   }
 }
 
+/** Wrapper for GET /bill/.../actions response. */
+export interface CongressBillActionsResponse {
+  actions?: CongressBillAction[]
+}
+
+/** Wrapper for GET /bill/.../summaries response. */
+export interface CongressBillSummariesResponse {
+  summaries?: CongressBillSummary[]
+}
+
+/** Subset of GET /member/{bioguideId} response. */
+export interface CongressMemberResponse {
+  member?: {
+    officialWebsiteUrl?: string
+    terms?: { item?: { startYear?: number }[] }
+  }
+}
+
 export interface CongressBillSponsor {
   fullName: string
   bioguideId: string
@@ -53,14 +71,18 @@ export interface GeocodioDistrict {
   current_legislators?: LegislatorJson[]
 }
 
-/**
- * Legislator entry shape used by Geocodio's `current_legislators` field
- * and the local `pipeline/data/legislators` raw JSON files. The two share
- * the same nested structure (references / bio / contact).
- */
+/** Legislator entry shape returned in Geocodio's `current_legislators` field. */
 export interface LegislatorJson {
   type?: string
   references?: { bioguide_id?: string }
   bio?: { first_name?: string; last_name?: string; party?: string }
   contact?: { url?: string; phone?: string }
+}
+
+/** Wrapper for GET /v1.7/geocode response from api.geocod.io. */
+export interface GeocodioGeocodeResponse {
+  results?: Array<{
+    address_components?: { state?: string }
+    fields?: { congressional_districts?: GeocodioDistrict[] }
+  }>
 }

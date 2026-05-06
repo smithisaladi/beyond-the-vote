@@ -3,7 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { parseSearchParams, RepresentativesParams } from '@/lib/api-validation'
 import { toParty } from '@/lib/party'
 import { ordinal } from '@/lib/format'
-import type { GeocodioDistrict, LegislatorJson } from '@/lib/types/congress'
+import type {
+  GeocodioDistrict,
+  GeocodioGeocodeResponse,
+  LegislatorJson,
+  CongressMemberResponse,
+} from '@/lib/types/congress'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const GEOCODIO_API_KEY = process.env.GEOCODIO_API_KEY ?? ''
@@ -21,13 +26,13 @@ async function enrichFromCongress(
   )
   if (!res.ok) return { since: null, website: null }
 
-  const data = await res.json()
+  const data = await res.json() as CongressMemberResponse
   const member = data.member
-  const firstTerm = member.terms?.item?.[0]
+  const firstTerm = member?.terms?.item?.[0]
 
   return {
     since: firstTerm?.startYear?.toString() ?? null,
-    website: member.officialWebsiteUrl ?? null,
+    website: member?.officialWebsiteUrl ?? null,
   }
 }
 
@@ -52,7 +57,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'address_not_found' }, { status: 404 })
     }
 
-    const geocodioData = await geocodioRes.json()
+    const geocodioData = await geocodioRes.json() as GeocodioGeocodeResponse
     const result = geocodioData.results?.[0]
 
     if (!result) {

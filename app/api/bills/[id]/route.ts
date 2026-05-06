@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { formatBillType } from '@/lib/format'
 import type {
   CongressBillResponse,
+  CongressBillActionsResponse,
+  CongressBillSummariesResponse,
   CongressBillAction,
   CongressBillSummary,
   CongressBillCosponsor,
@@ -100,6 +102,8 @@ export async function GET(
   const detailFetch  = detailRes.status   === 'fulfilled' ? detailRes.value   : null
   const actionsFetch = actionsRes.status  === 'fulfilled' ? actionsRes.value  : null
   const summaryFetch = summariesRes.status === 'fulfilled' ? summariesRes.value : null
+  // Supabase types `legislators` as an array via the FK join; we model it as a
+  // single object | null on BillVotePositionRow (see that type's docs).
   const dbVotes: BillVoteSummaryRow[] = dbVotesRes.status  === 'fulfilled' ? (dbVotesRes.value.data ?? []) as unknown as BillVoteSummaryRow[] : []
   const dbBill       = dbBillRes.status   === 'fulfilled' ? dbBillRes.value.data : null
   const dbTopics     = dbBill?.topics ?? []
@@ -112,9 +116,9 @@ export async function GET(
 
   const detailData    = await detailFetch.json() as CongressBillResponse
   const bill          = detailData.bill
-  const actionsData   = actionsFetch?.ok ? await actionsFetch.json() : {}
+  const actionsData: CongressBillActionsResponse = actionsFetch?.ok ? await actionsFetch.json() : {}
   const actions: CongressBillAction[] = actionsData.actions ?? []
-  const summariesData = summaryFetch?.ok ? await summaryFetch.json() : {}
+  const summariesData: CongressBillSummariesResponse = summaryFetch?.ok ? await summaryFetch.json() : {}
   const summaries: CongressBillSummary[] = summariesData.summaries ?? []
   const rawSummary = summaries.at(-1)?.text?.replace(/<[^>]+>/g, '') ?? ''
   const latestSummary = rawSummary
