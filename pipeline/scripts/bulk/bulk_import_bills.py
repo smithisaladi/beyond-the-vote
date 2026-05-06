@@ -126,59 +126,7 @@ def load_completed_pages(congress: int) -> set[int]:
     return completed
 
 
-def load_voted_bill_ids() -> set[str]:
-    """Load the set of bill_ids that have at least one recorded vote."""
-    from utils import get_supabase
-    db = get_supabase()
-    result: set[str] = set()
-    offset = 0
-    while True:
-        res = (
-            db.table("bill_vote_summaries")
-            .select("bill_id")
-            .range(offset, offset + 999)
-            .execute()
-        )
-        for row in (res.data or []):
-            if row.get("bill_id"):
-                result.add(row["bill_id"])
-        if len(res.data or []) < 1000:
-            break
-        offset += 1000
-    log.info("Loaded %d voted bill_ids", len(result))
-    return result
-
-
-def prune_unvoted_bills(voted_ids: set[str]) -> int:
-    """Delete bills from Supabase that have no recorded vote."""
-    from utils import get_supabase
-    db = get_supabase()
-    # Fetch all bill_ids currently in Supabase
-    all_ids: set[str] = set()
-    offset = 0
-    while True:
-        res = db.table("bills").select("bill_id").range(offset, offset + 999).execute()
-        for row in (res.data or []):
-            all_ids.add(row["bill_id"])
-        if len(res.data or []) < 1000:
-            break
-        offset += 1000
-
-    to_delete = all_ids - voted_ids
-    if not to_delete:
-        log.info("No unvoted bills to prune")
-        return 0
-
-    # Delete in batches
-    deleted = 0
-    for chunk in batch(list(to_delete), 100):
-        db.table("bills").delete().in_("bill_id", chunk).execute()
-        deleted += len(chunk)
-    log.info("Pruned %d unvoted bills from Supabase", deleted)
-    return deleted
-
-
-def process_congress(congress: int, api_key: str, voted_only_ids: set[str] | None = None) -> int:
+def process_congress(congress: int, api_key: str) -> int:
     """Fetch and upsert all bills for one congress. Returns count upserted."""
     total_upserted = 0
     offset = 0
@@ -233,9 +181,6 @@ def process_congress(congress: int, api_key: str, voted_only_ids: set[str] | Non
             row = transform_bill(detail)
             if not row:
                 continue
-            # In voted-only mode, skip bills without a recorded vote
-            if voted_only_ids is not None and row["bill_id"] not in voted_only_ids:
-                continue
             db_rows.append(row)
 
         if db_rows:
@@ -258,29 +203,20 @@ def process_congress(congress: int, api_key: str, voted_only_ids: set[str] | Non
     return total_upserted
 
 
-def run(congresses: list[int], voted_only: bool = False) -> None:
+def run(congresses: list[int]) -> None:
     run_id = log_run_start(SCRIPT)
     api_key = get_api_key()
     total = 0
 
-    voted_only_ids: set[str] | None = None
-    if voted_only:
-        voted_only_ids = load_voted_bill_ids()
-
     try:
         for congress in congresses:
-            log.info("=== Importing bills for congress %d %s===", congress, "(voted-only) " if voted_only else "")
-            n = process_congress(congress, api_key, voted_only_ids)
+            log.info("=== Importing bills for congress %d ===", congress)
+            n = process_congress(congress, api_key)
             total += n
             log.info("Congress %d complete: %d bills upserted", congress, n)
 
-        # In voted-only mode, also prune existing unvoted bills from Supabase
-        pruned = 0
-        if voted_only and voted_only_ids is not None:
-            pruned = prune_unvoted_bills(voted_only_ids)
-
-        log.info("All done. Total bills upserted: %d, pruned: %d", total, pruned)
-        log_run_end(run_id, "success", {"total_bills": total, "pruned": pruned, "congresses": congresses})
+        log.info("All done. Total bills upserted: %d", total)
+        log_run_end(run_id, "success", {"total_bills": total, "congresses": congresses})
 
     except Exception as e:
         log.exception("bulk_import_bills failed")
@@ -294,9 +230,5 @@ if __name__ == "__main__":
         "--congress", type=int, nargs="+", required=True,
         help="Congress number(s) to import (e.g. 118 119)"
     )
-    parser.add_argument(
-        "--voted-only", action="store_true",
-        help="Only load bills that have a recorded vote, and prune unvoted bills from Supabase"
-    )
     args = parser.parse_args()
-    run(congresses=args.congress, voted_only=args.voted_only)
+    run(congresses=args.congress)

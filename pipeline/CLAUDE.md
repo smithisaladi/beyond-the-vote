@@ -9,8 +9,7 @@ Python data pipeline: FEC campaign finance, Congress.gov legislation, VoteView i
 | `pip install -r requirements.txt` | Install dependencies |
 | `python -m scripts.bulk.bulk_import_legislators` | Bulk: legislators + committees |
 | `python -m scripts.bulk.bulk_import_member_scores` | Bulk: VoteView ideology scores |
-| `python -m scripts.bulk.bulk_import_bills --congress 118 119` | Bulk: bills from Congress.gov |
-| `python -m scripts.bulk.bulk_import_bills --congress 118 119 --voted-only` | Prune unvoted bills |
+| `python -m scripts.bulk.bulk_import_bills --congress 118 119` | Bulk: bills from Congress.gov (all bills) |
 | `python -m scripts.bulk.bulk_import_votes --congress 118 119` | Bulk: votes (House + Senate) |
 | `python -m scripts.bulk.bulk_import_fec` | Bulk: FEC campaign finance (legacy) |
 | `python -m scripts.sync.sync_fec` | Sync: FEC via OpenFEC API (weekly) |
@@ -50,10 +49,9 @@ Bulk imports must follow this sequence:
 | 2 | `bulk_import_member_scores` | member_scores (PK: bioguide_id, congress) |
 | 3 | `bulk_import_bills --congress 118 119` | bills |
 | 4 | `bulk_import_votes --congress 118 119` | bill_vote_summaries, bill_vote_positions |
-| 5 | `bulk_import_bills --voted-only` | Prune unvoted bills |
-| 6 | `bulk_import_fec` | pac_to_candidate, independent_expenditures + local CSVs |
-| 7 | `compute_funding_summaries` | legislator_funding_summary, legislator_top_pacs, legislator_top_contributors |
-| 8 | `compute_leaderboard_cache` | contributor_leaderboard_cache |
+| 5 | `bulk_import_fec` | pac_to_candidate, independent_expenditures + local CSVs |
+| 6 | `compute_funding_summaries` | legislator_funding_summary, legislator_top_pacs, legislator_top_contributors |
+| 7 | `compute_leaderboard_cache` | contributor_leaderboard_cache |
 
 ## What Goes Where
 
