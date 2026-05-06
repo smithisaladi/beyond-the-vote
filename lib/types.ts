@@ -10,3 +10,14 @@ export type {
   BillVoteMemberPosition,
   PartyBreakdown,
 } from './types/bills'
+export type {
+  Politician,
+  PoliticianStats,
+  PoliticianVote,
+  PoliticianBill,
+  DonorAlignment,
+  Donor,
+  TopContributor,
+  Committee,
+  FundingBreakdown,
+} from './types/politicians'
