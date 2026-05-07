@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, Inter } from 'next/font/google'
 import { siteConfig } from '@/lib/site-config'
-import { TooltipProvider } from '@/components/shared/TooltipProvider'
+import { Providers } from '@/components/shared/Providers'
 import './globals.css'
 
 /**
@@ -99,7 +99,7 @@ export default function RootLayout({
     // sets `class="dark"` pre-hydration, add it then.
     <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
