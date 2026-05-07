@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query-keys'
 import type { Party } from '@/lib/types'
 
 export interface PacDetailRecipient {
@@ -27,52 +28,41 @@ export interface PacDetail {
   summary: string
 }
 
+type PacBase = Omit<PacDetail, 'summary'> & { summary?: string }
+
 export function useFetchPacDetail(cmteId: string) {
-  const [pac, setPac] = useState<PacDetail | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [summaryLoading, setSummaryLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const pacQuery = useQuery<PacBase, Error>({
+    queryKey: queryKeys.donors.detail(cmteId),
+    queryFn: async () => {
+      const res = await fetch(`/api/donors/${encodeURIComponent(cmteId)}`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to load PAC details')
+      return data
+    },
+    enabled: !!cmteId,
+  })
 
-  useEffect(() => {
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    setSummaryLoading(false)
+  const summaryQuery = useQuery<string, Error>({
+    queryKey: queryKeys.donors.summary(cmteId),
+    queryFn: async () => {
+      const res = await fetch(`/api/donors/${encodeURIComponent(cmteId)}?summary=1`)
+      const data = await res.json()
+      if (!res.ok || !data.summary) return ''
+      return data.summary
+    },
+    enabled: !!pacQuery.data,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  })
 
-    fetch(`/api/donors/${encodeURIComponent(cmteId)}`)
-      .then(async (res) => {
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error ?? 'Failed to load PAC details')
-        if (!cancelled) {
-          setPac(data)
-          setLoading(false)
+  const pac: PacDetail | null = pacQuery.data
+    ? { ...pacQuery.data, summary: summaryQuery.data ?? pacQuery.data.summary ?? '' }
+    : null
 
-          // Fetch AI summary in background
-          setSummaryLoading(true)
-          fetch(`/api/donors/${encodeURIComponent(cmteId)}?summary=1`)
-            .then(async (res2) => {
-              const data2 = await res2.json()
-              if (!cancelled && res2.ok && data2.summary) {
-                setPac(prev => prev ? { ...prev, summary: data2.summary } : prev)
-              }
-            })
-            .catch(err => {
-              if (!cancelled) console.error('[pac-detail] summary fetch failed:', err)
-            })
-            .finally(() => {
-              if (!cancelled) setSummaryLoading(false)
-            })
-        }
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to load PAC details')
-          setLoading(false)
-        }
-      })
-
-    return () => { cancelled = true }
-  }, [cmteId])
-
-  return { pac, loading, summaryLoading, error }
+  return {
+    pac,
+    loading: pacQuery.isLoading,
+    summaryLoading: summaryQuery.isLoading,
+    error: pacQuery.error?.message ?? null,
+  }
 }
