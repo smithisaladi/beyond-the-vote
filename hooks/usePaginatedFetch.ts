@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useInfiniteQuery } from '@tanstack/react-query'
 
 interface UsePaginatedFetchOptions {
   /** API endpoint path, e.g. '/api/bills'. */
@@ -28,9 +28,16 @@ interface UsePaginatedFetchResult<T> {
   refetch: () => Promise<void>
 }
 
+interface PageData<T> {
+  rows: T[]
+  total: number
+  nextOffset: number | null
+}
+
 /**
- * Generic paginated fetch hook. Handles offset/total/loadMore state, AbortController cleanup,
- * and AbortError suppression. Callers wrap it to expose a domain-specific data key.
+ * Generic paginated fetch hook backed by React Query's useInfiniteQuery.
+ * Handles offset/total/loadMore state with automatic caching and deduplication.
+ * Callers wrap it to expose a domain-specific data key.
  */
 export function usePaginatedFetch<T>({
   endpoint,
@@ -40,64 +47,45 @@ export function usePaginatedFetch<T>({
   pageSize = 20,
   errorFallback = 'Request failed',
 }: UsePaginatedFetchOptions): UsePaginatedFetchResult<T> {
-  const [data, setData] = useState<T[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [offset, setOffset] = useState(0)
-  const [total, setTotal] = useState(0)
-  const [loadingMore, setLoadingMore] = useState(false)
-
-  const fetchPage = useCallback(
-    async (currentOffset: number, append: boolean, signal?: AbortSignal) => {
-      if (currentOffset === 0) setLoading(true)
-      else setLoadingMore(true)
-      setError(null)
-
-      try {
-        const params = buildParams(currentOffset)
-        const res = await fetch(`${endpoint}?${params.toString()}`, { signal })
-        const body = await res.json()
-        if (!res.ok) throw new Error(body?.error ?? errorFallback)
-        const rows: T[] = body[responseKey] ?? []
-        setData(prev => (append ? [...prev, ...rows] : rows))
-        setTotal(body.pagination?.total ?? rows.length)
-      } catch (err: unknown) {
-        if (err instanceof DOMException && err.name === 'AbortError') return
-        setError(err instanceof Error ? err.message : errorFallback)
-      } finally {
-        if (!signal?.aborted) {
-          setLoading(false)
-          setLoadingMore(false)
-        }
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useInfiniteQuery<PageData<T>, Error>({
+    queryKey: [endpoint, resetKey],
+    queryFn: async ({ pageParam, signal }) => {
+      const offset = pageParam as number
+      const params = buildParams(offset)
+      const res = await fetch(`${endpoint}?${params.toString()}`, { signal })
+      const body = await res.json()
+      if (!res.ok) throw new Error(body?.error ?? errorFallback)
+      const rows: T[] = body[responseKey] ?? []
+      const total: number = body.pagination?.total ?? rows.length
+      return {
+        rows,
+        total,
+        nextOffset: offset + pageSize < total ? offset + pageSize : null,
       }
     },
-    // buildParams identity is not stable; we gate re-runs on resetKey instead.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [endpoint, responseKey, errorFallback, resetKey]
-  )
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+  })
 
-  useEffect(() => {
-    const controller = new AbortController()
-    setOffset(0)
-    fetchPage(0, false, controller.signal)
-    return () => controller.abort()
-  }, [fetchPage])
-
-  const loadMore = () => {
-    if (loadingMore) return
-    const next = offset + pageSize
-    setOffset(next)
-    fetchPage(next, true)
-  }
+  const allRows = data?.pages.flatMap((p) => p.rows) ?? []
+  const total = data?.pages[data.pages.length - 1]?.total ?? 0
 
   return {
-    data,
-    loading,
-    error,
+    data: allRows,
+    loading: isLoading,
+    error: error?.message ?? null,
     total,
-    loadingMore,
-    loadMore,
-    hasMore: data.length < total,
-    refetch: () => fetchPage(0, false),
+    loadingMore: isFetchingNextPage,
+    loadMore: () => { if (hasNextPage) fetchNextPage() },
+    hasMore: !!hasNextPage,
+    refetch: async () => { await refetch() },
   }
 }

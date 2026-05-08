@@ -1,7 +1,9 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { topicToSlug, type Topic } from '@/lib/topics'
+import { queryKeys } from '@/lib/query-keys'
 
 export type TopicFeedItem = {
   topic: Topic
@@ -12,45 +14,37 @@ export function useTopicBills(topics: Set<Topic>, perTopicLimit = 10): {
   items: TopicFeedItem[]
   loading: boolean
 } {
-  const [items, setItems] = useState<TopicFeedItem[]>([])
-  const [loading, setLoading] = useState(false)
-
-  // Stable key — Set reference changes every render from useTopicPreferences
   const topicKey = useMemo(() => Array.from(topics).sort().join(','), [topics])
 
-  useEffect(() => {
-    if (!topicKey) { setItems([]); return }
-
-    const controller = new AbortController()
-    setLoading(true)
-    const topicList = topicKey.split(',') as Topic[]
-
-    const fetches = topicList.map(async (topic) => {
-      try {
-        const res = await fetch(`/api/bills/by-topic?slug=${topicToSlug(topic)}&limit=${perTopicLimit}`, { signal: controller.signal })
-        if (!res.ok) return []
-        const data = await res.json()
-        return (data.bills ?? []).map((b: TopicFeedItem['bill']) => ({ topic, bill: b }))
-      } catch {
-        return []
-      }
-    })
-
-    Promise.all(fetches).then((results) => {
-      if (controller.signal.aborted) return
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.dashboard.topicBills(topicKey, perTopicLimit),
+    queryFn: async () => {
+      if (!topicKey) return []
+      const topicList = topicKey.split(',') as Topic[]
+      const results = await Promise.all(
+        topicList.map(async (topic) => {
+          try {
+            const res = await fetch(
+              `/api/bills/by-topic?slug=${topicToSlug(topic)}&limit=${perTopicLimit}`
+            )
+            if (!res.ok) return []
+            const data = await res.json()
+            return (data.bills ?? []).map((b: TopicFeedItem['bill']) => ({ topic, bill: b }))
+          } catch {
+            return []
+          }
+        })
+      )
       const seen = new Set<string>()
-      const merged = (results.flat() as TopicFeedItem[]).filter((item) => {
+      return (results.flat() as TopicFeedItem[]).filter((item) => {
         if (seen.has(item.bill.id)) return false
         seen.add(item.bill.id)
         return true
       })
-      setItems(merged)
-      setLoading(false)
-    })
+    },
+    enabled: !!topicKey,
+    staleTime: 2 * 60 * 1000,
+  })
 
-    return () => controller.abort()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topicKey, perTopicLimit])
-
-  return { items, loading }
+  return { items: data ?? [], loading: isLoading }
 }
