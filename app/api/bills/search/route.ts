@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { lookupBill } from '@/lib/queries/lookup-bill'
 import { hybridBillSearch } from '@/lib/queries/hybrid-bill-search'
 import { parseSearchParams, BillSearchParams } from '@/lib/api-validation'
+import { apiError } from '@/lib/api-errors'
 
 // Bill ID format: "119-hr-4521" or bill_number format: "H.R. 4521", "S. 1247"
 const BILL_ID_RE     = /^\d{3}-[a-z]+-\d+$/i
@@ -10,7 +11,7 @@ const BILL_NUMBER_RE = /^[hs]\.?\s*(?:r(?:es)?|j\.?res|con\.?res)?\.?\s*\d+$/i
 export async function GET(req: NextRequest) {
   const parsed = parseSearchParams(BillSearchParams, req.nextUrl.searchParams)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 })
+    return apiError(parsed.error, 400)
   }
   const { q, limit, congress } = parsed.data
 
@@ -33,9 +34,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ query: q, results, count: results.length })
   } catch (err) {
     console.error('[api/bills/search]', err)
-    return NextResponse.json(
-      { error: 'Search failed' },
-      { status: 500 }
-    )
+    return apiError('Search failed', 500)
   }
 }

@@ -106,13 +106,13 @@ describe('GET /api/representatives', () => {
     expect(res.status).toBe(404)
   })
 
-  it('returns 200 with no_legislators when district has no legislators', async () => {
+  it('returns 404 with no_legislators when district has no legislators', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(
       jsonResponse(makeGeocodioResponse([])),
     ))
 
     const res = await callGET({ address: '123 Main St' })
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(404)
     const json = await res.json()
     expect(json.error).toBe('no_legislators')
   })

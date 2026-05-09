@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { apiError } from '@/lib/api-errors'
 import { getIdeologyLabel } from '@/lib/ideology'
 import { ordinal } from '@/lib/format'
 import { fetchRecentVotesForSenator } from '@/lib/integrations/senate-votes/fetch-recent'
@@ -39,13 +40,15 @@ interface CongressTerm {
 
 // ── Supabase query result types ───────────────────────────────────────────────
 
+interface CommitteeJoin {
+  name: string
+  url: string | null
+  chamber: string | null
+}
+
 interface CommitteeRow {
   title: string | null
-  committees: {
-    name: string
-    url: string | null
-    chamber: string | null
-  } | null
+  committees: CommitteeJoin | CommitteeJoin[] | null
 }
 
 interface PipelineRunRow {
@@ -126,7 +129,7 @@ export async function GET(
 
   const legislator   = extract(legislatorRes)?.data as LegislatorRow | null | undefined
   const scores       = extract(scoresRes)?.data
-  const commRows     = (extract(committeesRes)?.data ?? []) as unknown as CommitteeRow[]
+  const commRows     = (extract(committeesRes)?.data ?? []) as CommitteeRow[]
   const lastDonorRun = extract(lastDonorRunRes)?.data as PipelineRunRow | null | undefined
 
   // ── Tier 2: External APIs + votes (all in parallel) ───────────────────────
@@ -158,8 +161,8 @@ export async function GET(
       { next: { revalidate: 3600 } }
     )
     if (!fallback.ok) {
-      if (fallback.status === 404) return NextResponse.json({ error: 'Politician not found' }, { status: 404 })
-      return NextResponse.json({ error: 'Failed to load politician' }, { status: 502 })
+      if (fallback.status === 404) return apiError('Politician not found', 404)
+      return apiError('Failed to load politician', 502)
     }
     const { member } = await fallback.json() as { member: CongressMember }
     const terms: CongressTerm[] = member.terms?.item ?? []
@@ -209,18 +212,21 @@ export async function GET(
   }
 
   if (!legislator) {
-    return NextResponse.json({ error: 'Politician not found' }, { status: 404 })
+    return apiError('Politician not found', 404)
   }
 
   const billVotesCast  = 0
   const votedWithParty = null
 
-  const committees = commRows.map((r) => ({
-    name:    r.committees?.name ?? '',
-    url:     r.committees?.url ?? null,
-    chamber: r.committees?.chamber ?? null,
-    title:   r.title ?? null,
-  }))
+  const committees = commRows.map((r) => {
+    const c = Array.isArray(r.committees) ? r.committees[0] ?? null : r.committees
+    return {
+      name:    c?.name ?? '',
+      url:     c?.url ?? null,
+      chamber: c?.chamber ?? null,
+      title:   r.title ?? null,
+    }
+  })
 
   const isSenateMember = legislator.chamber === 'senate'
   const rawTerms = legislator.raw_json?.terms ?? []
@@ -288,6 +294,6 @@ export async function GET(
   })
   } catch (err) {
     console.error('[api/politicians/[id]]', err)
-    return NextResponse.json({ error: 'Failed to load politician' }, { status: 500 })
+    return apiError('Failed to load politician', 500)
   }
 }

@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { pacDetail } from '@/lib/queries/pac-detail'
+import { apiError } from '@/lib/api-errors'
+import { toTitleCase } from '@/lib/format'
 
 export const revalidate = 600
 
-function toTitleCase(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/(?:^|\s|[-/])\S/g, (c) => c.toUpperCase())
-}
+const AI_MODEL = 'claude-haiku-4-5-20251001'
 
 interface Recipient {
   bioguide_id: string
@@ -76,7 +74,7 @@ Write only the two paragraphs, no headings or labels.`
   try {
     const client = new Anthropic({ apiKey })
     const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: AI_MODEL,
       max_tokens: 400,
       messages: [{ role: 'user', content: prompt }],
     })
@@ -85,7 +83,7 @@ Write only the two paragraphs, no headings or labels.`
     if (block.type === 'text') return block.text
     return ''
   } catch (err) {
-    console.error('AI summary generation failed:', err)
+    console.error('[api/donors/[cmteId]] AI summary generation failed:', err)
     return ''
   }
 }
@@ -99,7 +97,7 @@ export async function GET(
   try {
     const data = await pacDetail(cmteId)
     if (data.length === 0) {
-      return NextResponse.json({ error: 'PAC not found' }, { status: 404 })
+      return apiError('PAC not found', 404)
     }
 
     const row = data[0]
@@ -147,10 +145,7 @@ export async function GET(
       summary,
     })
   } catch (err) {
-    console.error('PAC detail API error:', err)
-    return NextResponse.json(
-      { error: 'Failed to load PAC details' },
-      { status: 500 },
-    )
+    console.error('[api/donors/[cmteId]]', err)
+    return apiError('Failed to load PAC details', 500)
   }
 }

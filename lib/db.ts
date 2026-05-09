@@ -15,9 +15,9 @@ declare global {
 export const sql =
   globalThis.__pg ??
   postgres(process.env.DATABASE_URL!, {
-    max: 10,
-    idle_timeout: 20,
-    connect_timeout: 10,
+    max: parseInt(process.env.PG_POOL_MAX ?? '10', 10),
+    idle_timeout: parseInt(process.env.PG_IDLE_TIMEOUT ?? '20', 10),
+    connect_timeout: parseInt(process.env.PG_CONNECT_TIMEOUT ?? '10', 10),
     prepare: false,
   })
 

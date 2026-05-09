@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseSearchParams, DonorsParams } from '@/lib/api-validation'
+import { apiError } from '@/lib/api-errors'
 
 export const revalidate = 300
 
 export async function GET(req: NextRequest) {
   const parsed = parseSearchParams(DonorsParams, req.nextUrl.searchParams)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 })
+    return apiError(parsed.error, 400)
   }
   const { q: rawQ, limit, offset } = parsed.data
   const q = rawQ ?? null
@@ -81,10 +82,7 @@ export async function GET(req: NextRequest) {
       pagination: { total: count ?? 0, limit, offset },
     })
   } catch (err) {
-    console.error('Donors API error:', err)
-    return NextResponse.json(
-      { error: 'Failed to load donors' },
-      { status: 500 },
-    )
+    console.error('[api/donors]', err)
+    return apiError('Failed to load donors', 500)
   }
 }

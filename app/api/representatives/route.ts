@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseSearchParams, RepresentativesParams } from '@/lib/api-validation'
+import { apiError } from '@/lib/api-errors'
 import { toParty } from '@/lib/party'
 import { ordinal } from '@/lib/format'
 import type {
@@ -39,12 +40,12 @@ async function enrichFromCongress(
 export async function GET(request: NextRequest) {
   const parsed = parseSearchParams(RepresentativesParams, request.nextUrl.searchParams)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 })
+    return apiError(parsed.error, 400)
   }
   const { address } = parsed.data
 
   if (!GEOCODIO_API_KEY) {
-    return NextResponse.json({ error: 'geocode_failed' }, { status: 500 })
+    return apiError('geocode_failed', 500)
   }
 
   try {
@@ -54,14 +55,14 @@ export async function GET(request: NextRequest) {
     )
 
     if (!geocodioRes.ok) {
-      return NextResponse.json({ error: 'address_not_found' }, { status: 404 })
+      return apiError('address_not_found', 404)
     }
 
     const geocodioData = await geocodioRes.json() as GeocodioGeocodeResponse
     const result = geocodioData.results?.[0]
 
     if (!result) {
-      return NextResponse.json({ error: 'address_not_found' }, { status: 404 })
+      return apiError('address_not_found', 404)
     }
 
     const stateCode: string = result.address_components?.state ?? ''
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (legislators.length === 0) {
-      return NextResponse.json({ error: 'no_legislators' }, { status: 200 })
+      return apiError('no_legislators', 404)
     }
 
     // Enrich with local DB data (photos, ideology scores) in one query
@@ -149,7 +150,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ representatives: enriched })
   } catch (err) {
-    console.error('[/api/representatives]', err)
-    return NextResponse.json({ error: 'geocode_failed' }, { status: 500 })
+    console.error('[api/representatives]', err)
+    return apiError('geocode_failed', 500)
   }
 }

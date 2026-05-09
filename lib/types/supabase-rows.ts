@@ -46,19 +46,50 @@ export interface BillVoteSummaryRow {
   bill_vote_positions?: BillVotePositionRow[]
 }
 
+/**
+ * Supabase's PostgREST types nested FK joins as arrays even for single-row
+ * parent lookups. We define two shapes:
+ *
+ *  - `RawBillVotePositionRow` — matches Supabase's actual return type (array).
+ *  - `BillVotePositionRow`    — the normalised shape downstream code expects
+ *    (single object | null).
+ *
+ * Use `normalizeBillVotes()` to convert from raw → normalised.
+ */
+export interface RawBillVotePositionRow {
+  bioguide_id: string
+  position: string
+  legislators?: Array<{
+    full_name: string | null
+    party: string | null
+    state: string | null
+    photo_url: string | null
+  }> | null
+}
+
+export interface RawBillVoteSummaryRow extends Omit<BillVoteSummaryRow, 'bill_vote_positions'> {
+  bill_vote_positions?: RawBillVotePositionRow[]
+}
+
 export interface BillVotePositionRow {
   bioguide_id: string
   position: string
-  /**
-   * Joined `legislators` row. Supabase's nested-relation inference types this
-   * as an array because `legislators` is a parent table; in practice the FK is
-   * single-row, so we model it as `{...} | null`. This mismatch is why the
-   * fetch site uses an `as unknown as BillVoteSummaryRow[]` bridge.
-   */
   legislators?: {
     full_name: string | null
     party: string | null
     state: string | null
     photo_url: string | null
   } | null
+}
+
+/** Convert Supabase's raw array-typed join results to the normalised single-row shape. */
+export function normalizeBillVotes(raw: RawBillVoteSummaryRow[]): BillVoteSummaryRow[] {
+  return raw.map(vote => ({
+    ...vote,
+    bill_vote_positions: (vote.bill_vote_positions ?? []).map(pos => ({
+      bioguide_id: pos.bioguide_id,
+      position: pos.position,
+      legislators: Array.isArray(pos.legislators) ? pos.legislators[0] ?? null : pos.legislators ?? null,
+    })),
+  }))
 }

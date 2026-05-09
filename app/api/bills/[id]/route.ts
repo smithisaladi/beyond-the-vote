@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { formatBillType } from '@/lib/format'
+import { formatBillType, decodeHtmlEntities } from '@/lib/format'
+import { apiError } from '@/lib/api-errors'
 import type {
   CongressBillResponse,
   CongressBillActionsResponse,
@@ -13,7 +14,9 @@ import type {
 import type {
   BillVoteSummaryRow,
   BillVotePositionRow,
+  RawBillVoteSummaryRow,
 } from '@/lib/types/supabase-rows'
+import { normalizeBillVotes } from '@/lib/types/supabase-rows'
 
 const CONGRESS_API_KEY = process.env.CONGRESS_API_KEY ?? ''
 const CONGRESS_BASE = 'https://api.congress.gov/v3'
@@ -51,13 +54,13 @@ export async function GET(
 ) {
   try {
   if (!CONGRESS_API_KEY) {
-    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 })
+    return apiError('Server configuration error', 500)
   }
 
   const { id } = await params
   const parsed = parseId(id)
   if (!parsed) {
-    return NextResponse.json({ error: 'Invalid bill ID' }, { status: 400 })
+    return apiError('Invalid bill ID', 400)
   }
 
   const { congress, type, number } = parsed
@@ -102,16 +105,16 @@ export async function GET(
   const detailFetch  = detailRes.status   === 'fulfilled' ? detailRes.value   : null
   const actionsFetch = actionsRes.status  === 'fulfilled' ? actionsRes.value  : null
   const summaryFetch = summariesRes.status === 'fulfilled' ? summariesRes.value : null
-  // Supabase types `legislators` as an array via the FK join; we model it as a
-  // single object | null on BillVotePositionRow (see that type's docs).
-  const dbVotes: BillVoteSummaryRow[] = dbVotesRes.status  === 'fulfilled' ? (dbVotesRes.value.data ?? []) as unknown as BillVoteSummaryRow[] : []
+  const dbVotes: BillVoteSummaryRow[] = dbVotesRes.status === 'fulfilled'
+    ? normalizeBillVotes((dbVotesRes.value.data ?? []) as RawBillVoteSummaryRow[])
+    : []
   const dbBill       = dbBillRes.status   === 'fulfilled' ? dbBillRes.value.data : null
   const dbTopics     = dbBill?.topics ?? []
   const dbStatus     = (dbBill?.status as BillStatus | null) ?? null
 
   if (!detailFetch?.ok) {
-    if (detailFetch?.status === 404) return NextResponse.json({ error: 'Bill not found' }, { status: 404 })
-    return NextResponse.json({ error: 'Congress.gov API error' }, { status: detailFetch?.status ?? 502 })
+    if (detailFetch?.status === 404) return apiError('Bill not found', 404)
+    return apiError('Congress.gov API error', detailFetch?.status ?? 502)
   }
 
   const detailData    = await detailFetch.json() as CongressBillResponse
@@ -121,16 +124,7 @@ export async function GET(
   const summariesData: CongressBillSummariesResponse = summaryFetch?.ok ? await summaryFetch.json() : {}
   const summaries: CongressBillSummary[] = summariesData.summaries ?? []
   const rawSummary = summaries.at(-1)?.text?.replace(/<[^>]+>/g, '') ?? ''
-  const latestSummary = rawSummary
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&#(\d+);/g, (_: string, n: string) => String.fromCharCode(parseInt(n)))
-    .replace(/\s+/g, ' ')
-    .trim()
+  const latestSummary = decodeHtmlEntities(rawSummary)
 
   const sponsor    = bill.sponsors?.[0]
   const cosponsors: CongressBillCosponsor[] = Array.isArray(bill.cosponsors)
@@ -203,22 +197,26 @@ export async function GET(
       topics: dbTopics,
       subjects: (bill.subjects?.legislativeSubjects ?? []).slice(0, 8).map((s: CongressBillSubject) => s.name),
       congressGovUrl: `https://www.congress.gov/bill/${congress}th-congress/${CONGRESS_GOV_TYPE[type] ?? type}/${number}`,
-      actions: actions
-        .reduce((acc: CongressBillAction[], a: CongressBillAction) => {
+      actions: (() => {
+        const seen = new Set<string>()
+        const unique: CongressBillAction[] = []
+        for (const a of actions) {
           const key = `${a.actionDate}|${a.text}`
-          if (!acc.some((x: CongressBillAction) => `${x.actionDate}|${x.text}` === key)) acc.push(a)
-          return acc
-        }, [])
-        .slice(0, 10)
-        .map((a: CongressBillAction) => ({
+          if (seen.has(key)) continue
+          seen.add(key)
+          unique.push(a)
+          if (unique.length === 10) break
+        }
+        return unique.map((a: CongressBillAction) => ({
           date: a.actionDate, text: a.text, type: a.type,
-        })),
+        }))
+      })(),
       votes,
       _hasDetailedVotes: dbVotes.length > 0,
     },
   })
   } catch (err) {
     console.error('[api/bills/[id]]', err)
-    return NextResponse.json({ error: 'Failed to load bill' }, { status: 500 })
+    return apiError('Failed to load bill', 500)
   }
 }

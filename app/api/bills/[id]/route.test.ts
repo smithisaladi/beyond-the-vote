@@ -14,6 +14,7 @@ vi.mock('@/lib/format', () => ({
     const m: Record<string, string> = { hr: 'H.R.', s: 'S.' }
     return m[t] ?? t.toUpperCase()
   },
+  decodeHtmlEntities: (s: string) => s.replace(/<[^>]+>/g, '').trim(),
 }))
 
 vi.mock('@/lib/bills', () => ({

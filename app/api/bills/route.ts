@@ -6,6 +6,7 @@ import type { BillSummary } from '@/lib/types/bills'
 import type { BillRow, LegislatorLite } from '@/lib/types/supabase-rows'
 import { hybridBillSearch } from '@/lib/queries/hybrid-bill-search'
 import { parseSearchParams, BillsParams } from '@/lib/api-validation'
+import { apiError } from '@/lib/api-errors'
 import { toParty } from '@/lib/party'
 
 async function enrichBillsWithSponsors(
@@ -58,7 +59,7 @@ function mapRowToBill(row: BillRow): BillSummary {
 export async function GET(request: NextRequest) {
   const parsed = parseSearchParams(BillsParams, request.nextUrl.searchParams)
   if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error }, { status: 400 })
+    return apiError(parsed.error, 400)
   }
   const { q: rawQ, status, topics, date: dateFilter, sort, limit, offset, billIds: billIdsParam } = parsed.data
   const q = rawQ ?? ''
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
 
       // HybridBillSearchRow is structurally compatible with BillRow (status: string | null);
       // mapRowToBill narrows status with `as Status`.
-      const enriched = await enrichBillsWithSponsors(results as unknown as BillRow[], supabase)
+      const enriched = await enrichBillsWithSponsors(results as BillRow[], supabase)
 
       // If we got a full page, signal there may be more results
       const estimatedTotal = enriched.length + offset + (enriched.length === limit ? 1 : 0)
@@ -132,10 +133,7 @@ export async function GET(request: NextRequest) {
       pagination: { total: count ?? 0, limit, offset },
     })
   } catch (err) {
-    console.error('[/api/bills]', err)
-    return NextResponse.json(
-      { error: 'Failed to load bills' },
-      { status: 500 },
-    )
+    console.error('[api/bills]', err)
+    return apiError('Failed to load bills', 500)
   }
 }

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseSearchParams, PoliticianSearchParams } from '@/lib/api-validation'
+import { apiError } from '@/lib/api-errors'
 import { toParty } from '@/lib/party'
 
 export async function GET(request: NextRequest) {
   try {
     const parsed = parseSearchParams(PoliticianSearchParams, request.nextUrl.searchParams)
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error }, { status: 400 })
+      return apiError(parsed.error, 400)
     }
     const q = parsed.data.q.trim()
 
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
     ])
 
     if (byFullName.error && byLastName.error) {
-      return NextResponse.json({ error: 'Search failed' }, { status: 500 })
+      return apiError('Search failed', 500)
     }
 
     const seen = new Set<string>()
@@ -57,6 +58,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ politicians })
   } catch (err) {
     console.error('[api/politicians/search]', err)
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 })
+    return apiError('Search failed', 500)
   }
 }
