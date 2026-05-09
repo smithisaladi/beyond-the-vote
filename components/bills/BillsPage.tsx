@@ -1,76 +1,33 @@
 'use client'
 
-import { useState, useRef, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { SignInModal } from '@/components/auth/SignInModal'
-import { SignUpModal } from '@/components/auth/SignUpModal'
+import { Suspense } from 'react'
+import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useBillFilters } from '@/hooks/useBillFilters'
-import { useFetchBills, type BillFilters } from '@/hooks/useFetchBills'
+import { useFetchBills, type BillFilters as BillFiltersType } from '@/hooks/useFetchBills'
 import { useTrackedBills } from '@/hooks/useTrackedBills'
-import { useDebounce } from '@/hooks/useDebounce'
-import { useUrlState } from '@/hooks/useUrlState'
+import { topicToSlug } from '@/lib/topics'
 import { PageHeader } from '@/components/layout/PageHeader'
-import type { BillStatus as Status } from '@/lib/types'
-import { topicToSlug, slugToTopic, type Topic } from '@/lib/topics'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
-import { SEARCH_DEBOUNCE_MS } from '@/lib/constants'
 import { BillSearchBar } from '@/components/bills/BillSearchBar'
 import { BillFilters as BillFiltersComponent } from '@/components/bills/BillFilters'
 import { BillGrid } from '@/components/bills/BillGrid'
 
-type DateFilter = 'all' | 'month' | 'year'
-type SortOption = 'newest' | 'oldest'
-type DropdownId = 'status' | 'date' | 'topics' | 'sort' | null
-
 function BillsContent() {
-  const searchParams = useSearchParams()
   const { user } = useAuth()
-  const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
-
-  // ─── Search + filter state (initialize from URL) ────────────────────────────
-  const [query, setQuery] = useState(searchParams.get('q') ?? '')
-  const debouncedQuery = useDebounce(query, SEARCH_DEBOUNCE_MS)
-
-  const [openDropdown, setOpenDropdown] = useState<DropdownId>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null)
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [])
-
-  const initialStatuses = (searchParams.get('status')?.split(',').filter(Boolean) ?? []) as Status[]
-  const initialDate = (searchParams.get('date') ?? 'all') as DateFilter
+  const { openSignIn } = useAuthModal()
+  const filters = useBillFilters()
 
   const {
-    selectedStatuses, dateFilter,
-    toggleStatus, setDateFilter,
-    clearFilters, hasFilters,
-  } = useBillFilters({ statuses: initialStatuses, dateFilter: initialDate })
-
-  // Initialize from URL params
-  const [showTrackedOnly, setShowTrackedOnly] = useState(searchParams.get('tracked') === 'true')
-  const [selectedTopics, setSelectedTopics] = useState<Set<Topic>>(() => {
-    const t = searchParams.get('topics')
-    if (!t) return new Set()
-    return new Set(t.split(',').filter(Boolean).map(slugToTopic).filter(Boolean) as Topic[])
-  })
-  const [sort, setSort] = useState<SortOption>(() => {
-    const s = searchParams.get('sort')
-    return s === 'oldest' ? 'oldest' : 'newest'
-  })
+    query, setQuery, debouncedQuery,
+    selectedStatuses, selectedTopics,
+    dateFilter, sort, showTrackedOnly, clearAll,
+  } = filters
 
   const { trackedBills, toggleTrack: _toggleTrack } = useTrackedBills(user?.id ?? null)
 
   const topicSlugs = selectedTopics.size > 0 ? Array.from(selectedTopics).map(topicToSlug) : undefined
-  const filters: BillFilters = {
+  const fetchFilters: BillFiltersType = {
     statuses: selectedStatuses.size > 0 ? Array.from(selectedStatuses) : undefined,
     topics: topicSlugs,
     dateFilter: dateFilter,
@@ -81,44 +38,15 @@ function BillsContent() {
   const {
     bills, loading: billsLoading, error: billsError,
     loadingMore, loadMore, hasMore, refetch,
-  } = useFetchBills(debouncedQuery, filters)
-
-  // Sync all filter state to URL
-  useUrlState({
-    q: query || null,
-    status: selectedStatuses.size > 0 ? Array.from(selectedStatuses).join(',') : null,
-    topics: selectedTopics.size > 0 ? Array.from(selectedTopics).map(topicToSlug).join(',') : null,
-    date: dateFilter !== 'all' ? dateFilter : null,
-    sort: sort !== 'newest' ? sort : null,
-    tracked: showTrackedOnly ? 'true' : null,
-  }, [query, selectedStatuses, selectedTopics, dateFilter, sort, showTrackedOnly])
-
-  const toggleTopic = (topic: Topic) => {
-    setSelectedTopics(prev => {
-      const next = new Set(prev)
-      next.has(topic) ? next.delete(topic) : next.add(topic)
-      return next
-    })
-  }
+  } = useFetchBills(debouncedQuery, fetchFilters)
 
   const handleToggleTrack = (billId: string) => {
-    if (!user) { setAuthModal('signin'); return }
+    if (!user) { openSignIn(); return }
     _toggleTrack(billId)
   }
 
-  const handleClearAll = () => {
-    clearFilters()
-    setQuery('')
-    setShowTrackedOnly(false)
-    setSelectedTopics(new Set())
-    setSort('newest')
-  }
-
   const handleClearFiltersFromGrid = () => {
-    setQuery('')
-    clearFilters()
-    setShowTrackedOnly(false)
-    setSelectedTopics(new Set())
+    clearAll()
   }
 
   return (
@@ -148,22 +76,7 @@ function BillsContent() {
 
               {/* Filter chips */}
               <BillFiltersComponent
-                selectedStatuses={selectedStatuses}
-                toggleStatus={toggleStatus}
-                dateFilter={dateFilter}
-                setDateFilter={setDateFilter}
-                selectedTopics={selectedTopics}
-                toggleTopic={toggleTopic}
-                sort={sort}
-                setSort={setSort}
-                showTrackedOnly={showTrackedOnly}
-                setShowTrackedOnly={setShowTrackedOnly}
-                debouncedQuery={debouncedQuery}
-                hasFilters={hasFilters}
-                clearAll={handleClearAll}
-                openDropdown={openDropdown}
-                setOpenDropdown={setOpenDropdown}
-                dropdownRef={dropdownRef}
+                filters={filters}
                 user={user}
               />
 
@@ -184,17 +97,6 @@ function BillsContent() {
           </div>
         </main>
       </div>
-
-      <SignInModal
-        isOpen={authModal === 'signin'}
-        onClose={() => setAuthModal(null)}
-        onSwitchToSignUp={() => setAuthModal('signup')}
-      />
-      <SignUpModal
-        isOpen={authModal === 'signup'}
-        onClose={() => setAuthModal(null)}
-        onSwitchToSignIn={() => setAuthModal('signin')}
-      />
     </div>
   )
 }

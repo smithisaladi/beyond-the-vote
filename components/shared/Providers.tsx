@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import * as Tooltip from '@radix-ui/react-tooltip'
+import { AuthModalProvider } from '@/components/auth/AuthModalContext'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -23,7 +24,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <Tooltip.Provider delayDuration={150} skipDelayDuration={300}>
-        {children}
+        <AuthModalProvider>
+          {children}
+        </AuthModalProvider>
       </Tooltip.Provider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

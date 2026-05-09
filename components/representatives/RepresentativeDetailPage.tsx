@@ -1,11 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { SignInModal } from '@/components/auth/SignInModal'
-import { SignUpModal } from '@/components/auth/SignUpModal'
+import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/hooks/useAuth'
+import { useTabState } from '@/hooks/useTabState'
 import { useFollowPolitician } from '@/hooks/useFollowPolitician'
 import { useFetchPoliticianDetail, type Politician } from '@/hooks/useFetchPoliticianDetail'
 import { DonorTab } from '@/components/representatives/DonorTab'
@@ -22,29 +21,21 @@ import { ProfileSidebar } from './sections/ProfileSidebar'
 type Tab = 'votes' | 'bills' | 'donors'
 
 export default function RepresentativeDetailPage({ id, initialPolitician }: { id: string; initialPolitician?: Politician | null }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-
-  const tabParam = searchParams.get('tab')
-  const activeTab: Tab = tabParam === 'bills' || tabParam === 'donors' ? tabParam : 'votes'
-  const setActiveTab = useCallback((tab: Tab) => {
-    const params = new URLSearchParams(searchParams.toString())
-    if (tab === 'votes') params.delete('tab')
-    else params.set('tab', tab)
-    const qs = params.toString()
-    router.replace(`${pathname}${qs ? `?${qs}` : ''}`, { scroll: false })
-  }, [router, pathname, searchParams])
+  const { activeTab, setActiveTab } = useTabState<Tab>({
+    paramName: 'tab',
+    defaultValue: 'votes',
+    validValues: ['votes', 'bills', 'donors'],
+  })
 
   const [photoError, setPhotoError] = useState(false)
-  const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
+  const { openSignIn } = useAuthModal()
 
   const { user } = useAuth()
   const { politician, loading, error } = useFetchPoliticianDetail(id, initialPolitician)
   const { following, loading: followLoading, toggleFollow: handleFollow } = useFollowPolitician(
     id,
     user?.id ?? null,
-    () => setAuthModal('signin'),
+    openSignIn,
   )
 
   useEffect(() => {
@@ -141,16 +132,6 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
         </main>
       </div>
 
-      <SignInModal
-        isOpen={authModal === 'signin'}
-        onClose={() => setAuthModal(null)}
-        onSwitchToSignUp={() => setAuthModal('signup')}
-      />
-      <SignUpModal
-        isOpen={authModal === 'signup'}
-        onClose={() => setAuthModal(null)}
-        onSwitchToSignIn={() => setAuthModal('signin')}
-      />
     </div>
   )
 }

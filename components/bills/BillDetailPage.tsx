@@ -3,8 +3,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { SignInModal } from '@/components/auth/SignInModal'
-import { SignUpModal } from '@/components/auth/SignUpModal'
+import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useTrackedBills } from '@/hooks/useTrackedBills'
 import { useFetchBillDetail, type BillDetail } from '@/hooks/useFetchBillDetail'
@@ -80,7 +79,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
   const backHref = fromParam?.startsWith('/representatives/') ? fromParam : '/bills'
   const backLabel = fromParam?.startsWith('/representatives/') ? 'Back to representative' : 'Back to bills'
 
-  const [authModal, setAuthModal] = useState<'signin' | 'signup' | null>(null)
+  const { openSignIn } = useAuthModal()
   const [showAllCosponsors, setShowAllCosponsors] = useState(false)
 
   const { user } = useAuth()
@@ -90,7 +89,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
 
   const handleTrack = () => {
     if (!user) {
-      setAuthModal('signin')
+      openSignIn()
       return
     }
     toggleTrack(id)
@@ -339,16 +338,6 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
         </main>
       </div>
 
-      <SignInModal
-        isOpen={authModal === 'signin'}
-        onClose={() => setAuthModal(null)}
-        onSwitchToSignUp={() => setAuthModal('signup')}
-      />
-      <SignUpModal
-        isOpen={authModal === 'signup'}
-        onClose={() => setAuthModal(null)}
-        onSwitchToSignIn={() => setAuthModal('signin')}
-      />
     </div>
   )
 }

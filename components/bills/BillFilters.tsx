@@ -1,15 +1,14 @@
 'use client'
 
-import { type RefObject } from 'react'
 import type { User } from '@supabase/supabase-js'
-import type { BillStatus as Status } from '@/lib/types'
+import type { BillFiltersState } from '@/hooks/useBillFilters'
 import type { Topic } from '@/lib/topics'
+import type { BillStatus as Status } from '@/lib/types'
 import { ALL_TOPICS } from '@/lib/topics'
 import { Card } from '@/components/ui/Card'
 
 type DateFilter = 'all' | 'month' | 'year'
 type SortOption = 'newest' | 'oldest'
-type DropdownId = 'status' | 'date' | 'topics' | 'sort' | null
 
 const ALL_STATUSES: Status[] = ['Active', 'Committee', 'Stalled', 'Passed', 'Failed']
 
@@ -54,44 +53,22 @@ function FilterCheckbox({
 }
 
 interface BillFiltersProps {
-  selectedStatuses: Set<Status>
-  toggleStatus: (s: Status) => void
-  dateFilter: DateFilter
-  setDateFilter: (d: DateFilter) => void
-  selectedTopics: Set<Topic>
-  toggleTopic: (t: Topic) => void
-  sort: SortOption
-  setSort: (s: SortOption) => void
-  showTrackedOnly: boolean
-  setShowTrackedOnly: (fn: (prev: boolean) => boolean) => void
-  debouncedQuery: string
-  hasFilters: boolean
-  clearAll: () => void
-  openDropdown: DropdownId
-  setOpenDropdown: (d: DropdownId) => void
-  dropdownRef: RefObject<HTMLDivElement | null>
+  filters: BillFiltersState
   user: User | null
 }
 
-export function BillFilters({
-  selectedStatuses,
-  toggleStatus,
-  dateFilter,
-  setDateFilter,
-  selectedTopics,
-  toggleTopic,
-  sort,
-  setSort,
-  showTrackedOnly,
-  setShowTrackedOnly,
-  debouncedQuery,
-  hasFilters,
-  clearAll,
-  openDropdown,
-  setOpenDropdown,
-  dropdownRef,
-  user,
-}: BillFiltersProps) {
+export function BillFilters({ filters, user }: BillFiltersProps) {
+  const {
+    selectedStatuses, toggleStatus,
+    dateFilter, setDateFilter,
+    selectedTopics, toggleTopic,
+    sort, setSort,
+    showTrackedOnly, setShowTrackedOnly,
+    debouncedQuery,
+    hasFilters, clearAll,
+    openDropdown, setOpenDropdown, dropdownRef,
+  } = filters
+
   return (
     <div className="mt-3 flex items-center justify-center gap-2 flex-wrap" ref={dropdownRef}>
 

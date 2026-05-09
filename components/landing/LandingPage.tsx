@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { SignInModal } from '../auth/SignInModal'
-import { SignUpModal } from '../auth/SignUpModal'
+import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { RepresentativesTab } from './tabs/RepresentativesTab'
 import { BillsTab } from './tabs/BillsTab'
 import { DonorsTab } from './tabs/DonorsTab'
@@ -11,8 +10,7 @@ type Tab = 'representatives' | 'bills' | 'donors'
 
 export function LandingPage() {
   const [tab, setTab] = useState<Tab>('representatives')
-  const [showSignIn, setShowSignIn] = useState(false)
-  const [showSignUp, setShowSignUp] = useState(false)
+  const { openSignIn, openSignUp } = useAuthModal()
 
   return (
     <div className="min-h-screen bg-[#F5F0E8]">
@@ -57,13 +55,13 @@ export function LandingPage() {
           {/* Auth CTAs */}
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
-              onClick={() => setShowSignIn(true)}
+              onClick={openSignIn}
               className="text-sm text-[#1C1C1A]/60 hover:text-[#1C1C1A] transition-colors"
             >
               Sign in
             </button>
             <button
-              onClick={() => setShowSignUp(true)}
+              onClick={openSignUp}
               className="text-sm bg-[#7B5E8A] text-white px-4 py-2 rounded-lg hover:bg-[#6A4F78] transition-colors shadow-sm font-medium"
             >
               Sign up
@@ -75,10 +73,10 @@ export function LandingPage() {
       {/* ── Tab content ── */}
       <main id="main-content">
         {tab === 'representatives'
-          ? <RepresentativesTab onSignUp={() => setShowSignUp(true)} />
+          ? <RepresentativesTab onSignUp={openSignUp} />
           : tab === 'bills'
-          ? <BillsTab onSignUp={() => setShowSignUp(true)} />
-          : <DonorsTab onSignUp={() => setShowSignUp(true)} />
+          ? <BillsTab onSignUp={openSignUp} />
+          : <DonorsTab onSignUp={openSignUp} />
         }
       </main>
 
@@ -97,17 +95,6 @@ export function LandingPage() {
         </div>
       </footer>
 
-      {/* ── Auth modals ── */}
-      <SignInModal
-        isOpen={showSignIn}
-        onClose={() => setShowSignIn(false)}
-        onSwitchToSignUp={() => { setShowSignIn(false); setShowSignUp(true) }}
-      />
-      <SignUpModal
-        isOpen={showSignUp}
-        onClose={() => setShowSignUp(false)}
-        onSwitchToSignIn={() => { setShowSignUp(false); setShowSignIn(true) }}
-      />
     </div>
   )
 }
