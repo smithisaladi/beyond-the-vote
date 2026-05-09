@@ -40,6 +40,13 @@ export function resultBadge(result: string | null): string | null {
   return 'bg-[#8A8A7A]/[0.12] text-[#8A8A7A]'
 }
 
+const PARTY_CODE_MAP: Record<string, Party> = { D: 'Democrat', R: 'Republican', I: 'Independent' }
+
+/** Resolve a party code ('D', 'R', 'I') or full name to the corresponding PARTY_STYLES entry. */
+export function getPartyStyle(partyCode: string) {
+  return PARTY_STYLES[PARTY_CODE_MAP[partyCode] ?? (partyCode as Party)] ?? PARTY_STYLES.Independent
+}
+
 export function getUserInitials(user: User): string {
   const meta = user.user_metadata as UserMetadata | undefined
   const name = meta?.full_name

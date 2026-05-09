@@ -8,9 +8,9 @@ import { SignUpModal } from '@/components/auth/SignUpModal'
 import { useAuth } from '@/hooks/useAuth'
 import { useTrackedBills } from '@/hooks/useTrackedBills'
 import { useFetchBillDetail, type BillDetail } from '@/hooks/useFetchBillDetail'
-import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
+import { PARTY_STYLES, STATUS_STYLES, getPartyStyle } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
-import { parseLocalDate } from '@/lib/format'
+import { formatDate, formatShortDate } from '@/lib/format'
 import { PartyBadge } from '@/components/shared/PartyBadge'
 import BillVoteTally from '@/components/bills/BillVoteTally'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -63,9 +63,7 @@ function DetailSkeleton() {
 }
 
 function PartyTag({ party }: { party: string }) {
-  const partyMap: Record<string, keyof typeof PARTY_STYLES> = { D: 'Democrat', R: 'Republican', I: 'Independent' }
-  const partyKey = partyMap[party] ?? 'Independent'
-  const style = PARTY_STYLES[partyKey]
+  const style = getPartyStyle(party)
   return (
     <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${style.bg} ${style.text}`}>
       {style.label}
@@ -96,30 +94,6 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
       return
     }
     toggleTrack(id)
-  }
-
-  const formatDate = (dateStr: string) => {
-    try {
-      return parseLocalDate(dateStr).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    } catch {
-      return dateStr
-    }
-  }
-
-  const formatShortDate = (dateStr: string) => {
-    try {
-      return parseLocalDate(dateStr).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    } catch {
-      return dateStr
-    }
   }
 
   return (

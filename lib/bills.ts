@@ -36,7 +36,7 @@ export function mapStatus(latestActionText?: string, introducedDate?: string): B
   return 'Active'
 }
 
-const BILL_TYPE_LABELS: Record<string, string> = {
+export const BILL_TYPE_LABELS: Record<string, string> = {
   s:       'S.',
   hr:      'H.R.',
   sjres:   'S.J.Res.',

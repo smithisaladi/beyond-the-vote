@@ -8,6 +8,12 @@ export const queryKeys = {
   politicians: {
     all: ['politicians'] as const,
     detail: (id: string) => ['politicians', 'detail', id] as const,
+    search: (query: string) => ['politicians', 'search', query] as const,
+    follow: (politicianId: string, userId: string) => ['politicians', 'follow', politicianId, userId] as const,
+  },
+  representatives: {
+    all: ['representatives'] as const,
+    byAddress: (address: string) => ['representatives', 'byAddress', address] as const,
   },
   donors: {
     all: ['donors'] as const,

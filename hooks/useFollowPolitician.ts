@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/query-keys'
 import { createClient } from '@/lib/supabase/client'
 
 export function useFollowPolitician(
@@ -8,56 +9,64 @@ export function useFollowPolitician(
   userId: string | null,
   onSignInRequired: () => void,
 ) {
-  const [following, setFollowing] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+  const queryKey = queryKeys.politicians.follow(politicianId, userId ?? '')
 
-  useEffect(() => {
-    if (!userId) { setFollowing(false); return }
-    let cancelled = false
-    const supabase = createClient()
-    ;(async () => {
-      try {
-        const { data, error: err } = await supabase
-          .from('followed_politicians')
-          .select('politician_id')
-          .eq('user_id', userId)
-          .eq('politician_id', politicianId)
-          .maybeSingle()
-        if (cancelled) return
-        if (err) setError(err.message)
-        else setFollowing(!!data)
-      } catch (err) {
-        if (cancelled) return
-        setError(err instanceof Error ? err.message : 'Failed to load follow state')
-        console.error('[follow-politician] read failed:', err)
-      }
-    })()
-    return () => { cancelled = true }
-  }, [userId, politicianId])
+  const { data: following = false } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('followed_politicians')
+        .select('politician_id')
+        .eq('user_id', userId!)
+        .eq('politician_id', politicianId)
+        .maybeSingle()
+      if (error) throw error
+      return !!data
+    },
+    enabled: !!userId,
+    staleTime: 60 * 1000,
+  })
 
-  const toggleFollow = async () => {
+  const { mutate: toggle, isPending } = useMutation({
+    mutationFn: async () => {
+      if (!userId) return
+      const supabase = createClient()
+      const next = !following
+      const { error } = next
+        ? await supabase.from('followed_politicians').insert({ user_id: userId, politician_id: politicianId })
+        : await supabase.from('followed_politicians').delete().eq('user_id', userId).eq('politician_id', politicianId)
+      if (error) throw error
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey })
+      const prev = queryClient.getQueryData<boolean>(queryKey)
+      queryClient.setQueryData<boolean>(queryKey, (old) => !old)
+      return { prev }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.prev !== undefined) queryClient.setQueryData(queryKey, context.prev)
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey })
+      // Also invalidate the dashboard followed list so it stays in sync
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'followed'] })
+    },
+  })
+
+  const toggleFollow = () => {
     if (!userId) {
       onSignInRequired()
       return
     }
-
-    const supabase = createClient()
-    const next = !following
-    setFollowing(next) // optimistic
-    setLoading(true)
-    setError(null)
-
-    const { error: err } = next
-      ? await supabase.from('followed_politicians').insert({ user_id: userId, politician_id: politicianId })
-      : await supabase.from('followed_politicians').delete().eq('user_id', userId).eq('politician_id', politicianId)
-
-    if (err) {
-      setFollowing(!next) // revert on failure
-      setError(err.message)
-    }
-    setLoading(false)
+    toggle()
   }
 
-  return { following, loading, error, toggleFollow }
+  return {
+    following,
+    loading: isPending,
+    error: null as string | null,
+    toggleFollow,
+  }
 }

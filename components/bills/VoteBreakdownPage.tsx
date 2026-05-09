@@ -4,7 +4,8 @@ import { useState, useMemo, useRef, useEffect, use } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ExternalLink } from 'lucide-react'
-import { PARTY_STYLES, resultBadge } from '@/lib/ui'
+import { PARTY_STYLES, getPartyStyle, resultBadge } from '@/lib/ui'
+import { formatDate } from '@/lib/format'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton as SkeletonBox } from '@/components/ui/Skeleton'
@@ -15,14 +16,6 @@ import type { Party } from '@/lib/types'
 const FILTERS = ['All', 'Yea', 'Nay', 'Not Voting'] as const
 type Filter = (typeof FILTERS)[number]
 
-
-function formatDate(dateStr: string) {
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-  } catch {
-    return dateStr
-  }
-}
 
 function positionColor(position: string) {
   if (position === 'Yea') return 'text-[#1C1C1A]/70'
@@ -53,7 +46,7 @@ function VoteBreakdownSkeleton() {
 }
 
 function MemberRow({ m }: { m: MemberPosition }) {
-  const ps = PARTY_STYLES[m.party as Party] ?? PARTY_STYLES.Independent
+  const ps = getPartyStyle(m.party)
   return (
     <div className="flex items-center justify-between py-2 border-b border-[rgba(28,28,26,0.04)] last:border-0">
       <Link

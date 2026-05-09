@@ -10,6 +10,7 @@ import { useMapboxAutocomplete } from '@/hooks/useMapboxAutocomplete'
 import { useFetchRepresentatives } from '@/hooks/useFetchRepresentatives'
 import { useSearchPoliticians } from '@/hooks/useSearchPoliticians'
 import { useAuth } from '@/hooks/useAuth'
+import { useUrlState } from '@/hooks/useUrlState'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
@@ -42,22 +43,11 @@ function RepresentativesContent() {
   }, [addressParam])
 
   // Persist search state to URL
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString())
-    if (searchMode === 'name') {
-      params.set('mode', 'name')
-      if (nameQuery) params.set('name', nameQuery)
-      else params.delete('name')
-      params.delete('address')
-    } else {
-      params.set('mode', 'address')
-      params.delete('name')
-    }
-    const newUrl = `${window.location.pathname}?${params.toString()}`
-    if (newUrl !== `${window.location.pathname}${window.location.search}`) {
-      window.history.replaceState(null, '', newUrl)
-    }
-  }, [searchMode, nameQuery, searchParams])
+  useUrlState({
+    mode: searchMode,
+    name: searchMode === 'name' && nameQuery ? nameQuery : null,
+    address: searchMode === 'address' && addressParam ? addressParam : null,
+  }, [searchMode, nameQuery, addressParam])
 
   const { representatives, loading, error } = useFetchRepresentatives(addressParam)
   const {

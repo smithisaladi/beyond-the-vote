@@ -2,16 +2,8 @@
 
 import Link from 'next/link'
 import { PARTY_STYLES, resultBadge } from '@/lib/ui'
-import { parseLocalDate } from '@/lib/format'
+import { formatShortDate } from '@/lib/format'
 import type { Vote } from '@/hooks/useFetchBillDetail'
-
-function formatShortDate(dateStr: string) {
-  try {
-    return parseLocalDate(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  } catch {
-    return dateStr
-  }
-}
 
 
 function VoteEntryContent({ vote }: { vote: Vote }) {

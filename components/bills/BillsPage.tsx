@@ -9,6 +9,7 @@ import { useBillFilters } from '@/hooks/useBillFilters'
 import { useFetchBills, type BillFilters } from '@/hooks/useFetchBills'
 import { useTrackedBills } from '@/hooks/useTrackedBills'
 import { useDebounce } from '@/hooks/useDebounce'
+import { useUrlState } from '@/hooks/useUrlState'
 import { PageHeader } from '@/components/layout/PageHeader'
 import type { BillStatus as Status } from '@/lib/types'
 import { topicToSlug, slugToTopic, type Topic } from '@/lib/topics'
@@ -83,19 +84,13 @@ function BillsContent() {
   } = useFetchBills(debouncedQuery, filters)
 
   // Sync all filter state to URL
-  useEffect(() => {
-    const params = new URLSearchParams()
-    if (query) params.set('q', query)
-    if (selectedStatuses.size > 0) params.set('status', Array.from(selectedStatuses).join(','))
-    if (selectedTopics.size > 0) params.set('topics', Array.from(selectedTopics).map(topicToSlug).join(','))
-    if (dateFilter !== 'all') params.set('date', dateFilter)
-    if (sort !== 'newest') params.set('sort', sort)
-    if (showTrackedOnly) params.set('tracked', 'true')
-    const qs = params.toString()
-    const newUrl = `${window.location.pathname}${qs ? `?${qs}` : ''}`
-    if (newUrl !== `${window.location.pathname}${window.location.search}`) {
-      window.history.replaceState(null, '', newUrl)
-    }
+  useUrlState({
+    q: query || null,
+    status: selectedStatuses.size > 0 ? Array.from(selectedStatuses).join(',') : null,
+    topics: selectedTopics.size > 0 ? Array.from(selectedTopics).map(topicToSlug).join(',') : null,
+    date: dateFilter !== 'all' ? dateFilter : null,
+    sort: sort !== 'newest' ? sort : null,
+    tracked: showTrackedOnly ? 'true' : null,
   }, [query, selectedStatuses, selectedTopics, dateFilter, sort, showTrackedOnly])
 
   const toggleTopic = (topic: Topic) => {

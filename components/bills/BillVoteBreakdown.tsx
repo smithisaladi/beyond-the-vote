@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { PARTY_STYLES } from '@/lib/ui'
+import { PARTY_STYLES, getPartyStyle } from '@/lib/ui'
 import { Card } from '@/components/ui/Card'
 
 interface PartyBreakdown {
@@ -144,8 +144,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
 
               <div className="max-h-64 overflow-y-auto space-y-1 pr-1">
                 {filteredPositions.map(m => {
-                  const partyKey = m.party === 'D' ? 'Democrat' : m.party === 'R' ? 'Republican' : 'Independent'
-                  const ps = PARTY_STYLES[partyKey as keyof typeof PARTY_STYLES]
+                  const ps = getPartyStyle(m.party)
                   return (
                     <div
                       key={m.bioguideId}
@@ -153,7 +152,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
                     >
                       <span className="text-[#1C1C1A]/70">{m.name}</span>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ps?.bg ?? ''} ${ps?.text ?? 'text-[#1C1C1A]/45'}`}>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ps.bg} ${ps.text}`}>
                           {m.state}
                         </span>
                         <span className={

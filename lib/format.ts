@@ -69,10 +69,7 @@ export function formatTotal(n: number): string {
   return `$${n.toLocaleString()}`
 }
 
-const BILL_TYPE_LABELS: Record<string, string> = {
-  hr: 'H.R.', s: 'S.', hjres: 'H.J.Res.', sjres: 'S.J.Res.',
-  hconres: 'H.Con.Res.', sconres: 'S.Con.Res.', hres: 'H.Res.', sres: 'S.Res.',
-}
+import { BILL_TYPE_LABELS } from '@/lib/bills'
 
 export function formatBillType(type: string): string {
   return BILL_TYPE_LABELS[type.toLowerCase()] ?? type.toUpperCase()
@@ -103,4 +100,30 @@ export function parseLocalDate(dateStr: string): Date {
     return new Date(dateStr + 'T00:00:00')
   }
   return new Date(dateStr)
+}
+
+/** Format a date string as "January 15, 2024". */
+export function formatDate(dateStr: string): string {
+  try {
+    return parseLocalDate(dateStr).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+/** Format a date string as "Jan 15, 2024". */
+export function formatShortDate(dateStr: string): string {
+  try {
+    return parseLocalDate(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  } catch {
+    return dateStr
+  }
 }
