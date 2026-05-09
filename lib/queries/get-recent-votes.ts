@@ -25,7 +25,7 @@ export async function fetchRecentVotesFromDB(
   bioguideId: string,
   supabase: SupabaseClient,
 ): Promise<PoliticianVote[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('bill_vote_positions')
     .select(`
       position,
@@ -38,6 +38,12 @@ export async function fetchRecentVotesFromDB(
     .eq('bioguide_id', bioguideId)
     .order('bill_vote_summaries(date)', { ascending: false })
     .limit(50)
+
+  if (error) {
+    console.error('[get-recent-votes] Failed to fetch vote positions:', error.message)
+    return []
+  }
+
   // Collect bill_ids so we can look up real bill titles
   const rows = (data ?? []) as unknown as VotePositionRow[]
   const billIds = [...new Set(
@@ -49,10 +55,14 @@ export async function fetchRecentVotesFromDB(
   // Fetch actual bill titles from bills table
   const billTitleMap: Record<string, string> = {}
   if (billIds.length > 0) {
-    const { data: billRows } = await supabase
+    const { data: billRows, error: billError } = await supabase
       .from('bills')
       .select('bill_id, title')
       .in('bill_id', billIds)
+    if (billError) {
+      console.error('[get-recent-votes] Failed to fetch bill titles:', billError.message)
+      // Continue with empty title map — votes are still usable without titles
+    }
     for (const row of billRows ?? []) {
       if (row.title) billTitleMap[row.bill_id] = row.title
     }

@@ -18,7 +18,8 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // Server Component — cookie writes are handled by middleware
+            // Server Components cannot write cookies (read-only context).
+            // Auth session refresh is handled by middleware instead.
           }
         },
       },

@@ -3,12 +3,18 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import React from 'react'
 import { HeroCard } from './HeroCard'
+import type { Politician } from '@/lib/types/politicians'
 
-const basePolitician = {
+type HeroPolitician = Pick<
+  Politician,
+  'name' | 'photo' | 'title' | 'party' | 'state' | 'district' | 'since' | 'website' | 'phone' | 'address'
+>
+
+const defaultPolitician: HeroPolitician = {
   name: 'Jane Doe',
   photo: null,
   title: 'U.S. Senator',
-  party: 'Democrat' as const,
+  party: 'Democrat',
   state: 'CA',
   district: undefined,
   since: '2018',
@@ -17,147 +23,84 @@ const basePolitician = {
   address: null,
 }
 
+const defaultProps = {
+  politician: defaultPolitician,
+  following: false,
+  followLoading: false,
+  photoError: false,
+  onFollow: vi.fn(),
+  onPhotoError: vi.fn(),
+}
+
+function renderHeroCard(
+  overrides: Omit<Partial<typeof defaultProps>, 'politician'> & {
+    politician?: Partial<HeroPolitician>
+  } = {},
+) {
+  const props = {
+    ...defaultProps,
+    ...overrides,
+    politician: { ...defaultPolitician, ...overrides.politician },
+    onFollow: overrides.onFollow ?? vi.fn(),
+    onPhotoError: overrides.onPhotoError ?? vi.fn(),
+  }
+  return render(<HeroCard {...props} />)
+}
+
 describe('HeroCard', () => {
   it('renders politician name', () => {
-    render(
-      <HeroCard
-        politician={basePolitician}
-        following={false}
-        followLoading={false}
-        photoError={false}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard()
     expect(screen.getByText('Jane Doe')).toBeInTheDocument()
   })
 
   it('renders title and state', () => {
-    render(
-      <HeroCard
-        politician={basePolitician}
-        following={false}
-        followLoading={false}
-        photoError={false}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard()
     expect(screen.getByText('U.S. Senator')).toBeInTheDocument()
     expect(screen.getByText('CA')).toBeInTheDocument()
   })
 
   it('shows initials avatar when photo is null', () => {
-    render(
-      <HeroCard
-        politician={basePolitician}
-        following={false}
-        followLoading={false}
-        photoError={false}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard()
     expect(screen.getByText('JD')).toBeInTheDocument()
   })
 
   it('shows initials avatar when photoError is true', () => {
-    render(
-      <HeroCard
-        politician={{ ...basePolitician, photo: 'https://example.com/photo.jpg' }}
-        following={false}
-        followLoading={false}
-        photoError={true}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard({
+      politician: { photo: 'https://example.com/photo.jpg' },
+      photoError: true,
+    })
     expect(screen.getByText('JD')).toBeInTheDocument()
   })
 
   it('shows Follow button when not following', () => {
-    render(
-      <HeroCard
-        politician={basePolitician}
-        following={false}
-        followLoading={false}
-        photoError={false}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard()
     expect(screen.getByRole('button', { name: 'Follow' })).toBeInTheDocument()
   })
 
-  it('shows Following ✓ when following', () => {
-    render(
-      <HeroCard
-        politician={basePolitician}
-        following={true}
-        followLoading={false}
-        photoError={false}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+  it('shows Following when following', () => {
+    renderHeroCard({ following: true })
     expect(screen.getByRole('button', { name: /following/i })).toBeInTheDocument()
   })
 
   it('calls onFollow when Follow button is clicked', async () => {
     const onFollow = vi.fn()
-    render(
-      <HeroCard
-        politician={basePolitician}
-        following={false}
-        followLoading={false}
-        photoError={false}
-        onFollow={onFollow}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard({ onFollow })
     await userEvent.click(screen.getByRole('button', { name: 'Follow' }))
     expect(onFollow).toHaveBeenCalledTimes(1)
   })
 
   it('disables button when followLoading', () => {
-    render(
-      <HeroCard
-        politician={basePolitician}
-        following={false}
-        followLoading={true}
-        photoError={false}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard({ followLoading: true })
     expect(screen.getByRole('button', { name: 'Follow' })).toBeDisabled()
   })
 
   it('renders party badge', () => {
-    render(
-      <HeroCard
-        politician={basePolitician}
-        following={false}
-        followLoading={false}
-        photoError={false}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard()
     expect(screen.getByText('Democrat')).toBeInTheDocument()
   })
 
   it('renders website link when present', () => {
-    render(
-      <HeroCard
-        politician={{ ...basePolitician, website: 'https://doe.senate.gov' }}
-        following={false}
-        followLoading={false}
-        photoError={false}
-        onFollow={vi.fn()}
-        onPhotoError={vi.fn()}
-      />
-    )
+    renderHeroCard({ politician: { website: 'https://doe.senate.gov' } })
     expect(screen.getByText('Official website')).toBeInTheDocument()
   })
 })

@@ -57,4 +57,20 @@ describe('lookupBill', () => {
     const result = await lookupBill('nonexistent')
     expect(result).toEqual([])
   })
+
+  it('handles empty string input', async () => {
+    mockSql.mockResolvedValue([])
+    const result = await lookupBill('')
+    expect(result).toEqual([])
+    // Verify trimmed empty string is passed
+    const values = mockSql.mock.calls[0].slice(1)
+    expect(values).toContain('')
+  })
+
+  it('normalizes mixed case input (e.g., "119-Hr-1234")', async () => {
+    await lookupBill('119-Hr-1234')
+    const values = mockSql.mock.calls[0].slice(1)
+    expect(values).toContain('119-hr-1234')   // toLowerCase
+    expect(values).toContain('119-HR-1234')   // toUpperCase
+  })
 })

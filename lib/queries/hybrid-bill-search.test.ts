@@ -76,14 +76,24 @@ describe('hybridBillSearch', () => {
   it('passes null for unset filters', async () => {
     await hybridBillSearch({ queryText: 'test' })
     const values = mockSql.mock.calls[0].slice(1)
-    // statusFilter, topicFilters, policyAreas, congressFilter, billIds default to null
+    // 5 null filters (statusFilter, topicFilters, policyAreas, congressFilter, billIds),
+    // each referenced twice per CTE (condition + cast) across 2 CTEs = 20 nulls
     const nullCount = values.filter((v: unknown) => v === null).length
-    expect(nullCount).toBeGreaterThanOrEqual(5)
+    expect(nullCount).toBe(20)
   })
 
   it('returns empty array when no results', async () => {
     mockSql.mockResolvedValue([])
     const result = await hybridBillSearch({ queryText: 'nonexistent' })
     expect(result).toEqual([])
+  })
+
+  it('handles empty string query', async () => {
+    mockSql.mockResolvedValue([])
+    const result = await hybridBillSearch({ queryText: '' })
+    expect(result).toEqual([])
+    // Empty string is still passed as the queryText interpolation
+    const values = mockSql.mock.calls[0].slice(1)
+    expect(values).toContain('')
   })
 })

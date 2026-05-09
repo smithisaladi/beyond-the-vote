@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import { createSupabaseMock } from '@/test-utils/supabase-mock'
 
 const mockHybridBillSearch = vi.fn()
-const mockSupabaseFrom = vi.fn()
 const mockCreateClient = vi.fn()
 
 vi.mock('@/lib/queries/hybrid-bill-search', () => ({ hybridBillSearch: mockHybridBillSearch }))
@@ -18,22 +18,6 @@ function makeReq(params: Record<string, string>) {
   return new NextRequest(url)
 }
 
-// Helper to build a chainable Supabase query mock
-function buildQueryMock(data: unknown[] = [], count = 0, error: unknown = null) {
-  const mock: Record<string, unknown> = {}
-  const chain = () => mock
-  mock.select = vi.fn().mockReturnValue(mock)
-  mock.eq = vi.fn().mockReturnValue(mock)
-  mock.in = vi.fn().mockReturnValue(mock)
-  mock.gte = vi.fn().mockReturnValue(mock)
-  mock.order = vi.fn().mockReturnValue(mock)
-  mock.range = vi.fn().mockResolvedValue({ data, error, count })
-  mock.from = vi.fn().mockReturnValue(mock)
-  mock.ilike = vi.fn().mockReturnValue(mock)
-  mock.overlaps = vi.fn().mockReturnValue(mock)
-  return mock
-}
-
 describe('GET /api/bills', () => {
   beforeEach(() => {
     mockHybridBillSearch.mockReset()
@@ -41,8 +25,7 @@ describe('GET /api/bills', () => {
 
   describe('text search mode (q param)', () => {
     beforeEach(() => {
-      const supabaseMock = buildQueryMock([])
-      mockCreateClient.mockResolvedValue(supabaseMock)
+      mockCreateClient.mockResolvedValue(createSupabaseMock())
     })
 
     it('uses hybridBillSearch when q is set', async () => {
@@ -90,21 +73,24 @@ describe('GET /api/bills', () => {
 
   describe('browse mode (no q param)', () => {
     it('queries supabase directly', async () => {
-      const supabaseMock = buildQueryMock([
-        {
-          bill_id: '119-hr-2',
-          title: 'Browse Bill',
-          bill_number: 'H.R. 2',
-          sponsor_name: 'Smith',
-          sponsor_party: 'R',
-          sponsor_bioguide_id: null,
-          last_action_text: 'Committee.',
-          last_action_date: '2025-05-01',
-          introduced_date: '2025-01-01',
-          policy_area: null,
-          summary: null,
-        },
-      ], 1)
+      const supabaseMock = createSupabaseMock({
+        data: [
+          {
+            bill_id: '119-hr-2',
+            title: 'Browse Bill',
+            bill_number: 'H.R. 2',
+            sponsor_name: 'Smith',
+            sponsor_party: 'R',
+            sponsor_bioguide_id: null,
+            last_action_text: 'Committee.',
+            last_action_date: '2025-05-01',
+            introduced_date: '2025-01-01',
+            policy_area: null,
+            summary: null,
+          },
+        ],
+        count: 1,
+      })
       mockCreateClient.mockResolvedValue(supabaseMock)
 
       const res = await GET(makeReq({}))
@@ -116,7 +102,7 @@ describe('GET /api/bills', () => {
     })
 
     it('applies topic filter via overlaps', async () => {
-      const supabaseMock = buildQueryMock([], 0)
+      const supabaseMock = createSupabaseMock()
       mockCreateClient.mockResolvedValue(supabaseMock)
 
       const res = await GET(makeReq({ topics: 'healthcare,economy' }))
@@ -127,16 +113,16 @@ describe('GET /api/bills', () => {
 
   describe('error handling', () => {
     it('returns 500 on hybridBillSearch failure', async () => {
-      const supabaseMock = buildQueryMock()
-      mockCreateClient.mockResolvedValue(supabaseMock)
+      mockCreateClient.mockResolvedValue(createSupabaseMock())
       mockHybridBillSearch.mockRejectedValue(new Error('DB down'))
       const res = await GET(makeReq({ q: 'test' }))
       expect(res.status).toBe(500)
     })
 
     it('returns 500 on supabase query error', async () => {
-      const supabaseMock = buildQueryMock([], 0, { message: 'query failed' })
-      mockCreateClient.mockResolvedValue(supabaseMock)
+      mockCreateClient.mockResolvedValue(
+        createSupabaseMock({ error: { message: 'query failed' } }),
+      )
       const res = await GET(makeReq({}))
       expect(res.status).toBe(500)
     })

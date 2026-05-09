@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NextRequest } from 'next/server'
+import { createSupabaseMock } from '@/test-utils/supabase-mock'
 
 const mockCreateClient = vi.fn()
 vi.mock('@/lib/supabase/server', () => ({
@@ -12,29 +13,6 @@ function makeReq(params: Record<string, string> = {}) {
   const url = new URL('http://localhost/api/donors')
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   return new NextRequest(url)
-}
-
-function buildSupabaseMock(data: unknown[] = [], count = 0, error: unknown = null) {
-  // The Supabase PostgREST chain: .from().select().order().range() → thenable
-  // BUT .ilike() is called after .range() (the route mutates `query` conditionally).
-  // We need range() to return a chainable + thenable object.
-  const finalResult = { data, error, count }
-
-  // The terminal query object (returned by range) that can also chain ilike
-  const terminal: Record<string, unknown> = {}
-  terminal.ilike = vi.fn().mockReturnValue(terminal)
-  terminal.then = (resolve: (v: unknown) => void) => Promise.resolve(finalResult).then(resolve)
-
-  // The chainable mock (not thenable — so `await createClient()` returns this, not result)
-  const mock: Record<string, unknown> = {}
-  mock.select = vi.fn().mockReturnValue(mock)
-  mock.order = vi.fn().mockReturnValue(mock)
-  mock.range = vi.fn().mockReturnValue(terminal)
-  mock.from = vi.fn().mockReturnValue(mock)
-  // Expose terminal for assertions
-  mock._terminal = terminal
-
-  return mock
 }
 
 const sampleRow = {
@@ -56,7 +34,9 @@ describe('GET /api/donors', () => {
   })
 
   it('returns donors list', async () => {
-    mockCreateClient.mockResolvedValue(buildSupabaseMock([sampleRow], 1))
+    mockCreateClient.mockResolvedValue(
+      createSupabaseMock({ data: [sampleRow], count: 1, thenableRange: true }),
+    )
     const res = await GET(makeReq())
     expect(res.status).toBe(200)
     const json = await res.json()
@@ -67,23 +47,41 @@ describe('GET /api/donors', () => {
   })
 
   it('applies search filter when q is provided', async () => {
-    const mock = buildSupabaseMock([], 0)
+    const mock = createSupabaseMock({ thenableRange: true })
     mockCreateClient.mockResolvedValue(mock)
     await GET(makeReq({ q: 'AIPAC' }))
-    const terminal = mock._terminal as Record<string, ReturnType<typeof vi.fn>>
+    const terminal = mock._terminal!
     expect(terminal.ilike).toHaveBeenCalledWith('cmte_name', '%AIPAC%')
   })
 
   it('caps limit at 100', async () => {
-    const mock = buildSupabaseMock([], 0)
+    const mock = createSupabaseMock({ thenableRange: true })
     mockCreateClient.mockResolvedValue(mock)
     await GET(makeReq({ limit: '999' }))
     expect(mock.range).toHaveBeenCalledWith(0, 99)
   })
 
   it('returns 500 on error', async () => {
-    mockCreateClient.mockResolvedValue(buildSupabaseMock([], 0, { message: 'fail' }))
+    mockCreateClient.mockResolvedValue(
+      createSupabaseMock({ error: { message: 'fail' }, thenableRange: true }),
+    )
     const res = await GET(makeReq())
     expect(res.status).toBe(500)
+  })
+
+  it('returns 400 for negative limit values', async () => {
+    const mock = createSupabaseMock({ thenableRange: true })
+    mockCreateClient.mockResolvedValue(mock)
+    const res = await GET(makeReq({ limit: '-5' }))
+    // Zod's nonnegative() rejects negative numbers at validation
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 for invalid offset values', async () => {
+    const mock = createSupabaseMock({ thenableRange: true })
+    mockCreateClient.mockResolvedValue(mock)
+    const res = await GET(makeReq({ offset: 'abc' }))
+    // "abc" coerces to NaN which fails Zod's int().nonnegative()
+    expect(res.status).toBe(400)
   })
 })

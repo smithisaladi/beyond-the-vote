@@ -3,6 +3,7 @@ import path from 'node:path'
 
 export default defineConfig({
   oxc: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- oxc jsx 'automatic' is valid at runtime but not in stable typings
     jsx: 'automatic' as any,
   },
   test: {

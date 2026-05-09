@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { createSupabaseMock } from '@/test-utils/supabase-mock'
 
 // ── Mocks ──────────────────────────────────────────────────────────────────────
 
@@ -7,20 +8,6 @@ const mockCreateClient = vi.fn()
 vi.mock('@/lib/supabase/server', () => ({
   createClient: () => mockCreateClient(),
 }))
-
-// ── Helpers ────────────────────────────────────────────────────────────────────
-
-function buildChain() {
-  const mock: Record<string, any> = {}
-  mock.from = vi.fn().mockReturnValue(mock)
-  mock.select = vi.fn().mockReturnValue(mock)
-  mock.eq = vi.fn().mockReturnValue(mock)
-  mock.in = vi.fn().mockReturnValue(mock)
-  mock.order = vi.fn().mockReturnValue(mock)
-  mock.limit = vi.fn().mockResolvedValue({ data: [], error: null })
-  mock.auth = { getUser: vi.fn() }
-  return mock
-}
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
@@ -36,7 +23,7 @@ describe('GET /api/dashboard/followed', () => {
   }
 
   it('returns 401 when user is not authenticated', async () => {
-    const supabase = buildChain()
+    const supabase = createSupabaseMock({ withAuth: true })
     supabase.auth.getUser.mockResolvedValue({ data: { user: null } })
     mockCreateClient.mockResolvedValue(supabase)
 
@@ -47,7 +34,7 @@ describe('GET /api/dashboard/followed', () => {
   })
 
   it('returns empty politicians array when user has no follows', async () => {
-    const supabase = buildChain()
+    const supabase = createSupabaseMock({ withAuth: true })
     supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
     // followed_politicians query: .from().select().eq() returns empty
     supabase.eq.mockResolvedValueOnce({ data: [] })
@@ -60,7 +47,7 @@ describe('GET /api/dashboard/followed', () => {
   })
 
   it('returns 200 with politicians on happy path', async () => {
-    const supabase = buildChain()
+    const supabase = createSupabaseMock({ withAuth: true })
     supabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
 
     const follows = [{ politician_id: 'D000001' }]

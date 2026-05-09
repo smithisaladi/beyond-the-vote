@@ -81,4 +81,18 @@ describe('GET /api/bills/search', () => {
     const res = await GET(makeReq({ q: 'test query' }))
     expect(res.status).toBe(500)
   })
+
+  it('accepts query with exactly 3 characters (boundary)', async () => {
+    mockHybridBillSearch.mockResolvedValue([])
+    const res = await GET(makeReq({ q: 'abc' }))
+    expect(res.status).toBe(200)
+    expect(mockHybridBillSearch).toHaveBeenCalled()
+  })
+
+  it('rejects query with 2 characters', async () => {
+    const res = await GET(makeReq({ q: 'ab' }))
+    expect(res.status).toBe(400)
+    const json = await res.json()
+    expect(json.error).toMatch(/at least 3/)
+  })
 })
