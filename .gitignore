@@ -1,10 +1,21 @@
-# Dependencies
+# Node / frontend
 node_modules/
-
-# Build output
 dist/
-.next/
+*.log
+npm-debug.log*
+
+# Java / Gradle / Spring Boot backend
+.gradle/
+**/build/
+bin/
 out/
+*.class
+HELP.md
+
+# IDE
+.idea/
+.vscode/
+*.iml
 tsconfig.tsbuildinfo
 
 # Environment
@@ -12,21 +23,13 @@ tsconfig.tsbuildinfo
 .env.local
 .env.*.local
 
-# Logs
-*.log
-npm-debug.log*
-
 # OS
 .DS_Store
-
-# Editor
-.vscode/
-.idea/
+Thumbs.db
 
 # Supabase
 .supabase/
 supabase/.temp/
-tsconfig.tsbuildinfo
 
 # Python pipeline
 pipeline/.venv/
@@ -36,7 +39,7 @@ pipeline/**/*.pyo
 pipeline/.python-version
 *.egg-info/
 
-# FEC bulk data files (large, downloaded from fec.gov)
+# FEC bulk data (large, downloaded from fec.gov)
 pipeline/data/raw/
 pipeline/data/processed/
 
@@ -46,5 +49,5 @@ playwright-report/
 test-results/
 blob-report/
 
-# Local docs (not checked in)
+# Local notes (not checked in)
 docs/
