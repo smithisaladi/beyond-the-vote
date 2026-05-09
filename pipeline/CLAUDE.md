@@ -86,6 +86,20 @@ Bulk imports must follow this sequence:
 
 Loaded via `python-dotenv` from `.env` in pipeline root.
 
+## Schema ownership (post-migration)
+
+Spring Boot owns DDL via Flyway. The pipeline is now a downstream **consumer** of the schema and writes only to **pipeline-owned tables**:
+
+- `bills`, `bill_vote_positions`, `bill_vote_summaries`
+- `legislators`, `committees`, `committee_memberships`, `member_scores`
+- `pac_to_candidate`, `independent_expenditures`, `fec_cmte_names`
+- `legislator_funding_summary`, `legislator_top_contributors`, `legislator_top_pacs`
+- `contributor_leaderboard_cache`, `pipeline_runs`, `bulk_import_checkpoints`
+
+**App-owned tables** (`app_users`, `profiles`, `tracked_bills`, `followed_politicians`, `topic_preferences`, `refresh_tokens`, `password_reset_tokens`) are **off-limits** to the pipeline.
+
+The pipeline still authenticates via Supabase's REST API with `SUPABASE_SERVICE_KEY` (which has BYPASSRLS and full DML on everything). Switching the pipeline to direct Postgres with a restricted `pipeline` role is planned but not yet done — the DB-side `pipeline` role and grants are already provisioned in `backend/src/main/resources/db/setup/01_roles_and_grants.sql` for that future switch.
+
 ## GitHub Actions
 
 | Workflow | Schedule | What |
@@ -132,7 +146,7 @@ Loaded via `python-dotenv` from `.env` in pipeline root.
 - Skip the run order (FK constraints will fail)
 - Run `compute_funding_summaries` without local CSVs in `data/processed/fec/`
 - Run `refresh_views` mid-pipeline — always at the end
-- Modify `db/schema.sql` without being asked — schema changes go in `../supabase/migrations/`
+- Modify `db/schema.sql` without being asked — schema changes now go via Flyway in `../backend/src/main/resources/db/migration/V<n>__<name>.sql`. The Spring Boot app applies them on boot. Pull latest before runs so the pipeline sees the current schema.
 - Hardcode credentials or API keys
 - Treat `legislator_funding_summary`, `legislator_top_pacs`, or `legislator_top_contributors` as source tables — always derived
 

@@ -1,0 +1,78 @@
+spring:
+  application:
+    name: beyond-the-vote
+
+  datasource:
+    url: ${DATABASE_JDBC_URL}
+    username: ${DATABASE_USER:postgres}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: public
+        format_sql: true
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # The pre-existing schema (bills, legislators, etc.) was created outside
+    # Flyway and lives in supabase/migrations/*.sql as a historical record.
+    # Flyway treats whatever exists in the DB as the baseline at version 0
+    # and only runs migrations from V1 onwards.
+    baseline-on-migrate: true
+    baseline-version: 0
+
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=300s
+
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-token-expiration: 900000      # 15 minutes (bv_at JWT)
+
+  refresh-token:
+    expiration: 604800000                # 7 days (opaque bv_rt, hashed in refresh_tokens)
+
+  cookies:
+    # localhost dev defaults to false (browsers reject Secure cookies over http).
+    # Production MUST set APP_COOKIES_SECURE=true.
+    secure: ${APP_COOKIES_SECURE:false}
+
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+
+  congress-api:
+    base-url: https://api.congress.gov/v3
+    key: ${CONGRESS_API_KEY}
+
+  geocodio:
+    base-url: https://api.geocod.io/v1.7
+    key: ${GEOCODIO_API_KEY}
+
+  anthropic:
+    api-key: ${ANTHROPIC_API_KEY}
+    model: claude-haiku-4-5-20251001
+
+  rate-limit:
+    requests-per-minute: 60
