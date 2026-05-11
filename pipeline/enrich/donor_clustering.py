@@ -88,6 +88,12 @@ def cluster_donors(features: np.ndarray, min_cluster_size: int = 5, n_components
 def run_donor_clustering(parquet_path: Path) -> int:
     conn = get_conn()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+    # Clear previous results for this model version
+    cur.execute("DELETE FROM analytics.donor_cluster WHERE model_version = %s", (MODEL_VERSION,))
+    cur.execute("DELETE FROM analytics.donor_feature_vectors WHERE model_version = %s", (MODEL_VERSION,))
+    log.info("cleared_previous_clustering_results")
+
     cur.execute("SELECT contribution_id, canonical_id FROM enrichment.donor_canonical")
     result_data = [dict(r) for r in cur.fetchall()]
     if not result_data:
