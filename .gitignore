@@ -70,3 +70,4 @@ shared/openapi/
 
 # Parquet data
 *.parquet
+__pycache__/
