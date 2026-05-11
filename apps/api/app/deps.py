@@ -40,7 +40,12 @@ async def get_current_user(authorization: str = Header(default="")) -> dict:
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Token missing user ID")
-    return {"user_id": uuid.UUID(user_id), "payload": payload}
+    # Neon Auth may use non-UUID IDs — keep as string, cast to UUID only if valid
+    try:
+        parsed_id = uuid.UUID(user_id)
+    except ValueError:
+        parsed_id = user_id
+    return {"user_id": parsed_id, "payload": payload}
 
 
 async def get_optional_user(authorization: str = Header(default="")) -> dict | None:

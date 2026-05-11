@@ -1,13 +1,13 @@
-// apps/web/src/lib/api/fetch.ts
-import { supabase } from "@/lib/auth/supabase";
+// API fetch with Neon Auth token injection
+import { getJWTToken } from "@/lib/auth/neon";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 
 export async function apiFetch(path: string, options?: RequestInit): Promise<Response> {
-  const { data } = await supabase.auth.getSession();
+  const token = await getJWTToken();
   const headers = new Headers(options?.headers);
-  if (data.session?.access_token) {
-    headers.set("Authorization", `Bearer ${data.session.access_token}`);
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
   return fetch(`${API_BASE}${path}`, { ...options, headers });
 }
