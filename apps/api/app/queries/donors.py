@@ -1,19 +1,48 @@
-# apps/api/app/queries/donors.py
-"""PAC detail and leaderboard queries."""
+"""PAC detail and leaderboard queries — computed live from FEC tables."""
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
 async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit: int = 20, offset: int = 0) -> tuple[list[dict], int]:
+    """Live leaderboard from fec.pac_to_candidate + fec.independent_expenditures."""
     params: dict = {"limit": limit, "offset": offset}
+
+    name_filter = ""
     if q:
-        where = "cmte_name ILIKE :pattern"
+        name_filter = "AND cn.cmte_name ILIKE :pattern"
         params["pattern"] = f"%{q}%"
-    else:
-        where = "TRUE"
-    sql = f"""SELECT *, COUNT(*) OVER() AS total_count
-    FROM derived.contributor_leaderboard_cache WHERE {where}
-    ORDER BY total_contributions DESC LIMIT :limit OFFSET :offset"""
+
+    sql = f"""
+    WITH pac_totals AS (
+        SELECT cmte_id, SUM(transaction_amt) as direct_total
+        FROM fec.pac_to_candidate
+        GROUP BY cmte_id
+    ),
+    ie_totals AS (
+        SELECT cmte_id,
+               SUM(CASE WHEN sup_opp = 'S' THEN transaction_amt ELSE 0 END) as ie_for_total,
+               SUM(CASE WHEN sup_opp = 'O' THEN transaction_amt ELSE 0 END) as ie_against_total
+        FROM fec.independent_expenditures
+        GROUP BY cmte_id
+    ),
+    combined AS (
+        SELECT COALESCE(p.cmte_id, ie.cmte_id) as cmte_id,
+               COALESCE(p.direct_total, 0) as direct_total,
+               COALESCE(ie.ie_for_total, 0) as ie_for_total,
+               COALESCE(ie.ie_against_total, 0) as ie_against_total,
+               COALESCE(p.direct_total, 0) + COALESCE(ie.ie_for_total, 0) + COALESCE(ie.ie_against_total, 0) as total_contributions
+        FROM pac_totals p
+        FULL OUTER JOIN ie_totals ie ON p.cmte_id = ie.cmte_id
+    )
+    SELECT c.cmte_id, cn.cmte_name,
+           c.direct_total, c.ie_for_total, c.ie_against_total, c.total_contributions,
+           COUNT(*) OVER() AS total_count
+    FROM combined c
+    LEFT JOIN fec.cmte_names cn ON cn.cmte_id = c.cmte_id
+    WHERE cn.cmte_name IS NOT NULL {name_filter}
+    ORDER BY c.total_contributions DESC
+    LIMIT :limit OFFSET :offset
+    """
     result = await session.execute(text(sql), params)
     rows = result.mappings().all()
     total = rows[0]["total_count"] if rows else 0
@@ -21,6 +50,7 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit:
 
 
 async def pac_detail(session: AsyncSession, cmte_id: str) -> dict | None:
+    """Get PAC detail with aggregated contributions and top recipients."""
     sql = """
     WITH cmte_info AS (
         SELECT cmte_id, cmte_name, connected_org FROM fec.cmte_names WHERE cmte_id = :cmte_id
@@ -47,7 +77,8 @@ async def pac_detail(session: AsyncSession, cmte_id: str) -> dict | None:
     FROM cmte_info ci
     CROSS JOIN per_candidate pc
     LEFT JOIN congress.legislators l ON pc.cand_id = ANY(l.fec_ids)
-    ORDER BY total_support DESC LIMIT 20
+    ORDER BY total_support DESC
+    LIMIT 20
     """
     result = await session.execute(text(sql), {"cmte_id": cmte_id})
     rows = result.mappings().all()
