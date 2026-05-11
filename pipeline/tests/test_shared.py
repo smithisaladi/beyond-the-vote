@@ -1,6 +1,6 @@
 import pytest
-from pipeline.shared.observability import configure_logging
-from pipeline.shared.parquet import duckdb_connect
+from shared.observability import configure_logging
+from shared.parquet import duckdb_connect
 
 
 def test_configure_logging_does_not_raise():

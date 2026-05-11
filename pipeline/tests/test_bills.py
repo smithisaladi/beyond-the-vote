@@ -1,4 +1,4 @@
-from pipeline.load.bills import transform_bill, make_bill_id
+from load.bills import transform_bill, make_bill_id
 
 
 def test_make_bill_id():

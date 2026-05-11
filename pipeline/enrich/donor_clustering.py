@@ -4,8 +4,8 @@ from collections import defaultdict
 from pathlib import Path
 import numpy as np
 import structlog
-from pipeline.shared.db import upsert, get_supabase
-from pipeline.shared.parquet import duckdb_connect
+from shared.db import upsert, get_supabase
+from shared.parquet import duckdb_connect
 
 log = structlog.get_logger()
 MODEL_VERSION = "donor_cluster_v1_umap_hdbscan"

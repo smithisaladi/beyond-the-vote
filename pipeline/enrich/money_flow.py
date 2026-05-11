@@ -3,8 +3,8 @@
 from pathlib import Path
 import networkx as nx
 import structlog
-from pipeline.shared.db import upsert, get_supabase
-from pipeline.shared.parquet import duckdb_connect
+from shared.db import upsert, get_supabase
+from shared.parquet import duckdb_connect
 
 log = structlog.get_logger()
 MODEL_VERSION = "money_flow_v1_graph"

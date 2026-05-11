@@ -4,7 +4,7 @@ import zipfile
 from pathlib import Path
 import httpx
 import structlog
-from pipeline.shared.parquet import csv_to_parquet
+from shared.parquet import csv_to_parquet
 
 log = structlog.get_logger()
 
@@ -46,7 +46,7 @@ def download_fec_file(cycle: int, file_type: str, dest_dir: Path) -> Path:
 def convert_to_parquet(txt_path: Path, parquet_path: Path, columns: list[str]) -> int:
     if parquet_path.exists():
         log.info("parquet_exists", path=str(parquet_path))
-        from pipeline.shared.parquet import duckdb_connect
+        from shared.parquet import duckdb_connect
         with duckdb_connect() as conn:
             return conn.execute(f"SELECT count(*) FROM read_parquet('{parquet_path}')").fetchone()[0]
     return csv_to_parquet(txt_path, parquet_path, delimiter="|", columns=columns, header=False)

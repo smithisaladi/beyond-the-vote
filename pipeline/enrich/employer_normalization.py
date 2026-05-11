@@ -5,10 +5,10 @@ from pathlib import Path
 import numpy as np
 import structlog
 
-from pipeline.shared.db import upsert
-from pipeline.shared.embeddings import get_model, embed_texts
-from pipeline.shared.parquet import duckdb_connect
-from pipeline.enrich.stopwords import is_non_employer, normalize_employer_string
+from shared.db import upsert
+from shared.embeddings import get_model, embed_texts
+from shared.parquet import duckdb_connect
+from enrich.stopwords import is_non_employer, normalize_employer_string
 
 log = structlog.get_logger()
 

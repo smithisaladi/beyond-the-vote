@@ -9,12 +9,12 @@ from pathlib import Path
 
 import structlog
 
-from pipeline.shared.observability import configure_logging, configure_sentry
-from pipeline.shared.db import log_run_start, log_run_end
-from pipeline.enrich.donor_resolution import run_donor_resolution
-from pipeline.enrich.employer_normalization import run_employer_normalization
-from pipeline.enrich.industry_classification import run_industry_classification
-from pipeline.enrich.address_standardization import run_address_standardization
+from shared.observability import configure_logging, configure_sentry
+from shared.db import log_run_start, log_run_end
+from enrich.donor_resolution import run_donor_resolution
+from enrich.employer_normalization import run_employer_normalization
+from enrich.industry_classification import run_industry_classification
+from enrich.address_standardization import run_address_standardization
 
 SCRIPT = "enrich_tier1"
 DATA_DIR = Path(__file__).parent.parent / "data"

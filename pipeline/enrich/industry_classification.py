@@ -10,8 +10,8 @@ from pathlib import Path
 import numpy as np
 import structlog
 
-from pipeline.shared.db import upsert, get_supabase
-from pipeline.shared.embeddings import get_model, embed_texts
+from shared.db import upsert, get_supabase
+from shared.embeddings import get_model, embed_texts
 
 log = structlog.get_logger()
 

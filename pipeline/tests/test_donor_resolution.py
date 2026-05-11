@@ -1,4 +1,4 @@
-from pipeline.enrich.donor_resolution import (
+from enrich.donor_resolution import (
     build_blocking_key,
     extract_donors_from_parquet,
     cluster_block,

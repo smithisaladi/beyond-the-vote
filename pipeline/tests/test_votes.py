@@ -1,4 +1,4 @@
-from pipeline.load.votes import transform_vote, transform_positions
+from load.votes import transform_vote, transform_positions
 
 SAMPLE_VOTE_JSON = {
     "vote_id": "h123-119.2025",

@@ -1,8 +1,8 @@
 """Transform FEC Parquet data and upload aggregations to Supabase."""
 from pathlib import Path
 import structlog
-from pipeline.shared.db import upsert
-from pipeline.shared.parquet import duckdb_connect
+from shared.db import upsert
+from shared.parquet import duckdb_connect
 
 log = structlog.get_logger()
 
@@ -34,7 +34,7 @@ def transform_ie_contribution(record: dict, cycle: int) -> dict | None:
     return {"sub_id": sub_id, "cmte_id": cmte_id, "cand_id": (record.get("cand_id") or "").strip() or None, "sup_opp": sup_opp, "transaction_tp": tp, "transaction_amt": amt, "transaction_dt": (record.get("transaction_dt") or "").strip() or None, "cycle": cycle}
 
 def load_pac_contributions(parquet_path: Path, cycle: int) -> int:
-    from pipeline.shared.parquet import read_parquet_batched
+    from shared.parquet import read_parquet_batched
     total = 0
     for batch in read_parquet_batched(parquet_path):
         rows = [r for r in (transform_pac_contribution(rec, cycle) for rec in batch) if r]
@@ -45,7 +45,7 @@ def load_pac_contributions(parquet_path: Path, cycle: int) -> int:
     return total
 
 def load_ie_contributions(parquet_path: Path, cycle: int) -> int:
-    from pipeline.shared.parquet import read_parquet_batched
+    from shared.parquet import read_parquet_batched
     total = 0
     for batch in read_parquet_batched(parquet_path):
         rows = [r for r in (transform_ie_contribution(rec, cycle) for rec in batch) if r]
@@ -56,7 +56,7 @@ def load_ie_contributions(parquet_path: Path, cycle: int) -> int:
     return total
 
 def load_committee_names(parquet_path: Path) -> int:
-    from pipeline.shared.parquet import read_parquet_batched
+    from shared.parquet import read_parquet_batched
     total = 0
     for batch in read_parquet_batched(parquet_path):
         rows = []

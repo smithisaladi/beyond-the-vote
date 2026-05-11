@@ -1,4 +1,4 @@
-from pipeline.shared.embeddings import get_model, embed_texts
+from shared.embeddings import get_model, embed_texts
 
 
 def test_get_model_loads_successfully():

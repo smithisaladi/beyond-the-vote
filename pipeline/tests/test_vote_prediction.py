@@ -1,4 +1,4 @@
-from pipeline.enrich.vote_prediction import build_feature_vector, train_vote_model
+from enrich.vote_prediction import build_feature_vector, train_vote_model
 
 
 def test_build_feature_vector():

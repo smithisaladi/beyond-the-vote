@@ -8,15 +8,15 @@ from pathlib import Path
 
 import structlog
 
-from pipeline.shared.observability import configure_logging, configure_sentry
-from pipeline.shared.db import log_run_start, log_run_end
-from pipeline.ingest import congress, legislators, fec, voteview
-from pipeline.load.bills import load_bills
-from pipeline.load.legislators import load_legislators, load_committee_memberships
-from pipeline.load.votes import load_votes
-from pipeline.load.fec import load_pac_contributions, load_ie_contributions, load_committee_names
-from pipeline.load.scores import load_scores
-from pipeline.load.embeddings import load_bill_embeddings
+from shared.observability import configure_logging, configure_sentry
+from shared.db import log_run_start, log_run_end
+from ingest import congress, legislators, fec, voteview
+from load.bills import load_bills
+from load.legislators import load_legislators, load_committee_memberships
+from load.votes import load_votes
+from load.fec import load_pac_contributions, load_ie_contributions, load_committee_names
+from load.scores import load_scores
+from load.embeddings import load_bill_embeddings
 
 SCRIPT = "ingest_all"
 DATA_DIR = Path(__file__).parent.parent / "data"

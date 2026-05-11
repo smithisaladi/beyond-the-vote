@@ -6,10 +6,10 @@ import argparse
 import sys
 from pathlib import Path
 import structlog
-from pipeline.shared.observability import configure_logging, configure_sentry
-from pipeline.shared.db import log_run_start, log_run_end
-from pipeline.enrich.donor_clustering import run_donor_clustering
-from pipeline.enrich.money_flow import run_money_flow
+from shared.observability import configure_logging, configure_sentry
+from shared.db import log_run_start, log_run_end
+from enrich.donor_clustering import run_donor_clustering
+from enrich.money_flow import run_money_flow
 
 SCRIPT = "enrich_tier2"
 DATA_DIR = Path(__file__).parent.parent / "data"

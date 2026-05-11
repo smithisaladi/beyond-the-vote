@@ -6,9 +6,9 @@ import numpy as np
 import structlog
 from sklearn.cluster import AgglomerativeClustering
 
-from pipeline.shared.db import upsert, get_supabase
-from pipeline.shared.embeddings import get_model, embed_texts
-from pipeline.shared.parquet import read_parquet_batched
+from shared.db import upsert, get_supabase
+from shared.embeddings import get_model, embed_texts
+from shared.parquet import read_parquet_batched
 
 log = structlog.get_logger()
 

@@ -12,7 +12,7 @@ pytestmark = pytest.mark.skipif(
 
 def test_integration_legislator_load():
     """Load a single legislator and verify it exists in congress.legislators."""
-    from pipeline.shared.db import get_supabase, upsert
+    from shared.db import get_supabase, upsert
 
     test_row = {
         "bioguide_id": "TEST0001",
@@ -48,7 +48,7 @@ def test_integration_legislator_load():
 
 def test_integration_pipeline_run_logging():
     """Verify pipeline run logging works end-to-end."""
-    from pipeline.shared.db import log_run_start, log_run_end, get_watermark, get_supabase
+    from shared.db import log_run_start, log_run_end, get_watermark, get_supabase
 
     run_id = log_run_start("test_integration")
     log_run_end(run_id, "success", rows_processed=42)

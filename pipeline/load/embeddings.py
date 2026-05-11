@@ -1,7 +1,7 @@
 """Generate bill embeddings and upload to enrichment.bill_embeddings."""
 import structlog
-from pipeline.shared.db import get_supabase, upsert
-from pipeline.shared.embeddings import get_model, embed_texts
+from shared.db import get_supabase, upsert
+from shared.embeddings import get_model, embed_texts
 
 log = structlog.get_logger()
 MODEL_VERSION = "all-MiniLM-L6-v2-v1"

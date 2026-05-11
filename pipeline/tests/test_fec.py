@@ -1,4 +1,4 @@
-from pipeline.load.fec import transform_pac_contribution, transform_ie_contribution
+from load.fec import transform_pac_contribution, transform_ie_contribution
 
 def test_transform_pac_contribution_valid():
     record = {"sub_id": "4123456789", "cmte_id": "C00123456", "cand_id": "H0NY01234", "transaction_tp": "24K", "transaction_amt": "5000", "transaction_dt": "01152025"}

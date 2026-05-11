@@ -1,7 +1,7 @@
 """Transform usc-run vote JSON to congress.bill_vote_summaries and positions."""
 import structlog
-from pipeline.shared.db import upsert
-from pipeline.load.bills import make_bill_id
+from shared.db import upsert
+from load.bills import make_bill_id
 
 log = structlog.get_logger()
 

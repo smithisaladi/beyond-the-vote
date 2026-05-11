@@ -1,4 +1,4 @@
-from pipeline.enrich.industry_classification import (
+from enrich.industry_classification import (
     INDUSTRY_BUCKETS,
     build_classification_prompt,
     parse_classification_response,

@@ -8,7 +8,7 @@ import structlog
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 
-from pipeline.shared.db import get_supabase
+from shared.db import get_supabase
 
 log = structlog.get_logger()
 

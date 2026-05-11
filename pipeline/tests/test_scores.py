@@ -1,4 +1,4 @@
-from pipeline.load.scores import transform_member_score
+from load.scores import transform_member_score
 
 def test_transform_member_score_valid():
     record = {"icpsr": 14858, "congress": 119, "nominate_dim1": -0.342, "nominate_dim2": 0.156}

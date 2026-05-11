@@ -5,8 +5,8 @@ from pathlib import Path
 import httpx
 import structlog
 
-from pipeline.shared.db import upsert
-from pipeline.shared.parquet import duckdb_connect
+from shared.db import upsert
+from shared.parquet import duckdb_connect
 
 log = structlog.get_logger()
 

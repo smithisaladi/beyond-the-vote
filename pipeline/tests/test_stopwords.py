@@ -1,4 +1,4 @@
-from pipeline.enrich.stopwords import is_non_employer, normalize_employer_string
+from enrich.stopwords import is_non_employer, normalize_employer_string
 
 
 def test_retired_is_non_employer():

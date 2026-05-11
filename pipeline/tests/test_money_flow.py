@@ -1,5 +1,5 @@
 # pipeline/tests/test_money_flow.py
-from pipeline.enrich.money_flow import trace_money_flow, build_pac_graph
+from enrich.money_flow import trace_money_flow, build_pac_graph
 
 
 def test_build_pac_graph():

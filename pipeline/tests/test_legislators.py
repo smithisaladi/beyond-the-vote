@@ -1,4 +1,4 @@
-from pipeline.load.legislators import transform_legislator, transform_committee_membership
+from load.legislators import transform_legislator, transform_committee_membership
 
 
 SAMPLE_LEGISLATOR = {

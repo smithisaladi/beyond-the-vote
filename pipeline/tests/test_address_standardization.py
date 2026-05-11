@@ -1,4 +1,4 @@
-from pipeline.enrich.address_standardization import (
+from enrich.address_standardization import (
     parse_address,
     normalize_address,
     batch_geocode,

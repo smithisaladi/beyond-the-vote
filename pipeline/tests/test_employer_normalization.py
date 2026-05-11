@@ -1,4 +1,4 @@
-from pipeline.enrich.employer_normalization import (
+from enrich.employer_normalization import (
     extract_unique_employers,
     pick_canonical_name,
     cluster_employers,

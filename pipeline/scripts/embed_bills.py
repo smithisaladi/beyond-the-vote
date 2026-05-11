@@ -2,9 +2,9 @@
 Usage: uv run python -m pipeline.scripts.embed_bills
 """
 import sys
-from pipeline.shared.observability import configure_logging, configure_sentry
-from pipeline.shared.db import log_run_start, log_run_end
-from pipeline.load.embeddings import load_bill_embeddings
+from shared.observability import configure_logging, configure_sentry
+from shared.db import log_run_start, log_run_end
+from load.embeddings import load_bill_embeddings
 
 SCRIPT = "embed_bills"
 

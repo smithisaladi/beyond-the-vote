@@ -3,7 +3,7 @@ import re
 
 import structlog
 
-from pipeline.shared.db import upsert
+from shared.db import upsert
 
 log = structlog.get_logger()
 

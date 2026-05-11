@@ -1,5 +1,5 @@
 # pipeline/tests/test_donor_clustering.py
-from pipeline.enrich.donor_clustering import build_donor_features, cluster_donors, compute_feature_vectors
+from enrich.donor_clustering import build_donor_features, cluster_donors, compute_feature_vectors
 import numpy as np
 
 
