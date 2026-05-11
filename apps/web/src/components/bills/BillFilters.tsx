@@ -1,6 +1,6 @@
 
 
-import type { User } from '@supabase/supabase-js'
+
 // TODO: port useBillFilters hook — type defined inline for now
 interface BillFiltersState {
   query: string; setQuery: (q: string) => void; debouncedQuery: string;

@@ -1,7 +1,7 @@
 
 
 import { Link } from '@tanstack/react-router'
-import type { User } from '@supabase/supabase-js'
+
 // TODO: define Bill type properly
 type Bill = any
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
@@ -9,7 +9,7 @@ import { slugToTopic } from '@/lib/topics'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 
-function BookmarkIcon({ filled }: {ed: boolean }) {
+function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />

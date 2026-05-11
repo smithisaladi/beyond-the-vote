@@ -3,6 +3,6 @@ import RepresentativeDetailPage from "@/components/representatives/Representativ
 export const Route = createFileRoute("/_authenticated/representatives/$id")({
   component: () => {
     const { id } = Route.useParams();
-    return <RepresentativeDetailPage bioguideId={id} />;
+    return <RepresentativeDetailPage id={id} />;
   },
 });

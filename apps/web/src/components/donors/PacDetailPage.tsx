@@ -145,8 +145,7 @@ function FundingCard({
 type SortKey = 'amount' | 'name'
 type PartyFilter = 'all' | Party
 
-export default function PacDetailPage({ params }: { params: Promise<{ cmteId: string }> }) {
-  const { cmteId } = use(params)
+export default function PacDetailPage({ cmteId }: { cmteId: string }) {
   const { data: pac, isLoading: loading, error: _pacError } = usePacDetail(cmteId)
   const summaryLoading = false
   const error = _pacError ? String(_pacError) : null

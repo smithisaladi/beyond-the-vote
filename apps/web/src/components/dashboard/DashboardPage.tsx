@@ -3,10 +3,10 @@
 import { useState, useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { LogOut, UserMinus } from 'lucide-react'
-import type { User } from '@supabase/supabase-js'
+
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { useAuth } from '@/components/auth/AuthContext'
-// TODO: port useDashboard hook
+import { useFollowedPoliticians, useTrackedBills, useTopicPreferences } from "@/hooks/queries/useDashboard"
 // TODO: port useActivitySeen hook
 // TODO: port useUnfollowPolitician hook
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -32,10 +32,10 @@ function getGreeting(): string {
   return 'Good evening'
 }
 
-function getFirstName(user: User): string {
-  const name = user.user_metadata?.full_name as string | undefined
-  if (name) return name.trim().split(/\s+/)[0]
-  return user.email?.split('@')[0] ?? ''
+function getFirstName(user: { name?: string; email: string } | null): string {
+  if (!user) return ''
+  if (user.name) return user.name.trim().split(/\s+/)[0]
+  return user.email.split('@')[0]
 }
 
 function formatToday(): string {
@@ -48,11 +48,12 @@ function formatToday(): string {
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth()
-  // TODO: port useDashboard hook — stubbed for now
-  const politicians: any[] = []
-  const trackedBills: any[] = []
+  const { data: followedData, isLoading: loadingFollowed } = useFollowedPoliticians()
+  const { data: trackedData, isLoading: loadingTracked } = useTrackedBills()
+  const politicians = followedData?.politicians || []
+  const trackedBills = trackedData?.bills || []
   const activityFeed: any[] = []
-  const loading = false
+  const loading = loadingFollowed || loadingTracked
 
   const [photoErrors, setPhotoErrors] = useState<Set<string>>(new Set())
   // TODO: port useUnfollowPolitician hook — stubbed for now
