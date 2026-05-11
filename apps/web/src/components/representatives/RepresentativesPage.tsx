@@ -1,15 +1,14 @@
 
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { Search, MapPin, User } from 'lucide-react'
 import { RepresentativeCard } from '@/components/representatives/RepresentativeCard'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
-// TODO: port useMapboxAutocomplete hook
+import { useMapboxAutocomplete } from '@/hooks/useMapboxAutocomplete'
 import { useRepresentatives } from '@/hooks/queries/useRepresentatives'
 import { useSearchPoliticians } from '@/hooks/queries/usePoliticians'
 import { useAuth } from '@/components/auth/AuthContext'
-// TODO: port useUrlState hook — removed for now
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
@@ -45,12 +44,9 @@ function RepresentativesContent() {
 
   const { data: representatives = [], isLoading: loading, error: _repError } = useRepresentatives(addressParam)
   const error = _repError ? String(_repError) : ''
-  // TODO: port useMapboxAutocomplete hook — stubbed for now
-  const suggestions: string[] = []
-  const showSuggestions = false
-  const setShowSuggestions = (_v: boolean) => {}
-  const clearSuggestions = (_s?: string) => {}
-  const containerRef = { current: null } as React.RefObject<HTMLDivElement | null>
+  const suggestions = useMapboxAutocomplete(address)
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const { data: nameResults = [], isLoading: nameLoading } = useSearchPoliticians(nameQuery)
 
