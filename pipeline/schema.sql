@@ -428,7 +428,7 @@ CREATE TABLE anomalies.amount_distribution_anomalies (
 -- ============================================================
 
 CREATE TABLE app.profiles (
-    id              uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    id              uuid PRIMARY KEY,
     display_name    text,
     avatar_url      text,
     activity_last_seen_at timestamptz,
@@ -436,21 +436,21 @@ CREATE TABLE app.profiles (
 );
 
 CREATE TABLE app.followed_politicians (
-    user_id         uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id         uuid NOT NULL,
     politician_id   text NOT NULL REFERENCES congress.legislators(bioguide_id),
     created_at      timestamptz DEFAULT now(),
     PRIMARY KEY (user_id, politician_id)
 );
 
 CREATE TABLE app.tracked_bills (
-    user_id         uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id         uuid NOT NULL,
     bill_id         text NOT NULL REFERENCES congress.bills(bill_id),
     created_at      timestamptz DEFAULT now(),
     PRIMARY KEY (user_id, bill_id)
 );
 
 CREATE TABLE app.topic_preferences (
-    user_id         uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id         uuid NOT NULL,
     topic           text NOT NULL,
     created_at      timestamptz DEFAULT now(),
     PRIMARY KEY (user_id, topic)
