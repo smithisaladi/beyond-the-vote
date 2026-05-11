@@ -1,42 +1,34 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
+import { useNavigate } from "@tanstack/react-router";
 
 interface AuthModalContextType {
   showSignIn: () => void;
   showSignUp: () => void;
   closeModal: () => void;
-  isSignInOpen: boolean;
-  isSignUpOpen: boolean;
   openSignIn: () => void;
   openSignUp: () => void;
+  isSignInOpen: boolean;
+  isSignUpOpen: boolean;
 }
 
 const AuthModalContext = createContext<AuthModalContextType>({
-  showSignIn: () => {},
-  showSignUp: () => {},
-  closeModal: () => {},
-  isSignInOpen: false,
-  isSignUpOpen: false,
-  openSignIn: () => {},
-  openSignUp: () => {},
+  showSignIn: () => {}, showSignUp: () => {}, closeModal: () => {},
+  openSignIn: () => {}, openSignUp: () => {},
+  isSignInOpen: false, isSignUpOpen: false,
 });
 
 export function AuthModalProvider({ children }: { children: ReactNode }) {
-  const [isSignInOpen, setSignInOpen] = useState(false);
-  const [isSignUpOpen, setSignUpOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const showSignIn = () => { setSignUpOpen(false); setSignInOpen(true); };
-  const showSignUp = () => { setSignInOpen(false); setSignUpOpen(true); };
-  const closeModal = () => { setSignInOpen(false); setSignUpOpen(false); };
+  const showSignIn = () => navigate({ to: "/auth/sign-in" });
+  const showSignUp = () => navigate({ to: "/auth/sign-up" });
+  const closeModal = () => navigate({ to: "/" });
 
   return (
     <AuthModalContext.Provider value={{
-      showSignIn,
-      showSignUp,
-      closeModal,
-      isSignInOpen,
-      isSignUpOpen,
-      openSignIn: showSignIn,
-      openSignUp: showSignUp,
+      showSignIn, showSignUp, closeModal,
+      openSignIn: showSignIn, openSignUp: showSignUp,
+      isSignInOpen: false, isSignUpOpen: false,
     }}>
       {children}
     </AuthModalContext.Provider>
