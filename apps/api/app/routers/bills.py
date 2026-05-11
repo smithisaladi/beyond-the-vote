@@ -77,6 +77,46 @@ async def bill_detail(bill_id: str, db: AsyncSession = Depends(get_db)):
 
     votes = await get_bill_votes(db, bill["bill_id"])
 
+    # Cosponsors
+    cosponsor_result = await db.execute(
+        text("""SELECT bc.bioguide_id, bc.sponsored_at, bc.withdrawn_at, bc.original_cosponsor,
+                       l.full_name, l.party, l.state, l.photo_url
+                FROM congress.bill_cosponsors bc
+                LEFT JOIN congress.legislators l ON l.bioguide_id = bc.bioguide_id
+                WHERE bc.bill_id = :bill_id
+                ORDER BY bc.sponsored_at"""),
+        {"bill_id": bill["bill_id"]},
+    )
+    cosponsors = [
+        {
+            "bioguideId": r["bioguide_id"],
+            "name": r.get("full_name"),
+            "party": r.get("party"),
+            "state": r.get("state"),
+            "photoUrl": r.get("photo_url"),
+            "sponsoredAt": str(r.get("sponsored_at") or ""),
+            "originalCosponsor": r.get("original_cosponsor", False),
+        }
+        for r in cosponsor_result.mappings().all()
+    ]
+
+    # Actions timeline
+    actions_result = await db.execute(
+        text("""SELECT acted_at, text, action_code, action_type
+                FROM congress.bill_actions
+                WHERE bill_id = :bill_id
+                ORDER BY acted_at"""),
+        {"bill_id": bill["bill_id"]},
+    )
+    actions = [
+        {
+            "date": str(r["acted_at"]),
+            "text": r["text"],
+            "type": r.get("action_type"),
+        }
+        for r in actions_result.mappings().all()
+    ]
+
     return {
         "bill": {
             "id": bill["bill_id"],
@@ -91,9 +131,11 @@ async def bill_detail(bill_id: str, db: AsyncSession = Depends(get_db)):
                 "bioguideId": bill.get("sponsor_bioguide_id"),
                 "party": bill.get("sponsor_party"),
             } if bill.get("sponsor_bioguide_id") else None,
+            "cosponsors": cosponsors,
             "policyArea": bill.get("policy_area"),
             "topics": bill.get("topics", []),
             "congressGovUrl": bill.get("congress_gov_url"),
+            "actions": actions,
             "lastActionText": bill.get("last_action_text"),
             "lastActionDate": str(bill.get("last_action_date") or ""),
             "votes": [_format_vote(v) for v in votes],

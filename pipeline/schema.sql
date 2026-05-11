@@ -118,6 +118,31 @@ CREATE TABLE congress.bill_vote_summaries (
 CREATE INDEX ON congress.bill_vote_summaries (bill_id);
 CREATE INDEX ON congress.bill_vote_summaries (date);
 
+-- Bill cosponsors
+CREATE TABLE congress.bill_cosponsors (
+    bill_id         text NOT NULL,
+    bioguide_id     text NOT NULL,
+    sponsored_at    date,
+    withdrawn_at    date,
+    original_cosponsor boolean DEFAULT false,
+    PRIMARY KEY (bill_id, bioguide_id)
+);
+
+CREATE INDEX ON congress.bill_cosponsors (bioguide_id);
+
+-- Bill action timeline
+CREATE TABLE congress.bill_actions (
+    id              bigserial PRIMARY KEY,
+    bill_id         text NOT NULL,
+    acted_at        text NOT NULL,
+    text            text NOT NULL,
+    action_code     text,
+    action_type     text,
+    UNIQUE (bill_id, acted_at, text)
+);
+
+CREATE INDEX ON congress.bill_actions (bill_id);
+
 CREATE TABLE congress.bill_vote_positions (
     vote_id         text NOT NULL REFERENCES congress.bill_vote_summaries(id) ON DELETE CASCADE,
     bioguide_id     text NOT NULL REFERENCES congress.legislators(bioguide_id) ON DELETE CASCADE,

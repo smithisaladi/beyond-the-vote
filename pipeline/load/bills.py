@@ -174,13 +174,64 @@ def _clean_html(text: str) -> str:
     return re.sub(r"<[^>]+>", " ", text).strip()
 
 
-def load_bills(bill_jsons: list[dict]) -> int:
+def _extract_cosponsors(data: dict, bill_id: str) -> list[dict]:
+    """Extract cosponsors from usc-run bill JSON."""
     rows = []
+    for cs in data.get("cosponsors", []):
+        bioguide = cs.get("bioguide_id")
+        if not bioguide:
+            continue
+        rows.append({
+            "bill_id": bill_id,
+            "bioguide_id": bioguide,
+            "sponsored_at": cs.get("sponsored_at"),
+            "withdrawn_at": cs.get("withdrawn_at"),
+            "original_cosponsor": cs.get("original_cosponsor", False),
+        })
+    return rows
+
+
+def _extract_actions(data: dict, bill_id: str) -> list[dict]:
+    """Extract action timeline from usc-run bill JSON."""
+    rows = []
+    seen = set()
+    for action in data.get("actions", []):
+        acted_at = str(action.get("acted_at") or "")
+        text = str(action.get("text") or "")
+        if not acted_at or not text:
+            continue
+        # Deduplicate by (bill_id, acted_at, text)
+        key = (bill_id, acted_at, text[:200])
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append({
+            "bill_id": bill_id,
+            "acted_at": acted_at,
+            "text": text,
+            "action_code": action.get("action_code"),
+            "action_type": action.get("type"),
+        })
+    return rows
+
+
+def load_bills(bill_jsons: list[dict]) -> int:
+    """Transform and upload bills, cosponsors, and actions."""
+    rows = []
+    all_cosponsors = []
+    all_actions = []
+
     for data in bill_jsons:
         row = transform_bill(data)
-        if row:
-            rows.append(row)
-    log.info("bills_transformed", total=len(rows))
+        if not row:
+            continue
+        rows.append(row)
+        bill_id = row["bill_id"]
+        all_cosponsors.extend(_extract_cosponsors(data, bill_id))
+        all_actions.extend(_extract_actions(data, bill_id))
+
+    log.info("bills_transformed", bills=len(rows),
+             cosponsors=len(all_cosponsors), actions=len(all_actions))
 
     # Null out sponsor FKs that don't exist in legislators table (current-only DB)
     from shared.db import get_supabase
@@ -195,4 +246,14 @@ def load_bills(bill_jsons: list[dict]) -> int:
     if nulled:
         log.info("sponsor_fks_nulled", count=nulled)
 
-    return upsert("bills", rows, on_conflict="bill_id", schema="congress")
+    bill_count = upsert("bills", rows, on_conflict="bill_id", schema="congress")
+
+    if all_cosponsors:
+        upsert("bill_cosponsors", all_cosponsors, on_conflict="bill_id,bioguide_id", schema="congress")
+        log.info("cosponsors_loaded", count=len(all_cosponsors))
+
+    if all_actions:
+        upsert("bill_actions", all_actions, on_conflict="bill_id,acted_at,text", schema="congress")
+        log.info("actions_loaded", count=len(all_actions))
+
+    return bill_count
