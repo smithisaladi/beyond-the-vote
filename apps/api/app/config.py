@@ -10,12 +10,16 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
     geocodio_api_key: str = ""
     anthropic_api_key: str = ""
+    congress_api_key: str = ""
+    openfec_api_key: str = ""
+    fec_api_key: str = ""
+    mapbox_token: str = ""
 
     # Neon Auth
     neon_auth_url: str = ""  # e.g. https://ep-xxx.neonauth.us-east-1.aws.neon.tech/neondb/auth
     neon_auth_jwt_secret: str = ""  # Better Auth secret for HS256 validation
 
-    model_config = {"env_prefix": "", "env_file": ".env"}
+    model_config = {"env_prefix": "", "env_file": ".env", "extra": "ignore"}
 
     @property
     def async_database_url(self) -> str:
