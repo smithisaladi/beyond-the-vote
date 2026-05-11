@@ -8,7 +8,7 @@ from sklearn.cluster import AgglomerativeClustering
 
 import psycopg2.extras
 
-from shared.db import upsert, get_conn
+from shared.db import upsert, get_conn, reset_conn
 from shared.embeddings import get_model, embed_texts
 from shared.parquet import read_parquet_batched
 
@@ -142,6 +142,9 @@ def run_donor_resolution(parquet_path: Path, threshold: float = 0.15, block_batc
 
     model = get_model()
     donors = extract_donors_from_parquet(parquet_path)
+
+    # Close DB connection during long in-memory processing to avoid Neon idle timeout
+    reset_conn()
 
     blocks: dict[str, list[dict]] = defaultdict(list)
     skipped = 0
