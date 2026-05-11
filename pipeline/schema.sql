@@ -93,7 +93,7 @@ CREATE INDEX ON congress.bills (policy_area);
 
 CREATE TABLE congress.bill_vote_summaries (
     id              text PRIMARY KEY,
-    bill_id         text NOT NULL,
+    bill_id         text,
     congress        integer NOT NULL,
     chamber         text NOT NULL,
     date            date NOT NULL,
