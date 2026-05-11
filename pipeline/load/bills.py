@@ -62,13 +62,14 @@ def make_bill_id(congress: int, bill_type: str, number: int | str) -> str:
 
 
 def transform_bill(data: dict) -> dict | None:
-    congress = data.get("congress")
+    congress_raw = data.get("congress")
     bill_type = data.get("bill_type", "").lower()
     number = data.get("number")
 
-    if not congress or not number:
+    if not congress_raw or not number:
         return None
 
+    congress = int(congress_raw)
     bill_id = make_bill_id(congress, bill_type, number)
     bill_number = f"{_BILL_TYPE_DISPLAY.get(bill_type, bill_type.upper())} {number}"
 
@@ -155,7 +156,8 @@ def _months_since(date_str: str) -> int:
         return 0
 
 
-def _build_url(congress: int, bill_type: str, number: int | str) -> str:
+def _build_url(congress: int | str, bill_type: str, number: int | str) -> str:
+    congress = int(congress)
     type_path = {
         "hr": "house-bill", "s": "senate-bill",
         "hjres": "house-joint-resolution", "sjres": "senate-joint-resolution",

@@ -78,6 +78,8 @@ def _count_by_party(votes_by_position: dict) -> dict:
         else:
             continue
         for voter in voters:
+            if not isinstance(voter, dict):
+                continue
             party_raw = voter.get("party", "")
             party = _PARTY_MAP.get(party_raw, "independent").lower()
             key = f"{pos_key}_{party}"
@@ -91,6 +93,8 @@ def transform_positions(data: dict, vote_id: str) -> list[dict]:
     for position_label, voters in votes_by_position.items():
         normalized = _POSITION_MAP.get(position_label.lower(), position_label)
         for voter in voters:
+            if not isinstance(voter, dict):
+                continue
             bioguide = voter.get("id")
             if not bioguide:
                 continue
@@ -101,14 +105,34 @@ def transform_positions(data: dict, vote_id: str) -> list[dict]:
 def load_votes(vote_jsons: list[dict]) -> tuple[int, int]:
     summaries = []
     all_positions = []
+    seen_vote_ids = set()
+    seen_position_keys = set()
     for data in vote_jsons:
         summary = transform_vote(data)
         if not summary:
             continue
+        if summary["id"] in seen_vote_ids:
+            continue
+        seen_vote_ids.add(summary["id"])
         summaries.append(summary)
         positions = transform_positions(data, summary["id"])
-        all_positions.extend(positions)
+        for pos in positions:
+            key = (pos["vote_id"], pos["bioguide_id"])
+            if key not in seen_position_keys:
+                seen_position_keys.add(key)
+                all_positions.append(pos)
     log.info("votes_transformed", summaries=len(summaries), positions=len(all_positions))
     s_count = upsert("bill_vote_summaries", summaries, on_conflict="id", schema="congress")
-    p_count = upsert("bill_vote_positions", all_positions, on_conflict="vote_id,bioguide_id", schema="congress")
+
+    # Filter positions to only include known legislators (FK constraint)
+    from shared.db import get_supabase
+    client = get_supabase()
+    result = client.schema("congress").table("legislators").select("bioguide_id").execute()
+    valid_ids = {r["bioguide_id"] for r in result.data}
+    filtered_positions = [p for p in all_positions if p["bioguide_id"] in valid_ids]
+    skipped = len(all_positions) - len(filtered_positions)
+    if skipped > 0:
+        log.info("positions_filtered", total=len(all_positions), kept=len(filtered_positions), skipped=skipped)
+
+    p_count = upsert("bill_vote_positions", filtered_positions, on_conflict="vote_id,bioguide_id", schema="congress")
     return s_count, p_count

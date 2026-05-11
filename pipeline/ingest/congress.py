@@ -10,8 +10,8 @@ log = structlog.get_logger()
 
 
 def setup(data_dir: Path) -> Path:
-    """Clone usc-run repo if not present. Returns repo path."""
-    repo_dir = data_dir / "congress-scraper"
+    """Clone usc-run repo if not present. Returns repo path (absolute)."""
+    repo_dir = (data_dir / "congress-scraper").resolve()
     if (repo_dir / ".git").exists():
         log.info("usc_run_repo_exists", path=str(repo_dir))
     else:
