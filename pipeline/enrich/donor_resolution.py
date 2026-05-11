@@ -6,9 +6,9 @@ import numpy as np
 import structlog
 from sklearn.cluster import AgglomerativeClustering
 
-from pipeline.shared.db import upsert
+from pipeline.shared.db import upsert, get_supabase
 from pipeline.shared.embeddings import get_model, embed_texts
-from pipeline.shared.parquet import duckdb_connect
+from pipeline.shared.parquet import read_parquet_batched
 
 log = structlog.get_logger()
 
@@ -26,30 +26,32 @@ def build_blocking_key(last_name: str | None, zip_code: str | None) -> str | Non
     return f"{prefix}_{zip5}"
 
 
-def extract_donors_from_parquet(parquet_path: Path) -> list[dict]:
-    with duckdb_connect() as conn:
-        df = conn.execute(f"""
-            SELECT
-                CAST(sub_id AS BIGINT) as sub_id,
-                name, employer, occupation, city, state, zip_code,
-                CONCAT_WS(' ', city, state, zip_code) as address
-            FROM read_parquet('{parquet_path}')
-            WHERE entity_tp = 'IND' OR entity_tp = '' OR entity_tp IS NULL
-        """).fetchdf()
-
+def extract_donors_from_parquet(parquet_path: Path, batch_size: int = 100_000) -> list[dict]:
+    """Extract individual donor records from FEC indiv parquet file, streamed in batches."""
     donors = []
-    for _, row in df.iterrows():
-        zip_code = str(row.get("zip_code") or "")
-        donors.append({
-            "sub_id": int(row["sub_id"]) if row["sub_id"] else None,
-            "name": str(row.get("name") or ""),
-            "employer": str(row.get("employer") or ""),
-            "occupation": str(row.get("occupation") or ""),
-            "city": str(row.get("city") or ""),
-            "state": str(row.get("state") or ""),
-            "zip5": zip_code[:5],
-            "address": str(row.get("address") or ""),
-        })
+    for batch in read_parquet_batched(parquet_path, batch_size=batch_size):
+        for row in batch:
+            entity_tp = str(row.get("entity_tp") or "")
+            if entity_tp not in ("IND", "", None):
+                continue
+            zip_code = str(row.get("zip_code") or "")
+            sub_id = row.get("sub_id")
+            try:
+                sub_id_int = int(sub_id) if sub_id else None
+            except (ValueError, TypeError):
+                sub_id_int = None
+            if sub_id_int is None:
+                continue
+            donors.append({
+                "sub_id": sub_id_int,
+                "name": str(row.get("name") or ""),
+                "employer": str(row.get("employer") or ""),
+                "occupation": str(row.get("occupation") or ""),
+                "city": str(row.get("city") or ""),
+                "state": str(row.get("state") or ""),
+                "zip5": zip_code[:5],
+                "address": f"{row.get('city', '')} {row.get('state', '')} {zip_code}".strip(),
+            })
     log.info("extracted_donors", count=len(donors))
     return donors
 
@@ -131,6 +133,10 @@ def cluster_block(donors: list[dict], model, threshold: float = 0.15) -> list[di
 
 
 def run_donor_resolution(parquet_path: Path, threshold: float = 0.15, block_batch_size: int = 10_000) -> int:
+    # Clear previous results for this model version
+    client = get_supabase()
+    client.schema("enrichment").table("donor_canonical").delete().eq("model_version", MODEL_VERSION).execute()
+
     model = get_model()
     donors = extract_donors_from_parquet(parquet_path)
 

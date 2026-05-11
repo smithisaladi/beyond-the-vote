@@ -103,6 +103,9 @@ def extract_pac_transfers(parquet_path: Path) -> list[dict]:
 
 
 def run_money_flow(parquet_path: Path, cycle: int, max_depth: int = 3) -> int:
+    client = get_supabase()
+    client.schema("analytics").table("money_flow_attribution").delete().eq("cycle", cycle).execute()
+
     transfers = extract_pac_transfers(parquet_path)
     if not transfers:
         log.warning("no_pac_transfers_found")
