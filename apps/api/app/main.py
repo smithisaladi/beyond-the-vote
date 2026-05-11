@@ -31,7 +31,13 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_lim
 async def lifespan(app: FastAPI):
     log.info("app_starting", environment=settings.environment)
     from app.ml import load_all_models
-    load_all_models()
+    if settings.database_url:
+        from app.deps import _get_session_factory
+        factory = _get_session_factory()
+        async with factory() as session:
+            await load_all_models(db_session=session)
+    else:
+        await load_all_models()
     yield
     log.info("app_shutting_down")
 
@@ -73,3 +79,6 @@ app.include_router(dashboard.router)
 
 from app.routers import representatives
 app.include_router(representatives.router)
+
+from app.routers import ml
+app.include_router(ml.router)
