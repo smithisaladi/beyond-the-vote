@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/components/auth/AuthContext";
 import DashboardPage from "@/components/dashboard/DashboardPage";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { SidebarLayout } from "@/components/layout/SidebarLayout";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -18,5 +19,11 @@ function HomePage() {
     );
   }
 
-  return user ? <DashboardPage /> : <LandingPage />;
+  if (!user) return <LandingPage />;
+
+  return (
+    <SidebarLayout>
+      <DashboardPage />
+    </SidebarLayout>
+  );
 }
