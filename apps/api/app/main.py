@@ -85,3 +85,6 @@ app.include_router(ml.router)
 
 from app.routers import donor_similarity
 app.include_router(donor_similarity.router)
+
+from app.routers import money_flow
+app.include_router(money_flow.router)
