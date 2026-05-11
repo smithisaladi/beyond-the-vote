@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from shared.observability import configure_logging
-from shared.db import get_supabase, log_run_start, log_run_end
+from shared.db import get_supabase, get_conn, log_run_start, log_run_end
 
 import structlog
 
@@ -234,9 +234,13 @@ def step_fec():
     from load.fec import load_pac_contributions, load_ie_contributions, load_committee_names
 
     for cycle in FEC_CYCLES:
-        existing_pac = get_row_count("fec", "pac_to_candidate")
-        if existing_pac > 100000:
-            log.info("fec_already_loaded", cycle=cycle, pac_rows=existing_pac)
+        # Check per-cycle, not table-wide
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute("SELECT count(*) FROM fec.pac_to_candidate WHERE cycle = %s", (cycle,))
+        existing_pac = cur.fetchone()[0]
+        if existing_pac > 10000:
+            log.info("fec_cycle_already_loaded", cycle=cycle, pac_rows=existing_pac)
             continue
 
         if not check_storage(f"fec_cycle_{cycle}"):
