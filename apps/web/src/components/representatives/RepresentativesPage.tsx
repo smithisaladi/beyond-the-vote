@@ -52,16 +52,16 @@ function RepresentativesContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    clearSuggestions()
+    setShowSuggestions(false)
     if (address.trim()) {
-      navigate({ to: '/representatives', search: { address: encodeURIComponent(address.trim()) } })
+      navigate({ to: '/representatives', search: { address: address.trim(), mode: 'address' } as any })
     }
   }
 
   const handleSelectSuggestion = (suggestion: string) => {
     setAddress(suggestion)
-    clearSuggestions(suggestion)
-    navigate({ to: '/representatives', search: { address: encodeURIComponent(suggestion) } })
+    setShowSuggestions(false)
+    navigate({ to: '/representatives', search: { address: suggestion, mode: 'address' } as any })
   }
 
   // Displayed results depend on mode
