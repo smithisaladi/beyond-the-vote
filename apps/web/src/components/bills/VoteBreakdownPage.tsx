@@ -110,7 +110,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
         href={`/bills/${billId}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`}
         className="inline-flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M19 12H5M12 5l-7 7 7 7" />
         </svg>
         <span className="font-mono text-[#1C1C1A]/38">{billNumber}</span>
@@ -210,7 +210,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
                   }`}
                 >
                   {filter !== 'All' ? filter : 'Position'}
-                  <svg width="10" height="10" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M6 9l6 6 6-6" />
                   </svg>
                 </button>
@@ -242,7 +242,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
                   }`}
                 >
                   {partyFilter !== 'All' ? PARTY_STYLES[partyFilter].label : 'Party'}
-                  <svg width="10" height="10" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M6 9l6 6 6-6" />
                   </svg>
                 </button>

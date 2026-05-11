@@ -15,14 +15,14 @@ export function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment
         className="w-full flex items-center justify-between px-3 py-2 text-left bg-[#FAF8F5] hover:bg-[#F5F1EB] transition-colors"
       >
         <span className="text-xs text-[#1C1C1A]/50 font-medium flex items-center gap-1.5">
-          <svg width="11" height="11" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
             <line x1="12" y1="1" x2="12" y2="23" />
             <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
           </svg>
           Donor alignment · {alignments.length} connection{alignments.length !== 1 ? 's' : ''}
         </span>
         <svg
-          width="12" height="12" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2.5"
+          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
           strokeLinecap="round" strokeLinejoin="round"
           className={`text-[#1C1C1A]/30 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
         >

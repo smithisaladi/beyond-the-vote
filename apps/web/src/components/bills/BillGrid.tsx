@@ -9,9 +9,9 @@ import { slugToTopic } from '@/lib/topics'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 
-function BookmarkIcon({ed }: {ed: boolean }) {
+function BookmarkIcon({ filled }: {ed: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24"={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )
@@ -101,7 +101,7 @@ function BillCard({
             aria-label={tracked ? 'Untrack bill' : 'Track bill'}
             className="flex-shrink-0 p-2 rounded-lg hover:bg-[#7B5E8A]/8 transition-colors mt-0.5"
           >
-            <BookmarkIconed={tracked} />
+            <BookmarkIcon filled={tracked} />
           </button>
         </div>
       </Card>

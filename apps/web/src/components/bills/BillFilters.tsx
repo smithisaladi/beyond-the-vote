@@ -23,9 +23,9 @@ type SortOption = 'newest' | 'oldest'
 
 const ALL_STATUSES: Status[] = ['Active', 'Committee', 'Stalled', 'Passed', 'Failed']
 
-function BookmarkIcon({ed }: {ed: boolean }) {
+function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24"={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )
@@ -51,7 +51,7 @@ function FilterCheckbox({
         }`}
       >
         {checked && (
-          <svg width="10" height="10" viewBox="0 0 12 12"="none">
+          <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
             <path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         )}
@@ -95,7 +95,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           }`}
         >
           {selectedStatuses.size > 0 ? `Status: ${[...selectedStatuses].join(', ')}` : 'Status'}
-          <svg width="10" height="10" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9l6 6 6-6" />
           </svg>
         </button>
@@ -120,7 +120,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           }`}
         >
           {dateFilter === 'month' ? 'Last Action: Past month' : dateFilter === 'year' ? 'Last Action: Past year' : 'Last Action'}
-          <svg width="10" height="10" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9l6 6 6-6" />
           </svg>
         </button>
@@ -161,7 +161,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           }`}
         >
           {selectedTopics.size > 0 ? `Topics: ${selectedTopics.size}` : 'Topics'}
-          <svg width="10" height="10" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 9l6 6 6-6" />
           </svg>
         </button>
@@ -187,7 +187,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
             }`}
           >
             {sort === 'newest' ? 'Latest first' : 'Oldest first'}
-            <svg width="10" height="10" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
@@ -226,7 +226,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
               : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#7B5E8A]/50'
           }`}
         >
-          <BookmarkIconed={showTrackedOnly} />
+          <BookmarkIcon filled={showTrackedOnly} />
           Tracked
         </button>
       )}

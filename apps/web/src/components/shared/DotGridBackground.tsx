@@ -7,10 +7,10 @@ export function DotGridBackground({ id }: { id: string }) {
     >
       <defs>
         <pattern id={id} x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-          <circle cx="12" cy="12" r="1.2"="#1C1C1A" opacity="0.18" />
+          <circle cx="12" cy="12" r="1.2" fill="#1C1C1A" opacity="0.18" />
         </pattern>
       </defs>
-      <rect width="100%" height="100%"={`url(#${id})`} />
+      <rect width="100%" height="100%" fill={`url(#${id})`} />
     </svg>
   )
 }

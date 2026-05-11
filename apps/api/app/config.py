@@ -24,6 +24,9 @@ class Settings(BaseSettings):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)
         elif url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # asyncpg uses 'ssl' not 'sslmode' — convert for Neon compatibility
+        url = url.replace("sslmode=require", "ssl=require")
+        url = url.replace("&channel_binding=require", "")
         return url
 
 

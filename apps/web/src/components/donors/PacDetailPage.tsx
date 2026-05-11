@@ -22,7 +22,7 @@ const RECIPIENTS_PREVIEW = 30
 
 function BackArrow() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24"="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 12H5" />
       <polyline points="12 19 5 12 12 5" />
     </svg>
@@ -264,7 +264,7 @@ export default function PacDetailPage({ params }: { params: Promise<{ cmteId: st
               {(summaryLoading || pac.summary) && (
                 <Card className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
-                    <svg width="14" height="14" viewBox="0 0 24 24"="none" stroke="#7B5E8A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7B5E8A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M12 2L2 7l10 5 10-5-10-5z" />
                       <path d="M2 17l10 5 10-5" />
                       <path d="M2 12l10 5 10-5" />
