@@ -62,3 +62,6 @@ app.include_router(bills.router)
 
 from app.routers import politicians
 app.include_router(politicians.router)
+
+from app.routers import donors
+app.include_router(donors.router)
