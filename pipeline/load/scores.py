@@ -20,6 +20,14 @@ def transform_member_score(record: dict, icpsr_to_bioguide: dict[str, str]) -> d
     return {"bioguide_id": bioguide, "congress": int(congress), "nominate_dim1": dim1, "nominate_dim2": dim2}
 
 def load_scores(records: list[dict], icpsr_to_bioguide: dict[str, str]) -> int:
-    rows = [r for r in (transform_member_score(rec, icpsr_to_bioguide) for rec in records) if r]
+    rows = []
+    seen = set()
+    for rec in records:
+        row = transform_member_score(rec, icpsr_to_bioguide)
+        if row:
+            key = (row["bioguide_id"], row["congress"])
+            if key not in seen:
+                seen.add(key)
+                rows.append(row)
     log.info("member_scores_transformed", total=len(rows))
     return upsert("member_scores", rows, on_conflict="bioguide_id,congress", schema="congress")

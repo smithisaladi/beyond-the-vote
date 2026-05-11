@@ -71,14 +71,13 @@ def step_legislators():
         log.info("legislators_already_loaded", count=existing)
         return
 
-    from ingest.legislators import sync, load_current, load_historical, load_committee_memberships
+    from ingest.legislators import sync, load_current, load_committee_memberships
     from load.legislators import load_legislators, load_committee_memberships as upload_memberships
     import yaml
 
     repo_dir = sync(DATA_DIR)
     current = load_current(repo_dir)
-    historical = load_historical(repo_dir)
-    count = load_legislators(current, historical)
+    count = load_legislators(current, [])  # Current only — saves storage
     log.info("legislators_loaded", count=count)
 
     # Load committees
@@ -142,13 +141,12 @@ def step_voteview():
     csv_path = download_scores(DATA_DIR)
     records = parse_scores(csv_path)
 
-    # Build ICPSR -> bioguide lookup
-    from ingest.legislators import sync, load_current, load_historical
+    # Build ICPSR -> bioguide lookup (current legislators only)
+    from ingest.legislators import sync, load_current
     repo_dir = sync(DATA_DIR)
     current = load_current(repo_dir)
-    historical = load_historical(repo_dir)
     icpsr_map = {}
-    for rec in current + historical:
+    for rec in current:
         ids = rec.get("id", {})
         if ids.get("bioguide") and ids.get("icpsr"):
             icpsr_map[str(ids["icpsr"])] = ids["bioguide"]
