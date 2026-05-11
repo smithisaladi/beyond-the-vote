@@ -308,10 +308,10 @@ def step_enrichment():
         count = run_employer_normalization(indiv_parquet)
         log.info("employer_normalization_done", cycle=cycle, count=count)
 
-    # Industry classification (runs once across all employers)
+    # Industry classification via OpenSecrets CRP taxonomy
     if check_storage("industry_classification"):
-        from enrich.industry_classification import run_industry_classification
-        count = run_industry_classification(use_llm=False)
+        from enrich.opensecrets import run_industry_classification_opensecrets
+        count = run_industry_classification_opensecrets(DATA_DIR)
         log.info("industry_classification_done", count=count)
 
 

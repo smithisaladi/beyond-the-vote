@@ -66,10 +66,10 @@ def main():
             log.info("employer_normalization_done", cycle=2024, rows=count,
                      elapsed_min=round(elapsed / 60, 1), storage_mb=round(get_storage_mb(), 1))
 
-        # --- Industry classification (re-run to cover new employers) ---
+        # --- Industry classification via OpenSecrets CRP taxonomy ---
         log.info("industry_classification_starting")
-        from enrich.industry_classification import run_industry_classification
-        count = run_industry_classification(use_llm=False)
+        from enrich.opensecrets import run_industry_classification_opensecrets
+        count = run_industry_classification_opensecrets(DATA_DIR)
         log.info("industry_classification_done", rows=count)
 
         # --- Address standardization (both cycles, no geocoding to save time) ---

@@ -1,7 +1,7 @@
 from enrich.employer_normalization import (
     extract_unique_employers,
     pick_canonical_name,
-    cluster_employers,
+    cluster_block,
 )
 
 
@@ -32,7 +32,7 @@ def test_pick_canonical_name():
     assert len(canonical) > 2
 
 
-def test_cluster_employers_identical():
+def test_cluster_block_identical():
     employers = ["goldman sachs", "goldman sachs", "google llc"]
-    clusters = cluster_employers(employers, model=None)
+    clusters = cluster_block(employers, model=None)
     assert len(clusters) == 2
