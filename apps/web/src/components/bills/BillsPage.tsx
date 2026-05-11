@@ -1,6 +1,6 @@
 
 
-import { Suspense } from 'react'
+import { Suspense, useState } from 'react'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
 // TODO: port useBillFilters hook — using inline state for now
