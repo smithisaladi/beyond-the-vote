@@ -15,6 +15,7 @@ async def hybrid_bill_search(
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[dict], int]:
+    """3-signal hybrid search: FTS + trigram + semantic (when embedding provided)."""
     filters = []
     params: dict = {"query": query, "limit": limit, "offset": offset}
 
@@ -30,7 +31,7 @@ async def hybrid_bill_search(
 
     where_clause = " AND ".join(filters) if filters else "TRUE"
 
-    sql = f"""
+    ctes = f"""
     WITH tsq AS (
         SELECT websearch_to_tsquery('english', :query) AS q
     ),
@@ -50,6 +51,32 @@ async def hybrid_bill_search(
         WHERE similarity(b.title, :query) > 0.1 AND {where_clause}
         LIMIT 100
     ),
+    """
+
+    if query_embedding is not None:
+        params["embedding"] = str(query_embedding)
+        ctes += f"""
+    semantic AS (
+        SELECT be.bill_id,
+               1 - (be.embedding <=> :embedding::vector) AS sem_score,
+               ROW_NUMBER() OVER (ORDER BY be.embedding <=> :embedding::vector) AS sem_rank
+        FROM enrichment.bill_embeddings be
+        JOIN congress.bills b ON b.bill_id = be.bill_id
+        WHERE {where_clause}
+        LIMIT 100
+    ),
+    fused AS (
+        SELECT COALESCE(f.bill_id, t.bill_id, s.bill_id) AS bill_id,
+               COALESCE(1.0 / (60 + f.fts_rank), 0) +
+               COALESCE(0.5 / (60 + t.trgm_rank), 0) +
+               COALESCE(0.8 / (60 + s.sem_rank), 0) AS rrf_score
+        FROM fts f
+        FULL OUTER JOIN trgm t ON f.bill_id = t.bill_id
+        FULL OUTER JOIN semantic s ON COALESCE(f.bill_id, t.bill_id) = s.bill_id
+    )
+    """
+    else:
+        ctes += """
     fused AS (
         SELECT COALESCE(f.bill_id, t.bill_id) AS bill_id,
                COALESCE(1.0 / (60 + f.fts_rank), 0) +
@@ -57,6 +84,9 @@ async def hybrid_bill_search(
         FROM fts f
         FULL OUTER JOIN trgm t ON f.bill_id = t.bill_id
     )
+    """
+
+    sql = ctes + """
     SELECT b.*, fused.rrf_score,
            COUNT(*) OVER() AS total_count
     FROM fused

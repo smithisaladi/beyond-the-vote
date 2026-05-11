@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_db
+from app.ml.embeddings import embed_query, is_model_loaded
 from app.queries.bills import hybrid_bill_search, lookup_bill, get_bills_by_topic, get_bill_votes
 
 router = APIRouter(prefix="/api/bills", tags=["bills"])
@@ -23,8 +24,11 @@ async def list_bills(
     if q:
         status_list = status.split(",") if status else None
         topic_list = topics.split(",") if topics else None
+        # Embed query for semantic search signal
+        query_embedding = embed_query(q) if is_model_loaded() else None
         results, total = await hybrid_bill_search(
-            db, q, status=status_list, topics=topic_list, limit=limit, offset=offset,
+            db, q, query_embedding=query_embedding,
+            status=status_list, topics=topic_list, limit=limit, offset=offset,
         )
         bills = [_format_bill_summary(r) for r in results]
         return {"bills": bills, "pagination": {"total": total, "limit": limit, "offset": offset}}

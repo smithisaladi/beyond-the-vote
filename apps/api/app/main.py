@@ -30,6 +30,8 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_lim
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("app_starting", environment=settings.environment)
+    from app.ml import load_all_models
+    load_all_models()
     yield
     log.info("app_shutting_down")
 
