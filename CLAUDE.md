@@ -4,52 +4,84 @@ Political transparency app — track legislators, bills, votes, and campaign fin
 
 ## Commands
 
+### From repo root
+
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Dev server (localhost:3000) |
+| `npm run dev` | Vite dev server (localhost:5173) |
 | `npm run build` | Production build |
-| `npm run lint` | ESLint |
 | `npm run test` | Vitest (single run) |
 | `npm run test:watch` | Vitest (watch mode) |
-| `npm run test:coverage` | Vitest with V8 coverage |
-| `npm run test:e2e` | Playwright end-to-end |
-| `npx tsc --noEmit` | Type check only |
+
+### API (apps/api)
+
+| Command | Purpose |
+|---------|---------|
+| `uv run uvicorn app.main:app --reload` | FastAPI dev server (localhost:8000) |
+| `uv run pytest` | Run API tests |
+
+### Type check
+
+| Command | Purpose |
+|---------|---------|
+| `cd apps/web && npx tsc --noEmit` | Type check frontend |
 
 ## Tech Stack
 
 | Layer | Tech |
 |-------|------|
-| Framework | Next.js 15 (App Router), React 19 |
+| Frontend | Vite SPA, React 19, TanStack Router, TanStack Query |
 | Language | TypeScript (strict) |
-| Database | Supabase PostgreSQL + Auth + RLS |
+| Backend | FastAPI (async), SQLAlchemy 2.0, asyncpg |
+| Database | Neon PostgreSQL |
+| Auth | Neon Auth (Better Auth) — JWT via JWKS (EdDSA) |
 | Styling | Tailwind CSS 4 |
 | Icons | Lucide React (strokeWidth 1.8) |
 | Unit tests | Vitest + React Testing Library |
-| E2E tests | Playwright |
 | Pipeline | Python 3.11+ (see `pipeline/CLAUDE.md`) |
 
 ## Project Structure
 
 | Directory | Purpose |
 |-----------|---------|
-| `app/(authenticated)/` | Authed pages: dashboard, bills, representatives, donors, settings |
-| `app/api/` | API routes (bills, politicians, representatives, donors, og) |
-| `components/` | Feature-organized React components (bills/, representatives/, landing/, etc.) |
-| `hooks/` | Custom hooks (useFetchBills, useAuth, etc.) |
-| `lib/` | Shared utilities, types, format helpers |
-| `lib/supabase/` | Three Supabase clients: `client.ts` (browser), `server.ts` (SSR), `service.ts` (admin) |
-| `lib/queries/` | SQL query functions (hybrid-bill-search, lookup-bill, etc.) |
+| `apps/web/` | Vite SPA frontend |
+| `apps/web/src/routes/` | TanStack Router file-based routes |
+| `apps/web/src/components/` | Feature-organized React components |
+| `apps/web/src/hooks/queries/` | TanStack Query hooks per resource |
+| `apps/web/src/lib/` | Shared utilities, types, format helpers |
+| `apps/web/src/lib/api/` | `apiFetch()` wrapper + openapi-fetch client |
+| `apps/web/src/lib/auth/` | Neon Auth client |
+| `apps/api/` | FastAPI backend |
+| `apps/api/app/routers/` | One router per domain (bills, politicians, donors, dashboard) |
+| `apps/api/app/schemas/` | Pydantic request/response models |
+| `apps/api/app/db/` | SQLAlchemy models + async session |
+| `apps/api/app/queries/` | Complex SQL (hybrid search, money flow) |
+| `apps/api/app/ml/` | ML model loading + inference |
 | `pipeline/` | Python ETL pipeline (has its own CLAUDE.md) |
-| `supabase/migrations/` | PostgreSQL DDL migrations |
-| `e2e/` | Playwright test specs |
+| `shared/openapi/` | Generated OpenAPI schema + TS types (placeholder) |
 
 ## Key Conventions
 
-- **Thin shim pattern**: `app/.../page.tsx` files re-export client components from `components/`
-- **Path alias**: `@/` resolves to repo root
-- **Server components by default** — add `'use client'` only when needed
+- **Path alias**: `@/` resolves to `apps/web/src/`
+- **All components are client-side** — no SSR, no server components
 - **TypeScript strict mode** — no implicit `any`
 - **`@/lib/ui`** — single source of truth for party/status styling (see Design System below)
+- **Data fetching**: TanStack Query hooks in `hooks/queries/`, all use `apiFetch()` which injects Neon Auth JWT
+- **Routing**: TanStack Router file-based routes in `src/routes/`, `<Link to=...>` with typed params
+
+## Development Philosophy
+
+- **Prioritize high-level design** — think through architecture, data flow, and component boundaries before writing code. Propose the approach first when the task involves structural decisions.
+- **Avoid code smells** — no dead code, no unused imports, no copy-paste duplication, no `any` unless truly unavoidable. Extract shared logic into hooks or utilities when a pattern repeats. Keep components focused on one responsibility.
+- **No product decisions without asking** — if a feature gap is found (e.g. missing data, empty states), present the problem and options instead of inventing workarounds or fallback behaviors.
+
+## Auth Flow
+
+1. User signs in via Neon Auth modal (Better Auth)
+2. `apiFetch()` calls `authClient.getSession()` to get JWT
+3. JWT sent as `Authorization: Bearer <token>` to FastAPI
+4. FastAPI validates via JWKS (EdDSA/Ed25519) from Neon Auth endpoint
+5. Protected routes use `_authenticated` layout wrapper in TanStack Router
 
 ## Design System
 
@@ -113,38 +145,39 @@ All text uses `text-[#1C1C1A]` with opacity — never use `text-gray-*`:
 - Never use `font-bold` on body text
 - Never invent new colors outside the palette
 
-## Supabase
-
-Three clients for different contexts:
-- **Browser** (`lib/supabase/client.ts`): `createBrowserClient()` — client components
-- **Server** (`lib/supabase/server.ts`): `createClient()` — server components, API routes
-- **Service** (`lib/supabase/service.ts`): `createServiceClient()` — admin/pipeline operations, bypasses RLS
-
-Raw SQL queries via `postgres` package in `lib/db.ts` for complex joins and search.
-
 ## Environment Variables
+
+### Frontend (`apps/web/.env`)
 
 | Variable | Required | Notes |
 |----------|----------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Public anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only, bypasses RLS |
-| `DATABASE_URL` | Yes | Raw postgres connection (for lib/db.ts) |
+| `VITE_API_URL` | Yes | FastAPI URL (e.g. `http://localhost:8000`) |
+| `VITE_NEON_AUTH_URL` | Yes | Neon Auth endpoint |
+| `VITE_MAPBOX_TOKEN` | No | Mapbox address autocomplete |
+| `VITE_SENTRY_DSN` | No | Sentry error tracking |
+
+### Backend (`apps/api/.env`)
+
+| Variable | Required | Notes |
+|----------|----------|-------|
+| `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
+| `NEON_AUTH_URL` | Yes | Neon Auth endpoint (for JWKS validation) |
+| `CORS_ORIGINS` | Yes | Comma-separated allowed origins |
+| `GEOCODIO_API_KEY` | Yes | Address → district lookup |
 | `CONGRESS_API_KEY` | Pipeline | congress.gov API |
-| `FEC_API_KEY` | Pipeline | OpenFEC API |
+| `OPENFEC_API_KEY` | Pipeline | OpenFEC API |
+| `SENTRY_DSN` | No | Sentry error tracking |
 
 ## Testing
 
-- **Unit/component tests**: colocated as `*.test.ts(x)`, run with `npm run test`
-- **Setup**: `vitest.setup.ts` mocks `next/image`, `next/link`, `next/navigation`
-- **E2E**: Playwright against dev server, specs in `e2e/`
-- **Coverage scope**: `lib/`, `components/`, `app/api/`
+- **Unit/component tests**: colocated as `*.test.ts(x)` in `apps/web/`, run with `npm run test`
+- **API tests**: `apps/api/tests/`, run with `uv run pytest`
 
 ## Gotchas
 
-- Bill search uses **hybrid FTS + trigram** with Reciprocal Rank Fusion — see `lib/queries/hybrid-bill-search.ts`
-- Middleware (`middleware.ts`) refreshes Supabase auth session on every request
-- Topic mapping lives in `lib/topics.ts` — maps Congress.gov policyArea → 12 app topic slugs
-- `toTitleCase()` in `lib/format.ts` handles FEC ALLCAPS names
-- Schema changes go in `supabase/migrations/`, not in pipeline `db/schema.sql`
+- Bill search uses **hybrid FTS + trigram + semantic** with Reciprocal Rank Fusion — see `apps/api/app/queries/bills.py`
+- Topic mapping lives in `apps/web/src/lib/topics.ts` — maps Congress.gov policyArea → 12 app topic slugs
+- `toTitleCase()` in `apps/web/src/lib/format.ts` handles FEC ALLCAPS names
+- Neon Auth signs JWTs with **EdDSA (Ed25519)** — backend validates via JWKS using PyJWT
+- Vite dev server proxies `/api/*` to FastAPI at localhost:8000
 - SVG topo background uses unique `id` per `<pattern>` to avoid collisions

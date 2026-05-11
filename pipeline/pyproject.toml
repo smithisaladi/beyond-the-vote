@@ -1,25 +1,44 @@
 [project]
-name = "btb-pipeline"
+name = "beyond-the-ballot-pipeline"
 version = "0.1.0"
-description = "ETL pipeline for Beyond the Ballot (FEC, Congress.gov, VoteView -> Supabase)."
 requires-python = ">=3.11"
 dependencies = [
-    "supabase>=2.0.0",
-    "pandas>=2.0.0",
-    "requests>=2.31.0",
-    "PyYAML>=6.0",
-    "python-dotenv>=1.0.0",
-    "lxml>=5.0.0",
+    "httpx>=0.28.0",
     "duckdb>=1.0.0",
+    "pyarrow>=18.0.0",
+    "pandas>=2.0.0",
+    "pyyaml>=6.0",
+    "lxml>=5.0.0",
+    "python-dotenv>=1.0.0",
+    "structlog>=24.4.0",
+    "sentry-sdk>=2.19.0",
+    "sentence-transformers>=3.4.0",
+    "usaddress>=0.5.10",
+    "hdbscan>=0.8.39",
+    "scikit-learn>=1.6.0",
+    "umap-learn>=0.5.7",
+    "psycopg2-binary>=2.9.0",
+    "ruptures>=1.1.9",
+    "networkx>=3.2.0",
+    "requests>=2.33.1",
 ]
 
 [project.optional-dependencies]
-test = [
-    "pytest>=8.0.0",
-    "pytest-mock>=3.12.0",
-    "responses>=0.25.0",
+dev = [
+    "pytest>=8.3.0",
 ]
 
-[tool.uv]
-# Pipeline is a collection of scripts, not an installable library.
-package = false
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["shared", "transform", "scripts", "ingest", "load", "enrich"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]

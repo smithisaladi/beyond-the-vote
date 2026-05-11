@@ -3,8 +3,6 @@ node_modules/
 
 # Build output
 dist/
-.next/
-out/
 tsconfig.tsbuildinfo
 
 # Environment
@@ -23,28 +21,35 @@ npm-debug.log*
 .vscode/
 .idea/
 
-# Supabase
-.supabase/
-supabase/.temp/
-tsconfig.tsbuildinfo
-
-# Python pipeline
-pipeline/.venv/
-pipeline/**/__pycache__/
-pipeline/**/*.pyc
-pipeline/**/*.pyo
-pipeline/.python-version
+# Python
+__pycache__/
+*.pyc
+*.pyo
 *.egg-info/
+.venv/
 
-# FEC bulk data files (large, downloaded from fec.gov)
-pipeline/data/raw/
-pipeline/data/processed/
+# Pipeline local data
+pipeline/data/
+
+# API
+apps/api/.venv/
+
+# Shared
+shared/openapi/
+
+# ML models cache
+*.pt
+*.bin
+*.onnx
+
+# Parquet data
+*.parquet
+
+# Docs
+docs/
 
 # Testing
 coverage/
 playwright-report/
 test-results/
 blob-report/
-
-# Local docs (not checked in)
-docs/

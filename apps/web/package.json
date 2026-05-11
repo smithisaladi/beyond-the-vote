@@ -1,0 +1,40 @@
+{
+  "name": "@beyond-the-ballot/web",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "codegen": "openapi-typescript http://localhost:8000/openapi.json -o src/lib/api/generated/schema.ts"
+  },
+  "dependencies": {
+    "@neondatabase/auth-ui": "^0.2.0-beta",
+    "@neondatabase/neon-js": "^0.6.1-beta",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@sentry/react": "^8.0.0",
+    "@supabase/supabase-js": "^2.49.4",
+    "@tanstack/react-query": "^5.100.9",
+    "@tanstack/react-query-devtools": "^5.100.9",
+    "@tanstack/react-router": "^1.120.3",
+    "@tanstack/router-devtools": "^1.120.3",
+    "lucide-react": "^0.487.0",
+    "openapi-fetch": "^0.13.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "@tanstack/router-plugin": "^1.120.3",
+    "@testing-library/react": "^16.3.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "openapi-typescript": "^7.6.1",
+    "tailwindcss": "^4.1.12",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.1.4"
+  }
+}

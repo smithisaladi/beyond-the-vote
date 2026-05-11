@@ -17,7 +17,6 @@ from typing import Generator, Iterator
 
 import requests
 from dotenv import load_dotenv
-from supabase import Client, create_client
 
 load_dotenv()
 log = logging.getLogger(__name__)
@@ -41,26 +40,6 @@ def log_timing(func):
 class ApiResponseError(Exception):
     """Raised when an API returns an unparseable or unexpected response."""
     pass
-
-
-# ── Supabase ───────────────────────────────────────────────────────────────────
-
-_client: Client | None = None
-
-
-def get_supabase() -> Client:
-    global _client
-    if _client is None:
-        url = os.environ["SUPABASE_URL"]
-        key = os.environ["SUPABASE_SERVICE_KEY"]
-        _client = create_client(url, key)
-    return _client
-
-
-def reset_supabase() -> None:
-    """Force the next get_supabase() call to create a fresh client connection."""
-    global _client
-    _client = None
 
 
 # ── Batching ──────────────────────────────────────────────────────────────────

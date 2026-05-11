@@ -1,0 +1,113 @@
+"""SQLAlchemy 2.0 mapped models for derived/aggregated data tables."""
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.db.models.congress import Base
+
+
+class LegislatorFundingSummary(Base):
+    __tablename__ = "legislator_funding_summary"
+    __table_args__ = {"schema": "derived"}
+
+    bioguide_id: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("congress.legislators.bioguide_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    cycle: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    pac_direct_total: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    large_donor_total: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    small_donor_total: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    superpac_ie_for: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    superpac_ie_against: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    in_state_total: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    out_of_state_total: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class LegislatorTopPac(Base):
+    __tablename__ = "legislator_top_pacs"
+    __table_args__ = {"schema": "derived"}
+
+    bioguide_id: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("congress.legislators.bioguide_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    cycle: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    cmte_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    industry: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    direct_contribution: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    ie_for: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    ie_against: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    total_support: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+
+class LegislatorTopContributor(Base):
+    __tablename__ = "legislator_top_contributors"
+    __table_args__ = {"schema": "derived"}
+
+    bioguide_id: Mapped[str] = mapped_column(
+        Text,
+        ForeignKey("congress.legislators.bioguide_id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    cycle: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    org_name: Mapped[str] = mapped_column(Text, primary_key=True)
+    individual_total: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    pac_total: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    grand_total: Mapped[Optional[float]] = mapped_column(
+        Numeric(12, 2), nullable=True, server_default="0"
+    )
+    rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+
+class ContributorLeaderboardCache(Base):
+    __tablename__ = "contributor_leaderboard_cache"
+    __table_args__ = {"schema": "derived"}
+
+    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    cmte_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    direct_total: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
+    ie_for_total: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
+    ie_against_total: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
+    total_contributions: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
+    recipient_count: Mapped[Optional[int]] = mapped_column(
+        Integer, nullable=True, server_default="0"
+    )
+    top_recipients: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
