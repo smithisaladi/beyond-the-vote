@@ -55,3 +55,10 @@ app.add_middleware(SlowAPIMiddleware)
 @app.get("/healthz")
 async def healthz():
     return {"status": "ok"}
+
+
+from app.routers import bills
+app.include_router(bills.router)
+
+from app.routers import politicians
+app.include_router(politicians.router)
