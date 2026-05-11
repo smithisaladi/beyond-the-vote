@@ -82,3 +82,6 @@ app.include_router(representatives.router)
 
 from app.routers import ml
 app.include_router(ml.router)
+
+from app.routers import donor_similarity
+app.include_router(donor_similarity.router)
