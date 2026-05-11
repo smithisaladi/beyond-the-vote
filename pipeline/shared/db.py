@@ -8,9 +8,12 @@ import os
 import uuid
 from datetime import datetime, timezone
 
+from dotenv import load_dotenv
 import psycopg2
 import psycopg2.extras
 import structlog
+
+load_dotenv()
 
 log = structlog.get_logger()
 
@@ -18,12 +21,22 @@ _conn = None
 
 
 def get_conn():
-    """Get a shared psycopg2 connection. Auto-reconnects if closed."""
+    """Get a shared psycopg2 connection. Auto-reconnects if closed or broken."""
     global _conn
-    if _conn is None or _conn.closed:
+    needs_new = _conn is None or _conn.closed
+    if not needs_new:
+        try:
+            _conn.cursor().execute("SELECT 1")
+        except Exception:
+            needs_new = True
+    if needs_new:
+        if _conn and not _conn.closed:
+            try:
+                _conn.close()
+            except Exception:
+                pass
         _conn = psycopg2.connect(os.environ["DATABASE_URL"])
         _conn.autocommit = True
-        # Register JSON adapter for dicts/lists
         psycopg2.extras.register_default_jsonb(_conn)
         log.info("db_connection_created")
     return _conn
