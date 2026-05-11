@@ -18,11 +18,11 @@ export function TopoBackground() {
           <ellipse cx="700" cy="200" rx="340" ry="240" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
           <ellipse cx="705" cy="197" rx="265" ry="185" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
           <ellipse cx="708" cy="194" rx="195" ry="135" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="711" cy="191" rx="130" ry="90" ="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="713" cy="189" rx="72"  ry="50" ="none" stroke="#1C1C1A" strokeWidth="1.2" />
+          <ellipse cx="711" cy="191" rx="130" ry="90" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
+          <ellipse cx="713" cy="189" rx="72"  ry="50" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
           <ellipse cx="120" cy="580" rx="180" ry="120" fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="124" cy="576" rx="120" ry="78" ="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="127" cy="573" rx="68"  ry="44" ="none" stroke="#1C1C1A" strokeWidth="1" />
+          <ellipse cx="124" cy="576" rx="120" ry="78" fill="none" stroke="#1C1C1A" strokeWidth="1" />
+          <ellipse cx="127" cy="573" rx="68"  ry="44" fill="none" stroke="#1C1C1A" strokeWidth="1" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#topo-landing)" />
