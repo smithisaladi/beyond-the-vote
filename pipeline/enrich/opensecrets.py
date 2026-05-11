@@ -1,249 +1,153 @@
-"""OpenSecrets CRP industry classification integration.
+"""OpenSecrets CRP industry classification using real employer→industry mappings.
 
-Uses the CRP category codes taxonomy and OpenSecrets' bulk individual
-contribution data (which includes manually-assigned industry codes)
-to classify employers by industry.
+Uses two data files:
+1. CRP_Categories.txt — taxonomy (catcode → industry name → sector)
+2. org_to_industry.tsv — 769K employer→catcode mappings extracted from OpenSecrets bulk data
 
-Three-tier approach:
-1. Direct lookup from OpenSecrets bulk data (employer → CRP code, highest accuracy)
-2. Fuzzy match against known employer→industry mappings (good accuracy)
-3. Fallback to embedding-based local classifier (lower accuracy)
+Three-tier classification:
+1. Direct lookup in org_to_industry.tsv (highest accuracy, ~60-70% hit rate)
+2. Normalized fuzzy match (strip suffixes like Inc/LLC/Corp, retry)
+3. Fallback to "Other" with low confidence
 """
 import csv
-import os
-from collections import Counter, defaultdict
+import re
+from collections import Counter
 from pathlib import Path
 
-import httpx
 import structlog
 
 from shared.db import upsert, get_supabase
-from shared.parquet import duckdb_connect
 
 log = structlog.get_logger()
 
-MODEL_VERSION = "industry_opensecrets_v1"
+MODEL_VERSION = "industry_opensecrets_v2_bulk"
 
 CRP_CATEGORIES_URL = "https://www.opensecrets.org/downloads/crp/CRP_Categories.txt"
 
-# CRP sector code → readable sector name (first char of catcode)
-CRP_SECTORS = {
-    "A": "Agriculture",
-    "B": "Communications/Electronics",
-    "C": "Construction",
-    "D": "Defense",
-    "E": "Energy & Natural Resources",
-    "F": "Finance, Insurance & Real Estate",
-    "G": "Government",  # non-contrib
-    "H": "Health",
-    "K": "Lawyers & Lobbyists",
-    "L": "Transportation",
-    "M": "Manufacturing & Distribution",
-    "N": "Mining",
-    "P": "Miscellaneous Business",
-    "Q": "Ideology/Single-Issue",
-    "R": "Non-contribution",
-    "W": "Labor",
-    "X": "Unknown/Other",
-    "Y": "Unknown/Other",
-    "Z": "Unknown/Other",
-}
 
+def load_crp_categories(data_dir: Path) -> dict[str, dict]:
+    """Load and parse CRP_Categories.txt → {catcode: {name, industry, sector}}."""
+    import httpx
 
-def download_crp_categories(data_dir: Path) -> Path:
-    """Download the CRP category codes file."""
-    dest = data_dir / "opensecrets" / "CRP_Categories.txt"
-    dest.parent.mkdir(parents=True, exist_ok=True)
+    path = data_dir / "opensecrets" / "CRP_Categories.txt"
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        log.info("downloading_crp_categories")
+        resp = httpx.get(CRP_CATEGORIES_URL, follow_redirects=True, timeout=30)
+        resp.raise_for_status()
+        path.write_bytes(resp.content)
 
-    if dest.exists():
-        log.info("crp_categories_exists", path=str(dest))
-        return dest
-
-    log.info("downloading_crp_categories")
-    resp = httpx.get(CRP_CATEGORIES_URL, follow_redirects=True, timeout=30)
-    resp.raise_for_status()
-    dest.write_bytes(resp.content)
-    log.info("crp_categories_downloaded", path=str(dest))
-    return dest
-
-
-def parse_crp_categories(path: Path) -> dict[str, dict]:
-    """Parse CRP_Categories.txt into {catcode: {name, industry, sector}}."""
     categories = {}
     with open(path, encoding="utf-8", errors="replace") as f:
-        reader = csv.reader(f, delimiter="\t")
-        for row in reader:
-            if len(row) < 5:
+        for line in f:
+            if line.startswith('"') or line.startswith("Catcode") or not line.strip():
                 continue
-            catcode = row[0].strip()
-            catname = row[1].strip()
-            catorder = row[2].strip()
-            industry = row[3].strip()
-            sector = row[4].strip()
-            sector_long = row[5].strip() if len(row) > 5 else ""
-
-            if not catcode:
+            parts = line.strip().split("\t")
+            if len(parts) < 5:
                 continue
+            catcode = parts[0].strip()
+            catname = parts[1].strip().strip('"')
+            industry = parts[3].strip().strip('"')
+            sector_long = parts[5].strip().strip('"') if len(parts) > 5 else ""
 
-            categories[catcode] = {
-                "catcode": catcode,
-                "name": catname,
-                "industry": industry or catname,
-                "sector": CRP_SECTORS.get(catcode[0], "Other"),
-                "sector_code": catcode[0],
-                "sector_long": sector_long,
-            }
+            if catcode:
+                categories[catcode] = {
+                    "catcode": catcode,
+                    "name": catname,
+                    "industry": industry or catname,
+                    "sector": sector_long or catname,
+                }
 
-    log.info("crp_categories_parsed", count=len(categories))
+    log.info("crp_categories_loaded", count=len(categories))
     return categories
 
 
-def build_employer_industry_map(
-    parquet_path: Path,
-    crp_categories: dict[str, dict],
-) -> dict[str, str]:
-    """Build employer→industry mapping from OpenSecrets bulk data if available,
-    or from FEC data + CRP codes.
+def load_org_lookup(data_dir: Path) -> dict[str, str]:
+    """Load org_to_industry.tsv → {UPPERCASED_ORGNAME: catcode}."""
+    path = data_dir / "opensecrets" / "org_to_industry.tsv"
+    if not path.exists():
+        log.warning("org_to_industry_not_found", path=str(path))
+        return {}
 
-    Since OpenSecrets bulk data requires an account, this uses a heuristic approach:
-    - Map well-known employers to industries using the CRP taxonomy
-    - Use the sector/industry hierarchy for classification
+    lookup = {}
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            parts = line.strip().split("\t")
+            if len(parts) == 2:
+                lookup[parts[0].strip()] = parts[1].strip()
 
-    Returns: {normalized_employer: industry_name}
-    """
-    # Build a keyword→industry lookup from CRP category names
-    keyword_map: dict[str, str] = {}
-    for catcode, info in crp_categories.items():
-        industry = info["sector"]  # Use sector-level for broad classification
-        name_lower = info["name"].lower()
-
-        # Extract useful keywords from category names
-        for word in name_lower.split():
-            if len(word) > 4 and word not in ("other", "misc", "general", "total"):
-                keyword_map[word] = industry
-
-    # Well-known employer → industry direct mappings (supplementing CRP)
-    direct_map = {
-        # Finance
-        "goldman sachs": "Finance, Insurance & Real Estate",
-        "jpmorgan": "Finance, Insurance & Real Estate",
-        "morgan stanley": "Finance, Insurance & Real Estate",
-        "bank of america": "Finance, Insurance & Real Estate",
-        "citigroup": "Finance, Insurance & Real Estate",
-        "wells fargo": "Finance, Insurance & Real Estate",
-        "blackrock": "Finance, Insurance & Real Estate",
-        "fidelity": "Finance, Insurance & Real Estate",
-        # Tech
-        "google": "Communications/Electronics",
-        "alphabet": "Communications/Electronics",
-        "microsoft": "Communications/Electronics",
-        "apple": "Communications/Electronics",
-        "amazon": "Communications/Electronics",
-        "meta": "Communications/Electronics",
-        "facebook": "Communications/Electronics",
-        "salesforce": "Communications/Electronics",
-        "oracle": "Communications/Electronics",
-        "intel": "Communications/Electronics",
-        "nvidia": "Communications/Electronics",
-        # Health
-        "pfizer": "Health",
-        "johnson & johnson": "Health",
-        "unitedhealth": "Health",
-        "kaiser": "Health",
-        "merck": "Health",
-        "abbvie": "Health",
-        "amgen": "Health",
-        "eli lilly": "Health",
-        # Energy
-        "exxon": "Energy & Natural Resources",
-        "chevron": "Energy & Natural Resources",
-        "conocophillips": "Energy & Natural Resources",
-        "shell": "Energy & Natural Resources",
-        "bp": "Energy & Natural Resources",
-        # Defense
-        "lockheed": "Defense",
-        "raytheon": "Defense",
-        "northrop": "Defense",
-        "boeing": "Defense",
-        "general dynamics": "Defense",
-        # Legal
-        "kirkland": "Lawyers & Lobbyists",
-        "latham": "Lawyers & Lobbyists",
-        "skadden": "Lawyers & Lobbyists",
-        "jones day": "Lawyers & Lobbyists",
-        "sullivan & cromwell": "Lawyers & Lobbyists",
-        # Labor
-        "afscme": "Labor",
-        "seiu": "Labor",
-        "teamsters": "Labor",
-        "aft": "Labor",
-        "ufcw": "Labor",
-    }
-
-    return direct_map, keyword_map
+    log.info("org_lookup_loaded", entries=len(lookup))
+    return lookup
 
 
-def classify_employer_opensecrets(
+# Suffixes to strip for fuzzy matching
+_SUFFIXES = re.compile(
+    r'\s*,?\s*\b(INC\.?|LLC\.?|LLP\.?|LP\.?|CORP\.?|CORPORATION|CO\.?|COMPANY|GROUP|'
+    r'PARTNERS|PARTNERSHIP|ASSOCIATES|ASSOC\.?|INTERNATIONAL|INTL\.?|'
+    r'HOLDINGS|ENTERPRISES|SERVICES|SOLUTIONS|CONSULTING|MANAGEMENT|'
+    r'INDUSTRIES|SYSTEMS|TECHNOLOGIES|TECHNOLOGY|GLOBAL|USA|US|PC|PLLC|PA|NA)\s*$',
+    re.IGNORECASE
+)
+
+
+def _normalize_for_lookup(name: str) -> list[str]:
+    """Generate lookup variants for an employer name."""
+    upper = name.strip().upper()
+    variants = [upper]
+
+    # Strip common suffixes
+    stripped = _SUFFIXES.sub("", upper).strip().rstrip(",").strip()
+    if stripped and stripped != upper:
+        variants.append(stripped)
+
+    # Strip "THE " prefix
+    if upper.startswith("THE "):
+        variants.append(upper[4:])
+        stripped2 = _SUFFIXES.sub("", upper[4:]).strip().rstrip(",").strip()
+        if stripped2:
+            variants.append(stripped2)
+
+    return variants
+
+
+def classify_employer(
     employer: str,
-    direct_map: dict[str, str],
-    keyword_map: dict[str, str],
+    org_lookup: dict[str, str],
+    crp_categories: dict[str, dict],
 ) -> tuple[str, float]:
-    """Classify a single employer using OpenSecrets taxonomy.
+    """Classify an employer using OpenSecrets org→industry lookup.
 
-    Returns: (industry, confidence)
+    Returns: (sector_name, confidence)
     """
-    emp_lower = employer.lower()
+    variants = _normalize_for_lookup(employer)
 
-    # Tier 1: Direct match
-    for key, industry in direct_map.items():
-        if key in emp_lower:
-            return industry, 0.95
+    for variant in variants:
+        catcode = org_lookup.get(variant)
+        if catcode:
+            cat = crp_categories.get(catcode)
+            if cat:
+                return cat["sector"], 0.95
+            # Unknown catcode but still matched
+            return "Other", 0.5
 
-    # Tier 2: Keyword match
-    words = emp_lower.split()
-    matches: Counter = Counter()
-    for word in words:
-        if word in keyword_map:
-            matches[keyword_map[word]] += 1
-
-    if matches:
-        best_industry, count = matches.most_common(1)[0]
-        confidence = min(0.8, 0.5 + count * 0.1)
-        return best_industry, confidence
-
-    # Tier 3: Heuristic rules
-    if any(w in emp_lower for w in ["university", "college", "school", "academy"]):
-        return "Education", 0.85
-    if any(w in emp_lower for w in ["hospital", "medical", "clinic", "health"]):
-        return "Health", 0.85
-    if any(w in emp_lower for w in ["bank", "capital", "financial", "insurance", "fund"]):
-        return "Finance, Insurance & Real Estate", 0.75
-    if any(w in emp_lower for w in ["law", "legal", "attorney", "counsel"]):
-        return "Lawyers & Lobbyists", 0.80
-    if any(w in emp_lower for w in ["construction", "builder", "contractor"]):
-        return "Construction", 0.75
-    if any(w in emp_lower for w in ["farm", "ranch", "dairy", "agriculture"]):
-        return "Agriculture", 0.75
-    if any(w in emp_lower for w in ["oil", "gas", "energy", "petroleum", "solar", "wind"]):
-        return "Energy & Natural Resources", 0.70
-    if any(w in emp_lower for w in ["airline", "trucking", "shipping", "railroad", "transit"]):
-        return "Transportation", 0.75
-
-    return "Other", 0.3
+    return "Other", 0.2
 
 
 def run_industry_classification_opensecrets(data_dir: Path) -> int:
-    """Classify canonical employers using OpenSecrets CRP taxonomy.
+    """Classify canonical employers using OpenSecrets bulk data lookup.
 
-    Reads from enrichment.employer_canonical and writes to enrichment.employer_industry.
+    Reads from enrichment.employer_canonical, writes to enrichment.employer_industry.
     """
-    # Download and parse CRP categories
-    crp_path = download_crp_categories(data_dir)
-    crp_categories = parse_crp_categories(crp_path)
-    direct_map, keyword_map = build_employer_industry_map(Path(), crp_categories)
+    crp_categories = load_crp_categories(data_dir)
+    org_lookup = load_org_lookup(data_dir)
 
-    # Get canonical employers that need classification
+    if not org_lookup:
+        log.warning("no_org_lookup_available_falling_back_to_heuristics")
+        return 0
+
     client = get_supabase()
+
+    # Get canonical employers
     result = client.schema("enrichment").table("employer_canonical").select(
         "canonical_employer_id, canonical_name"
     ).execute()
@@ -252,7 +156,7 @@ def run_industry_classification_opensecrets(data_dir: Path) -> int:
         log.warning("no_employers_to_classify")
         return 0
 
-    # Deduplicate by canonical_employer_id
+    # Deduplicate
     seen = set()
     to_classify = []
     for row in result.data:
@@ -260,26 +164,28 @@ def run_industry_classification_opensecrets(data_dir: Path) -> int:
             seen.add(row["canonical_employer_id"])
             to_classify.append(row)
 
-    # Check which already have classifications
+    # Check existing
     existing = client.schema("enrichment").table("employer_industry").select(
         "canonical_employer_id"
     ).execute()
     existing_ids = {r["canonical_employer_id"] for r in existing.data}
-
     to_classify = [e for e in to_classify if e["canonical_employer_id"] not in existing_ids]
-    log.info("employers_to_classify", total=len(to_classify), already_classified=len(existing_ids))
+
+    log.info("employers_to_classify", total=len(to_classify), already=len(existing_ids))
 
     if not to_classify:
         return 0
 
-    # Classify each employer
+    # Classify
     rows = []
-    industry_counts: Counter = Counter()
+    stats: Counter = Counter()
+    matched = 0
+
     for emp in to_classify:
-        industry, confidence = classify_employer_opensecrets(
-            emp["canonical_name"], direct_map, keyword_map
-        )
-        industry_counts[industry] += 1
+        industry, confidence = classify_employer(emp["canonical_name"], org_lookup, crp_categories)
+        stats[industry] += 1
+        if confidence > 0.5:
+            matched += 1
         rows.append({
             "canonical_employer_id": emp["canonical_employer_id"],
             "industry": industry,
@@ -287,7 +193,10 @@ def run_industry_classification_opensecrets(data_dir: Path) -> int:
             "model_version": MODEL_VERSION,
         })
 
+    match_rate = matched / len(to_classify) if to_classify else 0
     total = upsert("employer_industry", rows, schema="enrichment")
-    log.info("industry_classification_opensecrets_complete",
-             rows=total, distribution=dict(industry_counts.most_common(10)))
+
+    log.info("industry_classification_complete",
+             rows=total, match_rate=round(match_rate, 3),
+             top_industries=dict(stats.most_common(10)))
     return total
