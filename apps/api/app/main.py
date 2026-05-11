@@ -68,3 +68,6 @@ app.include_router(donors.router)
 
 from app.routers import dashboard
 app.include_router(dashboard.router)
+
+from app.routers import representatives
+app.include_router(representatives.router)
