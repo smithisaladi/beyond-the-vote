@@ -88,3 +88,6 @@ app.include_router(donor_similarity.router)
 
 from app.routers import money_flow
 app.include_router(money_flow.router)
+
+from app.routers import research
+app.include_router(research.router)
