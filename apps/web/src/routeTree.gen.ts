@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedRepresentativesIndexRouteImport } from './routes/_authenticated/representatives/index'
 import { Route as AuthenticatedDonorsIndexRouteImport } from './routes/_authenticated/donors/index'
@@ -26,6 +27,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthPathnameRoute = AuthPathnameRouteImport.update({
+  id: '/auth/$pathname',
+  path: '/auth/$pathname',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -72,6 +78,7 @@ const AuthenticatedBillsBillIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/auth/$pathname': typeof AuthPathnameRoute
   '/bills/$billId': typeof AuthenticatedBillsBillIdRoute
   '/donors/$cmteId': typeof AuthenticatedDonorsCmteIdRoute
   '/representatives/$id': typeof AuthenticatedRepresentativesIdRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/auth/$pathname': typeof AuthPathnameRoute
   '/bills/$billId': typeof AuthenticatedBillsBillIdRoute
   '/donors/$cmteId': typeof AuthenticatedDonorsCmteIdRoute
   '/representatives/$id': typeof AuthenticatedRepresentativesIdRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/auth/$pathname': typeof AuthPathnameRoute
   '/_authenticated/bills/$billId': typeof AuthenticatedBillsBillIdRoute
   '/_authenticated/donors/$cmteId': typeof AuthenticatedDonorsCmteIdRoute
   '/_authenticated/representatives/$id': typeof AuthenticatedRepresentativesIdRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/settings'
+    | '/auth/$pathname'
     | '/bills/$billId'
     | '/donors/$cmteId'
     | '/representatives/$id'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/settings'
+    | '/auth/$pathname'
     | '/bills/$billId'
     | '/donors/$cmteId'
     | '/representatives/$id'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/_authenticated/settings'
+    | '/auth/$pathname'
     | '/_authenticated/bills/$billId'
     | '/_authenticated/donors/$cmteId'
     | '/_authenticated/representatives/$id'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AuthPathnameRoute: typeof AuthPathnameRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -154,6 +167,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/$pathname': {
+      id: '/auth/$pathname'
+      path: '/auth/$pathname'
+      fullPath: '/auth/$pathname'
+      preLoaderRoute: typeof AuthPathnameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/settings': {
@@ -236,6 +256,7 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AuthPathnameRoute: AuthPathnameRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

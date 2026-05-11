@@ -10,8 +10,8 @@
     "codegen": "openapi-typescript http://localhost:8000/openapi.json -o src/lib/api/generated/schema.ts"
   },
   "dependencies": {
-    "@neondatabase/auth-ui": "0.2.0-beta",
-    "@neondatabase/neon-js": "0.6.0-beta",
+    "@neondatabase/auth-ui": "^0.2.0-beta",
+    "@neondatabase/neon-js": "^0.6.1-beta",
     "@sentry/react": "^8.0.0",
     "@supabase/supabase-js": "^2.49.4",
     "@tanstack/react-query": "^5.100.9",
