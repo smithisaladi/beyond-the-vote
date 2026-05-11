@@ -48,3 +48,25 @@ blob-report/
 
 # Local docs (not checked in)
 docs/
+
+# Pipeline local data
+pipeline/data/
+pipeline/.venv/
+
+# API
+apps/api/.venv/
+
+# Web
+apps/web/node_modules/
+apps/web/dist/
+
+# Shared
+shared/openapi/
+
+# ML models cache
+*.pt
+*.bin
+*.onnx
+
+# Parquet data
+*.parquet

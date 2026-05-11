@@ -1,0 +1,37 @@
+[project]
+name = "beyond-the-ballot-api"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "alembic>=1.14.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.7.0",
+    "python-jose[cryptography]>=3.3.0",
+    "httpx>=0.28.0",
+    "structlog>=24.4.0",
+    "sentry-sdk[fastapi]>=2.19.0",
+    "slowapi>=0.1.9",
+    "pgvector>=0.3.6",
+    "scikit-learn>=1.6.0",
+    "joblib>=1.4.0",
+    "sentence-transformers>=3.4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "httpx>=0.28.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
