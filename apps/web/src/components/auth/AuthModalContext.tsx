@@ -1,5 +1,6 @@
-import { createContext, useContext, type ReactNode } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { createContext, useContext, useState, type ReactNode } from "react";
+import { SignInModal } from "./SignInModal";
+import { SignUpModal } from "./SignUpModal";
 
 interface AuthModalContextType {
   showSignIn: () => void;
@@ -18,19 +19,22 @@ const AuthModalContext = createContext<AuthModalContextType>({
 });
 
 export function AuthModalProvider({ children }: { children: ReactNode }) {
-  const navigate = useNavigate();
+  const [isSignInOpen, setSignInOpen] = useState(false);
+  const [isSignUpOpen, setSignUpOpen] = useState(false);
 
-  const showSignIn = () => navigate({ to: "/auth/sign-in" });
-  const showSignUp = () => navigate({ to: "/auth/sign-up" });
-  const closeModal = () => navigate({ to: "/" });
+  const showSignIn = () => { setSignUpOpen(false); setSignInOpen(true); };
+  const showSignUp = () => { setSignInOpen(false); setSignUpOpen(true); };
+  const closeModal = () => { setSignInOpen(false); setSignUpOpen(false); };
 
   return (
     <AuthModalContext.Provider value={{
       showSignIn, showSignUp, closeModal,
       openSignIn: showSignIn, openSignUp: showSignUp,
-      isSignInOpen: false, isSignUpOpen: false,
+      isSignInOpen, isSignUpOpen,
     }}>
       {children}
+      <SignInModal isOpen={isSignInOpen} onClose={closeModal} onSwitchToSignUp={showSignUp} />
+      <SignUpModal isOpen={isSignUpOpen} onClose={closeModal} onSwitchToSignIn={showSignIn} />
     </AuthModalContext.Provider>
   );
 }

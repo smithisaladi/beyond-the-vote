@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Modal } from './Modal'
-// TODO: port useSignUpForm hook
+import { authClient } from '@/lib/auth/neon'
+import { useAuth } from '@/components/auth/AuthContext'
 
 interface SignUpModalProps {
   isOpen: boolean
@@ -11,15 +12,35 @@ interface SignUpModalProps {
 }
 
 export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
-  // TODO: port useSignUpForm hook — stubbed for now
+  const { refreshSession } = useAuth()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error] = useState('')
-  const [loading] = useState(false)
-  const handleClose = () => { onClose() }
-  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault() }
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const handleClose = () => { setError(''); onClose() }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const result = await authClient.signUp.email({ email, password, name })
+      if (result.error) {
+        setError(result.error.message || 'Sign up failed')
+      } else {
+        await refreshSession()
+        onClose()
+      }
+    } catch (err: any) {
+      setError(err.message || 'Sign up failed')
+    }
+    setLoading(false)
+  }
   const handleGoogleSignUp = async () => {}
 
   return (

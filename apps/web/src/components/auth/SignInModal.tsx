@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Modal } from './Modal'
-// TODO: port useSignInForm hook
+import { authClient } from '@/lib/auth/neon'
+import { useAuth } from '@/components/auth/AuthContext'
 
 interface SignInModalProps {
   isOpen: boolean
@@ -11,15 +12,34 @@ interface SignInModalProps {
 }
 
 export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalProps) {
-  // TODO: port useSignInForm hook — stubbed for now
+  const { refreshSession } = useAuth()
   const [view, setView] = useState<'sign-in' | 'forgot-password' | 'check-email'>('sign-in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
-  const [loading] = useState(false)
+  const [loading, setLoading] = useState(false)
   const handleClose = () => { setError(''); onClose() }
-  const handleSignIn = async (e: React.FormEvent) => { e.preventDefault() }
-  const handleForgotPassword = async (e: React.FormEvent) => { e.preventDefault() }
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    try {
+      const result = await authClient.signIn.email({ email, password })
+      if (result.error) {
+        setError(result.error.message || 'Sign in failed')
+      } else {
+        await refreshSession()
+        onClose()
+      }
+    } catch (err: any) {
+      setError(err.message || 'Sign in failed')
+    }
+    setLoading(false)
+  }
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setView('check-email')
+  }
   const handleGoogleSignIn = async () => {}
 
   return (
