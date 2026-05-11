@@ -123,9 +123,9 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
 }
 
 function DonorsContent() {
-  const searchParams = useSearchParams()
+  const searchParams = useSearch({ strict: false }) as Record<string, string>
 
-  const [query, setQuery] = useState(searchParams.get('q') ?? '')
+  const [query, setQuery] = useState(searchParams['q'] ?? '')
   const debouncedQuery = useDebounce(query, 300)
 
   const { data, isLoading: loading, error: _donorError, refetch } = useDonors({ q: debouncedQuery })

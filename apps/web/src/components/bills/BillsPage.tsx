@@ -16,29 +16,40 @@ import { BillGrid } from '@/components/bills/BillGrid'
 function BillsContent() {
   const { user } = useAuth()
   const { openSignIn } = useAuthModal()
-  const filters = useBillFilters()
 
-  const {
+  // TODO: port useBillFilters hook — inline state for now
+  const [query, setQuery] = useState('')
+  const [debouncedQuery] = useState('')
+  const selectedStatuses = new Set<string>()
+  const selectedTopics = new Set<string>()
+  const dateFilter = 'all'
+  const sort = 'newest'
+  const showTrackedOnly = false
+  const clearAll = () => {}
+  const filters = {
     query, setQuery, debouncedQuery,
-    selectedStatuses, selectedTopics,
-    dateFilter, sort, showTrackedOnly, clearAll,
-  } = filters
-
-  const { trackedBills, toggleTrack: _toggleTrack } = useTrackedBills(user?.id ?? null)
-
-  const topicSlugs = selectedTopics.size > 0 ? Array.from(selectedTopics).map(topicToSlug) : undefined
-  const fetchFilters: BillFiltersType = {
-    statuses: selectedStatuses.size > 0 ? Array.from(selectedStatuses) : undefined,
-    topics: topicSlugs,
-    dateFilter: dateFilter,
-    sort: debouncedQuery ? undefined : sort,
-    trackedBillIds: showTrackedOnly && trackedBills.size > 0 ? Array.from(trackedBills) : undefined,
+    selectedStatuses, toggleStatus: () => {},
+    selectedTopics, toggleTopic: () => {},
+    dateFilter, setDateFilter: () => {},
+    sort, setSort: () => {},
+    showTrackedOnly, setShowTrackedOnly: () => {},
+    hasFilters: false, clearAll,
+    openDropdown: null as string | null, setOpenDropdown: () => {},
+    dropdownRef: { current: null },
   }
 
-  const {
-    bills, loading: billsLoading, error: billsError,
-    loadingMore, loadMore, hasMore, refetch,
-  } = useBills(debouncedQuery, fetchFilters)
+  // TODO: useTrackedBills returns React Query shape
+  const { data: _trackedData } = useTrackedBills()
+  const trackedBills = new Set<string>()
+  const _toggleTrack = (_billId: string) => {}
+
+  const { data, isLoading: billsLoading, error: _billsError, refetch } = useBills({ q: debouncedQuery, sort })
+  const bills = data ?? []
+  const billsError = _billsError ? String(_billsError) : null
+  // TODO: port pagination
+  const loadingMore = false
+  const loadMore = () => {}
+  const hasMore = false
 
   const handleToggleTrack = (billId: string) => {
     if (!user) { openSignIn(); return }

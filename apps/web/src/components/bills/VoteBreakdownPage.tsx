@@ -321,10 +321,11 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
 
 export default function VoteBreakdownPage({ params }: { params: Promise<{ id: string; voteId: string }> }) {
   const { id, voteId } = use(params)
-  const searchParams = useSearchParams()
-  const fromParam = searchParams.get('from')
+  const searchParams = useSearch({ strict: false }) as Record<string, string>
+  const fromParam = searchParams['from'] ?? null
   const billBackHref = `/bills/${id}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`
-  const { bill, loading, error } = useBillDetail(id)
+  const { data: bill, isLoading: loading, error: _billError } = useBillDetail(id)
+  const error = _billError ? String(_billError) : null
 
   const vote = bill?.votes.find(v => v.id === decodeURIComponent(voteId)) ?? null
 
