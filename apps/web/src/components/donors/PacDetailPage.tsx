@@ -69,7 +69,7 @@ function breakdownText(r: PacDetailRecipient): string | null {
 
 function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
   const party = toParty(recipient.party)
-  const ps = PARTY_STYLES[party]
+  const ps = PARTY_STYLES[party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
   const breakdown = breakdownText(recipient)
 
   return (

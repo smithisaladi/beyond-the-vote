@@ -39,7 +39,7 @@ function Initials({ name }: { name: string }) {
 export function RepresentativeCard({
   id, name, title, party, state, district, since, photo, userId, onSignInRequired,
 }: RepresentativeCardProps) {
-  const badge = PARTY_STYLES[party]
+  const badge = PARTY_STYLES[party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
   // TODO: port useFollowPolitician hook
   const following = false
   const followLoading = false

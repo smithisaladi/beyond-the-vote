@@ -38,7 +38,7 @@ function computeLean(recipients: ContributorRecipient[]): Lean | null {
 
 function LeanPill({ lean }: { lean: Lean }) {
   if (lean.party) {
-    const style = PARTY_STYLES[lean.party]
+    const style = PARTY_STYLES[lean.party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
     return (
       <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
         <span className="w-1.5 h-1.5 rounded-full" style={{ background: style.hex }} />

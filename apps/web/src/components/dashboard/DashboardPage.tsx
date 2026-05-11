@@ -135,7 +135,7 @@ export default function DashboardPage() {
                 ) : (
                   <Card padding="none" className="overflow-hidden max-h-[340px] overflow-y-auto">
                     {visiblePoliticians.map((pol, idx) => {
-                      const badge = PARTY_STYLES[pol.party]
+                      const badge = PARTY_STYLES[pol.party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
                       return (
                         <div
                           key={pol.id}

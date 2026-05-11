@@ -45,8 +45,8 @@ function BillCard({
   tracked: boolean
   onToggleTrack: () => void
 }) {
-  const party = PARTY_STYLES[bill.party]
-  const status = STATUS_STYLES[bill.status]
+  const party = PARTY_STYLES[bill.party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
+  const status = STATUS_STYLES[bill.status] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
 
   return (
     <Link to={`/bills/${bill.id}`} className="block group">
