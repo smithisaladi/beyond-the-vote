@@ -315,6 +315,30 @@ def step_enrichment():
         log.info("industry_classification_done", count=count)
 
 
+def step_anomaly_detection():
+    """Run ML Tier 3 anomaly detection (suspicious clusters + change detection)."""
+    if not check_storage("pre_anomalies"):
+        return
+
+    for cycle in FEC_CYCLES:
+        indiv_parquet = DATA_DIR / "fec" / str(cycle) / "indiv.parquet"
+        pas2_parquet = DATA_DIR / "fec" / str(cycle) / "pas2.parquet"
+
+        if indiv_parquet.exists():
+            if not check_storage(f"suspicious_{cycle}"):
+                break
+            from enrich.suspicious_clusters import run_suspicious_clusters
+            count = run_suspicious_clusters(indiv_parquet)
+            log.info("suspicious_clusters_done", cycle=cycle, count=count)
+
+        if pas2_parquet.exists():
+            if not check_storage(f"change_detection_{cycle}"):
+                break
+            from enrich.change_detection import run_change_detection
+            count = run_change_detection(pas2_parquet)
+            log.info("change_detection_done", cycle=cycle, count=count)
+
+
 # ─── Main orchestrator ────────────────────────────────────────────────────────
 
 STEPS = [
@@ -325,6 +349,7 @@ STEPS = [
     ("fec", step_fec, "Download + load FEC campaign finance data"),
     ("bill_embeddings", step_bill_embeddings, "Generate bill embeddings for semantic search"),
     ("enrichment", step_enrichment, "ML employer normalization + industry classification"),
+    ("anomaly_detection", step_anomaly_detection, "Tier 3 anomaly detection (suspicious clusters + change points)"),
 ]
 
 
