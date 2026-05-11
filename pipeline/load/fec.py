@@ -10,28 +10,44 @@ PAC_DIRECT_TPS = {"24K", "24Z"}
 IE_FOR_TP = "24E"
 IE_AGAINST_TP = "24A"
 
+
+def _safe_str(val) -> str:
+    """Safely convert any value to a stripped string. Handles NaN, None, float."""
+    if val is None:
+        return ""
+    s = str(val).strip()
+    if s.lower() in ("nan", "none"):
+        return ""
+    return s
+
+
 def transform_pac_contribution(record: dict, cycle: int) -> dict | None:
-    tp = (record.get("transaction_tp") or "").strip()
+    tp = _safe_str(record.get("transaction_tp"))
     if tp not in PAC_DIRECT_TPS:
         return None
     sub_id = _safe_int(record.get("sub_id"))
-    cmte_id = (record.get("cmte_id") or "").strip()
+    cmte_id = _safe_str(record.get("cmte_id"))
     amt = _safe_numeric(record.get("transaction_amt"))
     if not sub_id or not cmte_id or amt is None:
         return None
-    return {"sub_id": sub_id, "cmte_id": cmte_id, "cand_id": (record.get("cand_id") or "").strip() or None, "transaction_tp": tp, "transaction_amt": amt, "transaction_dt": (record.get("transaction_dt") or "").strip() or None, "cycle": cycle}
+    cand_id = _safe_str(record.get("cand_id")) or None
+    transaction_dt = _safe_str(record.get("transaction_dt")) or None
+    return {"sub_id": sub_id, "cmte_id": cmte_id, "cand_id": cand_id, "transaction_tp": tp, "transaction_amt": amt, "transaction_dt": transaction_dt, "cycle": cycle}
+
 
 def transform_ie_contribution(record: dict, cycle: int) -> dict | None:
-    tp = (record.get("transaction_tp") or "").strip()
+    tp = _safe_str(record.get("transaction_tp"))
     if tp not in (IE_FOR_TP, IE_AGAINST_TP):
         return None
     sub_id = _safe_int(record.get("sub_id"))
-    cmte_id = (record.get("cmte_id") or "").strip()
+    cmte_id = _safe_str(record.get("cmte_id"))
     amt = _safe_numeric(record.get("transaction_amt"))
     if not sub_id or not cmte_id or amt is None:
         return None
     sup_opp = "S" if tp == IE_FOR_TP else "O"
-    return {"sub_id": sub_id, "cmte_id": cmte_id, "cand_id": (record.get("cand_id") or "").strip() or None, "sup_opp": sup_opp, "transaction_tp": tp, "transaction_amt": amt, "transaction_dt": (record.get("transaction_dt") or "").strip() or None, "cycle": cycle}
+    cand_id = _safe_str(record.get("cand_id")) or None
+    transaction_dt = _safe_str(record.get("transaction_dt")) or None
+    return {"sub_id": sub_id, "cmte_id": cmte_id, "cand_id": cand_id, "sup_opp": sup_opp, "transaction_tp": tp, "transaction_amt": amt, "transaction_dt": transaction_dt, "cycle": cycle}
 
 def load_pac_contributions(parquet_path: Path, cycle: int) -> int:
     from shared.parquet import read_parquet_batched
@@ -61,11 +77,11 @@ def load_committee_names(parquet_path: Path) -> int:
     for batch in read_parquet_batched(parquet_path):
         rows = []
         for rec in batch:
-            cmte_id = (rec.get("cmte_id") or "").strip()
-            cmte_nm = (rec.get("cmte_nm") or "").strip()
+            cmte_id = _safe_str(rec.get("cmte_id"))
+            cmte_nm = _safe_str(rec.get("cmte_nm"))
             if not cmte_id or not cmte_nm:
                 continue
-            rows.append({"cmte_id": cmte_id, "cmte_name": cmte_nm, "connected_org": (rec.get("connected_org_nm") or "").strip() or None})
+            rows.append({"cmte_id": cmte_id, "cmte_name": cmte_nm, "connected_org": _safe_str(rec.get("connected_org_nm")) or None})
         if rows:
             upsert("cmte_names", rows, on_conflict="cmte_id", schema="fec")
             total += len(rows)

@@ -33,7 +33,9 @@ def csv_to_parquet(
                     SELECT * FROM read_csv('{csv_path}',
                         delim='{delimiter}',
                         header=false,
-                        names=[{names_str}]
+                        names=[{names_str}],
+                        all_varchar=true,
+                        ignore_errors=true
                     )
                 ) TO '{parquet_path}' (FORMAT PARQUET, COMPRESSION ZSTD)
             """
@@ -42,7 +44,9 @@ def csv_to_parquet(
                 COPY (
                     SELECT * FROM read_csv('{csv_path}',
                         delim='{delimiter}',
-                        header={'true' if header else 'false'}
+                        header={'true' if header else 'false'},
+                        all_varchar=true,
+                        ignore_errors=true
                     )
                 ) TO '{parquet_path}' (FORMAT PARQUET, COMPRESSION ZSTD)
             """
