@@ -20,6 +20,7 @@ dependencies = [
     "joblib>=1.4.0",
     "sentence-transformers>=3.4.0",
     "pyjwt[crypto]>=2.12.1",
+    "anthropic>=0.40.0",
 ]
 
 [project.optional-dependencies]

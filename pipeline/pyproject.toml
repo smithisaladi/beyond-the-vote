@@ -3,7 +3,6 @@ name = "beyond-the-ballot-pipeline"
 version = "0.1.0"
 requires-python = ">=3.11"
 dependencies = [
-    "supabase>=2.0.0",
     "httpx>=0.28.0",
     "duckdb>=1.0.0",
     "pyarrow>=18.0.0",
@@ -21,6 +20,7 @@ dependencies = [
     "psycopg2-binary>=2.9.0",
     "ruptures>=1.1.9",
     "networkx>=3.2.0",
+    "requests>=2.33.1",
 ]
 
 [project.optional-dependencies]
@@ -37,3 +37,8 @@ packages = ["shared", "transform", "scripts", "ingest", "load", "enrich"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]

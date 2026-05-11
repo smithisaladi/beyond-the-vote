@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthContext'
 import { authClient } from '@/lib/auth/neon'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 
 // ── Delete confirmation modal ─────────────────────────────────────────────────
@@ -116,10 +115,8 @@ export default function SettingsPage() {
       <DotGridBackground id="dot-grid-settings" />
 
       <div className="relative z-10 flex flex-col flex-1">
-        <PageHeader title="Settings" />
-
         {/* Content */}
-        <main className="flex-1 px-6 pt-24 pb-8">
+        <main className="flex-1 px-6 pt-8 pb-8">
           <div className="max-w-4xl mx-auto">
 
             <div className="flex flex-col gap-6">

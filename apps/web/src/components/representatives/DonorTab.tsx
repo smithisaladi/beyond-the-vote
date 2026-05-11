@@ -3,7 +3,7 @@
 import { Link } from '@tanstack/react-router'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import type { FecTermKey } from '@/lib/fec'
-import { formatTotal } from '@/lib/format'
+import { formatTotal, toTitleCase } from '@/lib/format'
 
 interface Donor {
   rank?: number
@@ -194,8 +194,8 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
   return (
     <div className="px-6 py-6 sm:px-8 space-y-7">
 
-      {/* ── Funding Breakdown ── */}
-      {bd && (
+      {/* ── Funding Breakdown (rich data from OpenSecrets-style source) ── */}
+      {bd && bd.total > 0 && (
         <div>
           <SectionLabel meta={`Cycle ${cycleLabel(bd)}`}>
             Funding Breakdown
@@ -238,7 +238,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
       )}
 
       {/* ── Geographic Breakdown ── */}
-      {hasGeo && bd && (
+      {hasGeo && bd && bd.total > 0 && (
         <div className="border-t border-[rgba(28,28,26,0.08)] pt-6">
           <SectionLabel
             tooltipTerm="inOutState"
@@ -305,7 +305,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             Top Contributors
           </SectionLabel>
           <p className="text-[#1C1C1A]/35 -mt-1 mb-3" style={{ fontSize: '0.6875rem' }}>
-            Employee donations & PAC contributions by organization
+            PAC contributions by parent organization
           </p>
 
           <div className="divide-y divide-[rgba(28,28,26,0.06)]">
@@ -322,7 +322,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
                       c.cmteId ? 'group-hover:text-[#7B5E8A] transition-colors' : ''
                     }`}
                   >
-                    {c.orgName.toUpperCase()}
+                    {toTitleCase(c.orgName)}
                   </span>
                   <span
                     className="flex-shrink-0 text-sm font-medium text-[#1C1C1A] tabular-nums"

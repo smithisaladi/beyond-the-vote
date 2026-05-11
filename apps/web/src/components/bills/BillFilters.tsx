@@ -132,9 +132,12 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
               { key: 'month', label: 'Past month' },
               { key: 'year', label: 'Past year' },
             ] as { key: DateFilter; label: string }[]).map(opt => (
-              <label key={opt.key} className="flex items-center gap-2.5 cursor-pointer group">
+              <div
+                key={opt.key}
+                onClick={() => { setDateFilter(opt.key); setOpenDropdown(null) }}
+                className="flex items-center gap-2.5 cursor-pointer group"
+              >
                 <div
-                  onClick={() => { setDateFilter(opt.key); setOpenDropdown(null) }}
                   className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
                     dateFilter === opt.key
                       ? 'border-[#7B5E8A]'
@@ -144,7 +147,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                   {dateFilter === opt.key && <div className="w-2 h-2 rounded-full bg-[#7B5E8A]" />}
                 </div>
                 <span className={`text-sm ${dateFilter === opt.key ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>{opt.label}</span>
-              </label>
+              </div>
             ))}
           </Card>
         )}
@@ -198,9 +201,12 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                 { key: 'newest', label: 'Latest first' },
                 { key: 'oldest', label: 'Oldest first' },
               ] as { key: SortOption; label: string }[]).map(opt => (
-                <label key={opt.key} className="flex items-center gap-2.5 cursor-pointer group">
+                <div
+                  key={opt.key}
+                  onClick={() => { setSort(opt.key); setOpenDropdown(null) }}
+                  className="flex items-center gap-2.5 cursor-pointer group"
+                >
                   <div
-                    onClick={() => { setSort(opt.key); setOpenDropdown(null) }}
                     className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
                       sort === opt.key
                         ? 'border-[#7B5E8A]'
@@ -210,7 +216,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                     {sort === opt.key && <div className="w-2 h-2 rounded-full bg-[#7B5E8A]" />}
                   </div>
                   <span className={`text-sm ${sort === opt.key ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>{opt.label}</span>
-                </label>
+                </div>
               ))}
             </Card>
           )}

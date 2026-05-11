@@ -7,7 +7,6 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { useBills } from '@/hooks/queries/useBills'
 import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
 import { topicToSlug } from '@/lib/topics'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { BillSearchBar } from '@/components/bills/BillSearchBar'
 import { BillFilters as BillFiltersComponent } from '@/components/bills/BillFilters'
@@ -85,16 +84,20 @@ function BillsContent() {
   const statusParam = selectedStatuses.size > 0 ? [...selectedStatuses].join(',') : undefined
   const topicsParam = selectedTopics.size > 0 ? [...selectedTopics].map(t => topicToSlug(t as any)).join(',') : undefined
 
-  // Pagination
+  // Pagination — accumulate bills across pages
+  const [allBills, setAllBills] = useState<any[]>([])
   const [offset, setOffset] = useState(0)
+  const [total, setTotal] = useState(0)
   const limit = 20
 
-  // Reset offset when filters change
+  // Reset when filters change
   useEffect(() => {
     setOffset(0)
+    setAllBills([])
+    setTotal(0)
   }, [debouncedQuery, statusParam, topicsParam, sort])
 
-  const { data, isLoading: billsLoading, error: _billsError, refetch } = useBills({
+  const { data, isLoading: billsLoading, isFetching, error: _billsError, refetch } = useBills({
     q: debouncedQuery || undefined,
     status: statusParam,
     topics: topicsParam,
@@ -103,11 +106,18 @@ function BillsContent() {
     offset,
   })
 
-  const bills = data?.bills ?? []
-  const total = data?.pagination?.total ?? 0
+  // Append new page results
+  useEffect(() => {
+    if (data?.bills) {
+      setAllBills(prev => offset === 0 ? data.bills : [...prev, ...data.bills])
+      setTotal(data.pagination?.total ?? 0)
+    }
+  }, [data, offset])
+
+  const bills = allBills
   const billsError = _billsError ? String(_billsError) : null
   const hasMore = offset + limit < total
-  const loadingMore = false
+  const loadingMore = isFetching && offset > 0
 
   const loadMore = () => {
     setOffset(prev => prev + limit)
@@ -126,7 +136,7 @@ function BillsContent() {
       <DotGridBackground id="dot-grid-bills" />
 
       <div className="relative z-10 flex flex-col flex-1">
-        <PageHeader title="Bills Tracker" />
+
         <main className="flex-1 px-6 pt-24 pb-8">
           <div className="max-w-4xl mx-auto">
 

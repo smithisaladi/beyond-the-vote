@@ -43,7 +43,7 @@ async def list_bills(
         params["topics"] = topics.split(",")
 
     where = " AND ".join(where_parts) if where_parts else "TRUE"
-    order = "synced_at DESC" if sort == "newest" else "synced_at ASC"
+    order = "introduced_date DESC NULLS LAST" if sort == "newest" else "introduced_date ASC NULLS LAST"
 
     sql = f"""
     SELECT *, COUNT(*) OVER() AS total_count

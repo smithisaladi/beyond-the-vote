@@ -8,7 +8,9 @@ import structlog
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 
-from shared.db import get_supabase
+import psycopg2.extras
+
+from shared.db import get_conn, upsert
 
 log = structlog.get_logger()
 
@@ -44,36 +46,33 @@ def train_vote_model(features: np.ndarray, labels: np.ndarray) -> tuple:
 
 
 def run_vote_prediction_training(congress_num: int = 119) -> None:
-    client = get_supabase()
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     log.info("fetching_training_data", congress=congress_num)
 
-    positions_result = client.schema("congress").table("bill_vote_positions").select(
-        "vote_id, bioguide_id, position").execute()
-    if not positions_result.data:
+    cur.execute("SELECT vote_id, bioguide_id, position FROM congress.bill_vote_positions")
+    positions_data = [dict(r) for r in cur.fetchall()]
+    if not positions_data:
         log.warning("no_vote_positions_found")
         return
 
-    scores_result = client.schema("congress").table("member_scores").select(
-        "bioguide_id, nominate_dim1, nominate_dim2").eq("congress", congress_num).execute()
-    scores_by_id = {r["bioguide_id"]: r for r in scores_result.data}
+    cur.execute("SELECT bioguide_id, nominate_dim1, nominate_dim2 FROM congress.member_scores WHERE congress = %s", (congress_num,))
+    scores_by_id = {r["bioguide_id"]: dict(r) for r in cur.fetchall()}
 
-    legs_result = client.schema("congress").table("legislators").select(
-        "bioguide_id, party").execute()
-    party_by_id = {r["bioguide_id"]: r["party"] for r in legs_result.data}
+    cur.execute("SELECT bioguide_id, party FROM congress.legislators")
+    party_by_id = {r["bioguide_id"]: r["party"] for r in cur.fetchall()}
 
-    votes_result = client.schema("congress").table("bill_vote_summaries").select(
-        "id, bill_id").execute()
-    bill_id_by_vote = {r["id"]: r["bill_id"] for r in votes_result.data}
+    cur.execute("SELECT id, bill_id FROM congress.bill_vote_summaries")
+    bill_id_by_vote = {r["id"]: r["bill_id"] for r in cur.fetchall()}
 
-    bills_result = client.schema("congress").table("bills").select(
-        "bill_id, sponsor_party, topics, policy_area").execute()
-    bills_by_id = {r["bill_id"]: r for r in bills_result.data}
+    cur.execute("SELECT bill_id, sponsor_party, topics, policy_area FROM congress.bills")
+    bills_by_id = {r["bill_id"]: dict(r) for r in cur.fetchall()}
 
     features_list = []
     labels_list = []
 
-    for pos in positions_result.data:
+    for pos in positions_data:
         bio_id = pos["bioguide_id"]
         position = pos["position"]
         if position not in ("Yea", "Nay"):
@@ -113,13 +112,13 @@ def run_vote_prediction_training(congress_num: int = 119) -> None:
 
     log.info("model_serialized", size_bytes=len(model_bytes), accuracy=accuracy)
 
-    client.schema("ops").table("ml_models").upsert({
+    upsert("ml_models", [{
         "model_name": MODEL_NAME,
         "congress": congress_num,
         "model_bytes": model_b64,
         "accuracy": accuracy,
         "feature_names": FEATURE_NAMES,
         "model_version": MODEL_VERSION,
-    }, on_conflict="model_name,congress").execute()
+    }], on_conflict="model_name,congress", schema="ops")
 
     log.info("model_uploaded", congress=congress_num, accuracy=accuracy)

@@ -9,7 +9,6 @@ import { useMapboxAutocomplete } from '@/hooks/useMapboxAutocomplete'
 import { useRepresentatives } from '@/hooks/queries/useRepresentatives'
 import { useSearchPoliticians } from '@/hooks/queries/usePoliticians'
 import { useAuth } from '@/components/auth/AuthContext'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -77,7 +76,7 @@ function RepresentativesContent() {
   return (
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-reps" />
-      <PageHeader title="Politicians" />
+
       <main className="relative z-10 flex-1 px-6 pt-24 pb-8">
           {/* Search */}
           <div className="max-w-4xl mx-auto mb-10">

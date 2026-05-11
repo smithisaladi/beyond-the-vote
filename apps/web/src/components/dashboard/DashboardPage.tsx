@@ -77,8 +77,9 @@ export default function DashboardPage() {
     <div className="relative flex-1 flex flex-col min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-dashboard" />
 
+      <div className="relative z-10 flex flex-col flex-1">
         {/* ── Header ── */}
-        <header className="relative z-10 sticky top-0 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] px-8 py-5 flex items-center justify-between">
+        <header className="sticky top-0 bg-[#F5F0E8]/90 backdrop-blur-sm border-b border-[rgba(28,28,26,0.08)] px-8 py-5 flex items-center justify-between">
           <div>
             <p className="text-[11px] tracking-wide uppercase text-[#1C1C1A]/38 mb-1">{formatToday()}</p>
             <h1 className="text-xl text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>
@@ -96,7 +97,7 @@ export default function DashboardPage() {
         </header>
 
         {/* ── Content ── */}
-        <main className="relative z-10 flex-1 px-8 py-8">
+        <main className="flex-1 px-8 py-8">
           <div className="max-w-5xl mx-auto">
 
             {/* ── Main two-column: Activity + Following ── */}
@@ -158,8 +159,7 @@ export default function DashboardPage() {
                                 <img
                                   src={pol.photo}
                                   alt={pol.name}
-                                 
-                                  className="rounded-full object-cover"
+                                  className="absolute inset-0 w-9 h-9 rounded-full object-cover"
                                   onError={() => setPhotoErrors(prev => new Set([...prev, pol.id]))}
                                 />
                               )}
@@ -245,6 +245,7 @@ export default function DashboardPage() {
 
           </div>
         </main>
+      </div>
     </div>
   )
 }

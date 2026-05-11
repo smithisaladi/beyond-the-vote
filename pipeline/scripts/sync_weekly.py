@@ -93,6 +93,78 @@ def sync_fec_api():
     return total
 
 
+def sync_funding_summaries():
+    """Refresh legislator funding summaries via FEC API candidate totals."""
+    from ingest.fec_api import fetch_candidate_totals
+    from shared.db import get_conn
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # Get all fec_ids for current legislators
+    cur.execute("SELECT bioguide_id, unnest(fec_ids) as cand_id, state FROM congress.legislators")
+    leg_rows = cur.fetchall()
+    bioguide_map = {}  # cand_id -> (bioguide_id, state)
+    all_cand_ids = []
+    for bioguide_id, cand_id, state in leg_rows:
+        bioguide_map[cand_id] = (bioguide_id, state)
+        all_cand_ids.append(cand_id)
+
+    results: dict[str, dict] = {}
+
+    for cycle in FEC_CYCLES:
+        totals = fetch_candidate_totals(all_cand_ids, cycle=cycle)
+
+        for rec in totals:
+            cand_id = rec.get("candidate_id")
+            if cand_id not in bioguide_map:
+                continue
+
+            bioguide_id, _ = bioguide_map[cand_id]
+            if bioguide_id not in results:
+                results[bioguide_id] = {
+                    "pac_direct_total": 0, "large_donor_total": 0, "small_donor_total": 0,
+                    "superpac_ie_for": 0, "superpac_ie_against": 0,
+                    "in_state_total": 0, "out_of_state_total": 0,
+                }
+            r = results[bioguide_id]
+
+            # FEC API fields
+            indiv_itemized = float(rec.get("individual_itemized_contributions") or 0)
+            indiv_unitemized = float(rec.get("individual_unitemized_contributions") or 0)
+            pac_contrib = float(rec.get("other_political_committee_contributions") or 0)
+
+            r["large_donor_total"] += indiv_itemized
+            r["small_donor_total"] += indiv_unitemized
+            r["pac_direct_total"] += pac_contrib
+
+    # IE data comes from our DB (already synced separately)
+    for cycle in FEC_CYCLES:
+        cur.execute("""
+            SELECT cand_id,
+                   SUM(CASE WHEN sup_opp = 'S' THEN transaction_amt ELSE 0 END),
+                   SUM(CASE WHEN sup_opp = 'O' THEN transaction_amt ELSE 0 END)
+            FROM fec.independent_expenditures WHERE cycle = %s GROUP BY cand_id
+        """, (cycle,))
+        for cand_id, ie_for, ie_against in cur.fetchall():
+            if cand_id not in bioguide_map:
+                continue
+            bioguide_id, _ = bioguide_map[cand_id]
+            if bioguide_id in results:
+                results[bioguide_id]["superpac_ie_for"] += float(ie_for or 0)
+                results[bioguide_id]["superpac_ie_against"] += float(ie_against or 0)
+
+    rows = [
+        {"bioguide_id": bid, "cycle": max(FEC_CYCLES), **{k: round(v, 2) for k, v in r.items()}}
+        for bid, r in results.items() if any(v != 0 for v in r.values())
+    ]
+
+    count = upsert("legislator_funding_summary", rows, on_conflict="bioguide_id,cycle", schema="derived")
+    log.info("funding_summaries_synced", count=count)
+    conn.close()
+    return count
+
+
 def sync_employer_enrichment():
     """Re-run employer normalization + industry classification on any new employers."""
     from enrich.opensecrets import run_industry_classification_opensecrets
@@ -110,6 +182,7 @@ def main():
         ("legislators", sync_legislators),
         ("voteview", sync_voteview),
         ("fec_api", sync_fec_api),
+        ("funding_summaries", sync_funding_summaries),
         ("employer_enrichment", sync_employer_enrichment),
     ]
 

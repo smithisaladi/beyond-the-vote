@@ -9,7 +9,6 @@ import { usePoliticianDetail } from '@/hooks/queries/usePoliticians'
 import { useFollowedPoliticians, useFollowPolitician } from '@/hooks/queries/useDashboard'
 import type { Politician } from '@/lib/types/politicians'
 import { DonorTab } from '@/components/representatives/DonorTab'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { ProfileSkeleton } from './sections/ProfileSkeleton'
@@ -61,9 +60,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
       <DotGridBackground id="dot-grid-rep-detail" />
 
       <div className="relative z-10 flex flex-col flex-1">
-        <PageHeader title="Politicians" />
-
-        <main className="flex-1 px-6 pt-16 pb-8">
+        <main className="flex-1 px-6 pt-8 pb-8">
           {loading ? (
             <ProfileSkeleton />
           ) : error ? (

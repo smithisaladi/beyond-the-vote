@@ -4,7 +4,9 @@ from collections import defaultdict
 from pathlib import Path
 import numpy as np
 import structlog
-from shared.db import upsert, get_supabase
+import psycopg2.extras
+
+from shared.db import upsert, get_conn
 from shared.parquet import duckdb_connect
 
 log = structlog.get_logger()
@@ -84,12 +86,14 @@ def cluster_donors(features: np.ndarray, min_cluster_size: int = 5, n_components
 
 
 def run_donor_clustering(parquet_path: Path) -> int:
-    client = get_supabase()
-    result = client.schema("enrichment").table("donor_canonical").select("contribution_id, canonical_id").execute()
-    if not result.data:
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("SELECT contribution_id, canonical_id FROM enrichment.donor_canonical")
+    result_data = [dict(r) for r in cur.fetchall()]
+    if not result_data:
         log.warning("no_canonical_donors_found")
         return 0
-    canonical_map = {str(r["contribution_id"]): r["canonical_id"] for r in result.data}
+    canonical_map = {str(r["contribution_id"]): r["canonical_id"] for r in result_data}
     log.info("canonical_map_loaded", entries=len(canonical_map))
 
     donor_vectors = compute_feature_vectors(parquet_path, canonical_map)

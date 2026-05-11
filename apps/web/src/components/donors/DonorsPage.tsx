@@ -21,7 +21,6 @@ interface ContributorEntry {
   topRecipients: ContributorRecipient[]
 }
 import { useDebounce } from '@/hooks/useDebounce'
-import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
@@ -143,17 +142,34 @@ function DonorsContent() {
   const [query, setQuery] = useState(searchParams['q'] ?? '')
   const debouncedQuery = useDebounce(query, 300)
   const [offset, setOffset] = useState(0)
+  const [accumulated, setAccumulated] = useState<any[]>([])
   const limit = 20
 
-  // Reset offset when search changes
-  useEffect(() => { setOffset(0) }, [debouncedQuery])
+  // Reset offset and accumulated results when search changes
+  useEffect(() => {
+    setOffset(0)
+    setAccumulated([])
+  }, [debouncedQuery])
 
-  const { data, isLoading: loading, error: _donorError, refetch } = useDonors({ q: debouncedQuery, limit, offset })
-  const contributors = data?.contributors ?? data ?? []
+  const { data, isLoading: loading, isFetching, error: _donorError, refetch } = useDonors({ q: debouncedQuery, limit, offset })
+  const freshContributors = data?.contributors ?? data ?? []
   const total = data?.pagination?.total ?? 0
   const error = _donorError ? String(_donorError) : null
+
+  // Accumulate results when new data arrives
+  useEffect(() => {
+    if (freshContributors.length > 0) {
+      if (offset === 0) {
+        setAccumulated(freshContributors)
+      } else {
+        setAccumulated(prev => [...prev, ...freshContributors])
+      }
+    }
+  }, [data])
+
+  const contributors = accumulated
   const hasMore = offset + limit < total
-  const loadingMore = false
+  const loadingMore = isFetching && offset > 0
   const loadMore = () => setOffset(prev => prev + limit)
 
   return (
@@ -161,7 +177,7 @@ function DonorsContent() {
       <DotGridBackground id="dot-grid-donors" />
 
       <div className="relative z-10 flex flex-col flex-1">
-        <PageHeader title="Donors" />
+
         <main className="flex-1 px-6 pt-24 pb-8">
           <div className="max-w-4xl mx-auto">
 

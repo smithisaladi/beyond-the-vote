@@ -16,7 +16,9 @@ from pathlib import Path
 
 import structlog
 
-from shared.db import upsert, get_supabase
+import psycopg2.extras
+
+from shared.db import upsert, get_conn
 
 log = structlog.get_logger()
 
@@ -145,30 +147,29 @@ def run_industry_classification_opensecrets(data_dir: Path) -> int:
         log.warning("no_org_lookup_available_falling_back_to_heuristics")
         return 0
 
-    client = get_supabase()
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Get canonical employers
-    result = client.schema("enrichment").table("employer_canonical").select(
-        "canonical_employer_id, canonical_name"
-    ).execute()
+    cur.execute("SELECT canonical_employer_id, canonical_name FROM enrichment.employer_canonical")
+    result_data = [dict(r) for r in cur.fetchall()]
 
-    if not result.data:
+    if not result_data:
         log.warning("no_employers_to_classify")
         return 0
 
     # Deduplicate
     seen = set()
     to_classify = []
-    for row in result.data:
+    for row in result_data:
         if row["canonical_employer_id"] not in seen:
             seen.add(row["canonical_employer_id"])
             to_classify.append(row)
 
     # Check existing
-    existing = client.schema("enrichment").table("employer_industry").select(
-        "canonical_employer_id"
-    ).execute()
-    existing_ids = {r["canonical_employer_id"] for r in existing.data}
+    cur.execute("SELECT canonical_employer_id FROM enrichment.employer_industry")
+    existing_data = [dict(r) for r in cur.fetchall()]
+    existing_ids = {r["canonical_employer_id"] for r in existing_data}
     to_classify = [e for e in to_classify if e["canonical_employer_id"] not in existing_ids]
 
     log.info("employers_to_classify", total=len(to_classify), already=len(existing_ids))

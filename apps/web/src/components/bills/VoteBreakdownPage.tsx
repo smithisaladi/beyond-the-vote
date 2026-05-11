@@ -1,6 +1,6 @@
 
 
-import { useState, useMemo, useRef, useEffect, use } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink } from 'lucide-react'
@@ -341,12 +341,11 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
   )
 }
 
-export default function VoteBreakdownPage({ params }: { params: Promise<{ id: string; voteId: string }> }) {
-  const { id, voteId } = use(params)
+export default function VoteBreakdownPage({ billId, voteId }: { billId: string; voteId: string }) {
   const searchParams = useSearch({ strict: false }) as Record<string, string>
   const fromParam = searchParams['from'] ?? null
-  const billBackHref = `/bills/${id}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`
-  const { data: bill, isLoading: loading, error: _billError } = useBillDetail(id)
+  const billBackHref = `/bills/${billId}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`
+  const { data: bill, isLoading: loading, error: _billError } = useBillDetail(billId)
   const error = _billError ? String(_billError) : null
 
   const vote = bill?.votes.find((v: any) => v.id === decodeURIComponent(voteId)) ?? null
@@ -377,7 +376,7 @@ export default function VoteBreakdownPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           ) : (
-            <VoteContent vote={vote} billId={id} billNumber={bill.number} billTitle={bill.title} fromParam={fromParam} />
+            <VoteContent vote={vote} billId={billId} billNumber={bill.number} billTitle={bill.title} fromParam={fromParam} />
           )}
         </main>
       </div>

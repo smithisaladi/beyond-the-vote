@@ -9,13 +9,17 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit:
 
     name_filter = ""
     if q:
-        name_filter = "AND cn.cmte_name ILIKE :pattern"
+        name_filter = "AND cmte_name ILIKE :pattern"
         params["pattern"] = f"%{q}%"
 
     sql = f"""
-    WITH pac_totals AS (
+    WITH congress_cand_ids AS (
+        SELECT unnest(fec_ids) AS cand_id FROM congress.legislators
+    ),
+    pac_totals AS (
         SELECT cmte_id, SUM(transaction_amt) as direct_total
         FROM fec.pac_to_candidate
+        WHERE cand_id IN (SELECT cand_id FROM congress_cand_ids)
         GROUP BY cmte_id
     ),
     ie_totals AS (
@@ -23,6 +27,7 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit:
                SUM(CASE WHEN sup_opp = 'S' THEN transaction_amt ELSE 0 END) as ie_for_total,
                SUM(CASE WHEN sup_opp = 'O' THEN transaction_amt ELSE 0 END) as ie_against_total
         FROM fec.independent_expenditures
+        WHERE cand_id IN (SELECT cand_id FROM congress_cand_ids)
         GROUP BY cmte_id
     ),
     combined AS (
@@ -33,14 +38,21 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit:
                COALESCE(p.direct_total, 0) + COALESCE(ie.ie_for_total, 0) + COALESCE(ie.ie_against_total, 0) as total_contributions
         FROM pac_totals p
         FULL OUTER JOIN ie_totals ie ON p.cmte_id = ie.cmte_id
+    ),
+    ranked AS (
+        SELECT c.cmte_id, cn.cmte_name,
+               c.direct_total, c.ie_for_total, c.ie_against_total, c.total_contributions,
+               ROW_NUMBER() OVER (ORDER BY c.total_contributions DESC) AS global_rank
+        FROM combined c
+        LEFT JOIN fec.cmte_names cn ON cn.cmte_id = c.cmte_id
+        WHERE cn.cmte_name IS NOT NULL
     )
-    SELECT c.cmte_id, cn.cmte_name,
-           c.direct_total, c.ie_for_total, c.ie_against_total, c.total_contributions,
+    SELECT cmte_id, cmte_name, direct_total, ie_for_total, ie_against_total,
+           total_contributions, global_rank,
            COUNT(*) OVER() AS total_count
-    FROM combined c
-    LEFT JOIN fec.cmte_names cn ON cn.cmte_id = c.cmte_id
-    WHERE cn.cmte_name IS NOT NULL {name_filter}
-    ORDER BY c.total_contributions DESC
+    FROM ranked
+    WHERE 1=1 {name_filter}
+    ORDER BY total_contributions DESC
     LIMIT :limit OFFSET :offset
     """
     result = await session.execute(text(sql), params)
@@ -52,14 +64,21 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit:
 async def pac_detail(session: AsyncSession, cmte_id: str) -> dict | None:
     """Get PAC detail with aggregated contributions and top recipients."""
     sql = """
-    WITH cmte_info AS (
+    WITH congress_cand_ids AS (
+        SELECT unnest(fec_ids) AS cand_id FROM congress.legislators
+    ),
+    cmte_info AS (
         SELECT cmte_id, cmte_name, connected_org FROM fec.cmte_names WHERE cmte_id = :cmte_id
     ),
     direct AS (
-        SELECT cand_id, SUM(transaction_amt) AS direct_total FROM fec.pac_to_candidate WHERE cmte_id = :cmte_id GROUP BY cand_id
+        SELECT cand_id, SUM(transaction_amt) AS direct_total FROM fec.pac_to_candidate
+        WHERE cmte_id = :cmte_id AND cand_id IN (SELECT cand_id FROM congress_cand_ids)
+        GROUP BY cand_id
     ),
     ie AS (
-        SELECT cand_id, sup_opp, SUM(transaction_amt) AS ie_total FROM fec.independent_expenditures WHERE cmte_id = :cmte_id GROUP BY cand_id, sup_opp
+        SELECT cand_id, sup_opp, SUM(transaction_amt) AS ie_total FROM fec.independent_expenditures
+        WHERE cmte_id = :cmte_id AND cand_id IN (SELECT cand_id FROM congress_cand_ids)
+        GROUP BY cand_id, sup_opp
     ),
     per_candidate AS (
         SELECT COALESCE(d.cand_id, ie_for.cand_id, ie_against.cand_id) AS cand_id,

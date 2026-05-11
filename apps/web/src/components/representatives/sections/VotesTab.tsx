@@ -65,7 +65,7 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
             const question = v.question?.replace(/^On /i, '') ?? ''
             const displayTitle = v.billTitle
               ? `${question}: ${v.billTitle}`
-              : v.billId ? `${question}: ${formatBillId(v.billId)}` : v.bill
+              : v.billId ? `${question}: ${formatBillId(v.billId)}` : v.question ?? question
             const vote = v.position ?? v.vote
             return (
               <div key={v.id} className="px-6 py-4">

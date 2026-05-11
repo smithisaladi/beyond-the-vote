@@ -13,7 +13,7 @@ import numpy as np
 import structlog
 from pathlib import Path
 
-from shared.db import upsert, get_supabase, get_conn
+from shared.db import upsert, get_conn
 from shared.embeddings import get_model, embed_texts
 
 log = structlog.get_logger()

@@ -13,12 +13,14 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthPathnameRouteImport } from './routes/auth/$pathname'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedRepresentativesIndexRouteImport } from './routes/_authenticated/representatives/index'
 import { Route as AuthenticatedDonorsIndexRouteImport } from './routes/_authenticated/donors/index'
 import { Route as AuthenticatedBillsIndexRouteImport } from './routes/_authenticated/bills/index'
 import { Route as AuthenticatedRepresentativesIdRouteImport } from './routes/_authenticated/representatives/$id'
 import { Route as AuthenticatedDonorsCmteIdRouteImport } from './routes/_authenticated/donors/$cmteId'
-import { Route as AuthenticatedBillsBillIdRouteImport } from './routes/_authenticated/bills/$billId'
+import { Route as AuthenticatedBillsBillIdIndexRouteImport } from './routes/_authenticated/bills/$billId/index'
+import { Route as AuthenticatedBillsBillIdVotesVoteIdRouteImport } from './routes/_authenticated/bills/$billId/votes/$voteId'
 
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
@@ -37,6 +39,11 @@ const AuthPathnameRoute = AuthPathnameRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRepresentativesIndexRoute =
@@ -68,83 +75,101 @@ const AuthenticatedDonorsCmteIdRoute =
     path: '/donors/$cmteId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedBillsBillIdRoute =
-  AuthenticatedBillsBillIdRouteImport.update({
-    id: '/bills/$billId',
-    path: '/bills/$billId',
+const AuthenticatedBillsBillIdIndexRoute =
+  AuthenticatedBillsBillIdIndexRouteImport.update({
+    id: '/bills/$billId/',
+    path: '/bills/$billId/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBillsBillIdVotesVoteIdRoute =
+  AuthenticatedBillsBillIdVotesVoteIdRouteImport.update({
+    id: '/bills/$billId/votes/$voteId',
+    path: '/bills/$billId/votes/$voteId',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/home': typeof AuthenticatedHomeRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/bills/$billId': typeof AuthenticatedBillsBillIdRoute
   '/donors/$cmteId': typeof AuthenticatedDonorsCmteIdRoute
   '/representatives/$id': typeof AuthenticatedRepresentativesIdRoute
   '/bills/': typeof AuthenticatedBillsIndexRoute
   '/donors/': typeof AuthenticatedDonorsIndexRoute
   '/representatives/': typeof AuthenticatedRepresentativesIndexRoute
+  '/bills/$billId/': typeof AuthenticatedBillsBillIdIndexRoute
+  '/bills/$billId/votes/$voteId': typeof AuthenticatedBillsBillIdVotesVoteIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/home': typeof AuthenticatedHomeRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/bills/$billId': typeof AuthenticatedBillsBillIdRoute
   '/donors/$cmteId': typeof AuthenticatedDonorsCmteIdRoute
   '/representatives/$id': typeof AuthenticatedRepresentativesIdRoute
   '/bills': typeof AuthenticatedBillsIndexRoute
   '/donors': typeof AuthenticatedDonorsIndexRoute
   '/representatives': typeof AuthenticatedRepresentativesIndexRoute
+  '/bills/$billId': typeof AuthenticatedBillsBillIdIndexRoute
+  '/bills/$billId/votes/$voteId': typeof AuthenticatedBillsBillIdVotesVoteIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/auth/$pathname': typeof AuthPathnameRoute
-  '/_authenticated/bills/$billId': typeof AuthenticatedBillsBillIdRoute
   '/_authenticated/donors/$cmteId': typeof AuthenticatedDonorsCmteIdRoute
   '/_authenticated/representatives/$id': typeof AuthenticatedRepresentativesIdRoute
   '/_authenticated/bills/': typeof AuthenticatedBillsIndexRoute
   '/_authenticated/donors/': typeof AuthenticatedDonorsIndexRoute
   '/_authenticated/representatives/': typeof AuthenticatedRepresentativesIndexRoute
+  '/_authenticated/bills/$billId/': typeof AuthenticatedBillsBillIdIndexRoute
+  '/_authenticated/bills/$billId/votes/$voteId': typeof AuthenticatedBillsBillIdVotesVoteIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/home'
     | '/settings'
     | '/auth/$pathname'
-    | '/bills/$billId'
     | '/donors/$cmteId'
     | '/representatives/$id'
     | '/bills/'
     | '/donors/'
     | '/representatives/'
+    | '/bills/$billId/'
+    | '/bills/$billId/votes/$voteId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/home'
     | '/settings'
     | '/auth/$pathname'
-    | '/bills/$billId'
     | '/donors/$cmteId'
     | '/representatives/$id'
     | '/bills'
     | '/donors'
     | '/representatives'
+    | '/bills/$billId'
+    | '/bills/$billId/votes/$voteId'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_authenticated/home'
     | '/_authenticated/settings'
     | '/auth/$pathname'
-    | '/_authenticated/bills/$billId'
     | '/_authenticated/donors/$cmteId'
     | '/_authenticated/representatives/$id'
     | '/_authenticated/bills/'
     | '/_authenticated/donors/'
     | '/_authenticated/representatives/'
+    | '/_authenticated/bills/$billId/'
+    | '/_authenticated/bills/$billId/votes/$voteId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,6 +208,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/representatives/': {
       id: '/_authenticated/representatives/'
       path: '/representatives'
@@ -218,35 +250,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDonorsCmteIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/bills/$billId': {
-      id: '/_authenticated/bills/$billId'
+    '/_authenticated/bills/$billId/': {
+      id: '/_authenticated/bills/$billId/'
       path: '/bills/$billId'
-      fullPath: '/bills/$billId'
-      preLoaderRoute: typeof AuthenticatedBillsBillIdRouteImport
+      fullPath: '/bills/$billId/'
+      preLoaderRoute: typeof AuthenticatedBillsBillIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/bills/$billId/votes/$voteId': {
+      id: '/_authenticated/bills/$billId/votes/$voteId'
+      path: '/bills/$billId/votes/$voteId'
+      fullPath: '/bills/$billId/votes/$voteId'
+      preLoaderRoute: typeof AuthenticatedBillsBillIdVotesVoteIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
   }
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedBillsBillIdRoute: typeof AuthenticatedBillsBillIdRoute
   AuthenticatedDonorsCmteIdRoute: typeof AuthenticatedDonorsCmteIdRoute
   AuthenticatedRepresentativesIdRoute: typeof AuthenticatedRepresentativesIdRoute
   AuthenticatedBillsIndexRoute: typeof AuthenticatedBillsIndexRoute
   AuthenticatedDonorsIndexRoute: typeof AuthenticatedDonorsIndexRoute
   AuthenticatedRepresentativesIndexRoute: typeof AuthenticatedRepresentativesIndexRoute
+  AuthenticatedBillsBillIdIndexRoute: typeof AuthenticatedBillsBillIdIndexRoute
+  AuthenticatedBillsBillIdVotesVoteIdRoute: typeof AuthenticatedBillsBillIdVotesVoteIdRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedBillsBillIdRoute: AuthenticatedBillsBillIdRoute,
   AuthenticatedDonorsCmteIdRoute: AuthenticatedDonorsCmteIdRoute,
   AuthenticatedRepresentativesIdRoute: AuthenticatedRepresentativesIdRoute,
   AuthenticatedBillsIndexRoute: AuthenticatedBillsIndexRoute,
   AuthenticatedDonorsIndexRoute: AuthenticatedDonorsIndexRoute,
   AuthenticatedRepresentativesIndexRoute:
     AuthenticatedRepresentativesIndexRoute,
+  AuthenticatedBillsBillIdIndexRoute: AuthenticatedBillsBillIdIndexRoute,
+  AuthenticatedBillsBillIdVotesVoteIdRoute:
+    AuthenticatedBillsBillIdVotesVoteIdRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(

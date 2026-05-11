@@ -19,18 +19,6 @@ export function ProfileSidebar({ stats, nextElectionYear, committees }: ProfileS
           </p>
         </div>
 
-        {stats.attendance !== null && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide">Attendance Rate</p>
-              <p className="text-sm font-medium text-[#1C1C1A]">{stats.attendance}%</p>
-            </div>
-            <div className="h-1.5 bg-[#E8E3DA] rounded-full overflow-hidden">
-              <div className="h-full bg-[#7B5E8A] rounded-full" style={{ width: `${stats.attendance}%` }} />
-            </div>
-          </div>
-        )}
-
         {stats.ideologyScore !== null && (
           <div>
             <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide mb-3 flex items-center gap-1">

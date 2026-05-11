@@ -234,10 +234,11 @@ def load_bills(bill_jsons: list[dict]) -> int:
              cosponsors=len(all_cosponsors), actions=len(all_actions))
 
     # Null out sponsor FKs that don't exist in legislators table (current-only DB)
-    from shared.db import get_supabase
-    client = get_supabase()
-    result = client.schema("congress").table("legislators").select("bioguide_id").execute()
-    valid_ids = {r["bioguide_id"] for r in result.data}
+    from shared.db import get_conn
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT bioguide_id FROM congress.legislators")
+    valid_ids = {r[0] for r in cur.fetchall()}
     nulled = 0
     for row in rows:
         if row.get("sponsor_bioguide_id") and row["sponsor_bioguide_id"] not in valid_ids:

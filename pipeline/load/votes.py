@@ -23,7 +23,8 @@ def transform_vote(data: dict) -> dict | None:
         return None
 
     chamber = _CHAMBER_MAP.get(chamber_code, chamber_code)
-    vote_id = f"{chamber.lower()}-{congress}-{number}"
+    session = data.get("session", "")
+    vote_id = f"{chamber.lower()}-{congress}-{session}-{number}"
 
     bill = data.get("bill")
     bill_id = None
@@ -102,11 +103,24 @@ def transform_positions(data: dict, vote_id: str) -> list[dict]:
     return positions
 
 
+def _build_lis_to_bioguide() -> dict[str, str]:
+    """Build LIS ID → bioguide_id mapping for Senate vote resolution."""
+    from shared.db import get_conn
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT lis_id, bioguide_id FROM congress.legislators WHERE lis_id IS NOT NULL")
+    return {r[0]: r[1] for r in cur.fetchall()}
+
+
 def load_votes(vote_jsons: list[dict]) -> tuple[int, int]:
     summaries = []
     all_positions = []
     seen_vote_ids = set()
     seen_position_keys = set()
+
+    # Build LIS → bioguide map for Senate vote resolution
+    lis_to_bioguide = _build_lis_to_bioguide()
+
     for data in vote_jsons:
         summary = transform_vote(data)
         if not summary:
@@ -115,20 +129,29 @@ def load_votes(vote_jsons: list[dict]) -> tuple[int, int]:
             continue
         seen_vote_ids.add(summary["id"])
         summaries.append(summary)
+
+        is_senate = data.get("chamber", "") == "s"
         positions = transform_positions(data, summary["id"])
+
         for pos in positions:
+            # Senate votes from usc-run use LIS IDs — resolve to bioguide
+            if is_senate and pos["bioguide_id"] in lis_to_bioguide:
+                pos["bioguide_id"] = lis_to_bioguide[pos["bioguide_id"]]
+
             key = (pos["vote_id"], pos["bioguide_id"])
             if key not in seen_position_keys:
                 seen_position_keys.add(key)
                 all_positions.append(pos)
+
     log.info("votes_transformed", summaries=len(summaries), positions=len(all_positions))
     s_count = upsert("bill_vote_summaries", summaries, on_conflict="id", schema="congress")
 
     # Filter positions to only include known legislators (FK constraint)
-    from shared.db import get_supabase
-    client = get_supabase()
-    result = client.schema("congress").table("legislators").select("bioguide_id").execute()
-    valid_ids = {r["bioguide_id"] for r in result.data}
+    from shared.db import get_conn
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT bioguide_id FROM congress.legislators")
+    valid_ids = {r[0] for r in cur.fetchall()}
     filtered_positions = [p for p in all_positions if p["bioguide_id"] in valid_ids]
     skipped = len(all_positions) - len(filtered_positions)
     if skipped > 0:

@@ -4,10 +4,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+from cachetools import TTLCache
 
 from app.deps import get_db
 
 router = APIRouter(prefix="/api/politicians", tags=["politicians"])
+
+# Cache top contributors for 24 hours (keyed by bioguide_id)
+_contributors_cache: TTLCache = TTLCache(maxsize=500, ttl=60 * 60 * 24)
 
 _IDEOLOGY_LIBERAL_THRESHOLD = -0.3
 _IDEOLOGY_CONSERVATIVE_THRESHOLD = 0.3
@@ -195,35 +199,52 @@ async def _get_sponsored_bills(db: AsyncSession, bioguide_id: str) -> list[dict]
 
 
 async def _get_funding(db: AsyncSession, bioguide_id: str) -> dict:
-    """Compute funding summary live from FEC tables."""
+    """Get funding summary from derived table (populated by pipeline)."""
     result = await db.execute(
         text("""
-        WITH fec_ids AS (
-            SELECT unnest(fec_ids) as cand_id FROM congress.legislators WHERE bioguide_id = :id
-        ),
-        pac_direct AS (
-            SELECT COALESCE(SUM(transaction_amt), 0) as total
-            FROM fec.pac_to_candidate
-            WHERE cand_id IN (SELECT cand_id FROM fec_ids)
-        ),
-        ie AS (
-            SELECT
-                COALESCE(SUM(CASE WHEN sup_opp = 'S' THEN transaction_amt ELSE 0 END), 0) as ie_for,
-                COALESCE(SUM(CASE WHEN sup_opp = 'O' THEN transaction_amt ELSE 0 END), 0) as ie_against
-            FROM fec.independent_expenditures
-            WHERE cand_id IN (SELECT cand_id FROM fec_ids)
-        )
-        SELECT pd.total as pac_direct_total, ie.ie_for as superpac_ie_for, ie.ie_against as superpac_ie_against
-        FROM pac_direct pd, ie
+        SELECT pac_direct_total, large_donor_total, small_donor_total,
+               superpac_ie_for, superpac_ie_against,
+               in_state_total, out_of_state_total, cycle
+        FROM derived.legislator_funding_summary
+        WHERE bioguide_id = :id
+        ORDER BY cycle DESC LIMIT 1
         """),
         {"id": bioguide_id})
     row = result.mappings().first()
     if not row:
         return {}
+
+    pac = float(row.get("pac_direct_total") or 0)
+    large = float(row.get("large_donor_total") or 0)
+    small = float(row.get("small_donor_total") or 0)
+    ie_for = float(row.get("superpac_ie_for") or 0)
+    ie_against = float(row.get("superpac_ie_against") or 0)
+    in_state = float(row.get("in_state_total") or 0)
+    out_of_state = float(row.get("out_of_state_total") or 0)
+    total = pac + large + small
+
+    def pct(v: float) -> float:
+        return round(v / total * 100, 1) if total > 0 else 0
+
+    indiv_total = in_state + out_of_state
+
     return {
-        "pacDirectTotal": float(row.get("pac_direct_total") or 0),
-        "superpacIeFor": float(row.get("superpac_ie_for") or 0),
-        "superpacIeAgainst": float(row.get("superpac_ie_against") or 0),
+        "pac": pac,
+        "pacPct": pct(pac),
+        "individualLarge": large,
+        "individualLargePct": pct(large),
+        "individualSmall": small,
+        "individualSmallPct": pct(small),
+        "other": 0,
+        "otherPct": 0,
+        "total": total,
+        "superPacFor": ie_for,
+        "superPacAgainst": ie_against,
+        "inStateTotal": in_state,
+        "outOfStateTotal": out_of_state,
+        "inStatePct": round(in_state / indiv_total * 100, 1) if indiv_total > 0 else 0,
+        "outOfStatePct": round(out_of_state / indiv_total * 100, 1) if indiv_total > 0 else 0,
+        "cycle": int(row.get("cycle") or 0),
     }
 
 
@@ -267,10 +288,39 @@ async def _get_top_pacs(db: AsyncSession, bioguide_id: str) -> list[dict]:
 
 
 async def _get_top_contributors(db: AsyncSession, bioguide_id: str) -> list[dict]:
-    """Top PAC contributors — same as top_pacs but formatted as contributors."""
-    # For now, return top PACs as contributors since individual contribution
-    # data isn't aggregated per-employer without the derived tables
-    return []
+    """Top employers/orgs: group PAC contributions by connected_org (parent organization)."""
+    if bioguide_id in _contributors_cache:
+        return _contributors_cache[bioguide_id]
+    result = await db.execute(
+        text("""
+        WITH fec_ids AS (
+            SELECT unnest(fec_ids) as cand_id FROM congress.legislators WHERE bioguide_id = :id
+        ),
+        pac_contributions AS (
+            SELECT p.cmte_id, p.transaction_amt
+            FROM fec.pac_to_candidate p
+            WHERE p.cand_id IN (SELECT cand_id FROM fec_ids)
+        ),
+        by_org AS (
+            SELECT COALESCE(NULLIF(cn.connected_org, ''), cn.cmte_name) as org_name,
+                   cn.cmte_id,
+                   SUM(pc.transaction_amt) as total
+            FROM pac_contributions pc
+            JOIN fec.cmte_names cn ON cn.cmte_id = pc.cmte_id
+            GROUP BY COALESCE(NULLIF(cn.connected_org, ''), cn.cmte_name), cn.cmte_id
+        )
+        SELECT org_name, cmte_id, total,
+               ROW_NUMBER() OVER (ORDER BY total DESC) as rank
+        FROM by_org
+        WHERE org_name IS NOT NULL
+        ORDER BY total DESC
+        LIMIT 10"""),
+        {"id": bioguide_id})
+    rows = [{"rank": int(r["rank"]), "orgName": r["org_name"], "total": f"${float(r['total']):,.0f}",
+              "cmteId": r.get("cmte_id")}
+             for r in result.mappings().all()]
+    _contributors_cache[bioguide_id] = rows
+    return rows
 
 
 def _ideology_label(score: float) -> str:

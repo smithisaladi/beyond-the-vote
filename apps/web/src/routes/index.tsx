@@ -1,8 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/components/auth/AuthContext";
-import DashboardPage from "@/components/dashboard/DashboardPage";
 import { LandingPage } from "@/components/landing/LandingPage";
-import { SidebarLayout } from "@/components/layout/SidebarLayout";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -10,20 +9,19 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && user) {
+      navigate({ to: "/home" });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading || user) {
     return (
-      <div style={{ background: "#F5F0E8", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <p style={{ color: "#1C1C1A", opacity: 0.5 }}>Loading...</p>
-      </div>
+      <div style={{ background: "#F5F0E8", minHeight: "100vh" }} />
     );
   }
 
-  if (!user) return <LandingPage />;
-
-  return (
-    <SidebarLayout>
-      <DashboardPage />
-    </SidebarLayout>
-  );
+  return <LandingPage />;
 }

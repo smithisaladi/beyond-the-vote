@@ -68,7 +68,7 @@ function IconChevronRight() {
 }
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',      href: '/',               icon: <IconHome /> },
+  { label: 'Home',            href: '/home',            icon: <IconHome /> },
   { label: 'My Politicians', href: '/representatives', icon: <IconUsers /> },
   { label: 'Bills Tracker',  href: '/bills',           icon: <IconFileText /> },
   { label: 'Donors',         href: '/donors',          icon: <IconDollarSign /> },
@@ -95,7 +95,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         style={{ minHeight: 64, padding: collapsed ? '0' : '0 16px' }}
       >
         {collapsed ? (
-          <Link to="/" aria-label="Beyond the Vote — home" className="flex items-center justify-center w-full">
+          <Link to="/home" aria-label="Beyond the Vote — home" className="flex items-center justify-center w-full">
             <span
               className="text-2xl font-bold tracking-tight select-none leading-none"
               style={{ fontFamily: 'var(--font-serif)' }}
@@ -105,7 +105,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             </span>
           </Link>
         ) : (
-          <Link to="/" className="flex items-center justify-center w-full">
+          <Link to="/home" className="flex items-center justify-center w-full">
             <span
               className="text-xl font-semibold text-[#1C1C1A] tracking-tight whitespace-nowrap"
               style={{ fontFamily: 'var(--font-serif)' }}
@@ -119,7 +119,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       {/* Nav links */}
       <nav className="flex-1 py-4 flex flex-col gap-0.5" style={{ paddingLeft: collapsed ? 0 : 8, paddingRight: collapsed ? 0 : 8 }}>
         {NAV_ITEMS.map((item) => {
-          const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+          const active = pathname === item.href || (item.href !== '/home' && pathname.startsWith(item.href))
           if (collapsed) {
             return (
               <Link

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import structlog
 
-from shared.db import upsert, get_supabase, get_conn
+from shared.db import upsert, get_conn
 from enrich.opensecrets import load_org_lookup, load_crp_categories, _normalize_for_lookup
 
 log = structlog.get_logger()
@@ -141,21 +141,23 @@ def run_industry_classification_combined(data_dir: Path) -> int:
     crp_categories = load_crp_categories(data_dir)
     org_lookup = load_org_lookup(data_dir)
 
-    client = get_supabase()
+    import psycopg2.extras
+
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     # Get all canonical employers
-    result = client.schema("enrichment").table("employer_canonical").select(
-        "canonical_employer_id, canonical_name"
-    ).execute()
+    cur.execute("SELECT canonical_employer_id, canonical_name FROM enrichment.employer_canonical")
+    result_data = [dict(r) for r in cur.fetchall()]
 
-    if not result.data:
+    if not result_data:
         log.warning("no_employers_to_classify")
         return 0
 
     # Deduplicate
     seen = set()
     to_classify = []
-    for row in result.data:
+    for row in result_data:
         if row["canonical_employer_id"] not in seen:
             seen.add(row["canonical_employer_id"])
             to_classify.append(row)

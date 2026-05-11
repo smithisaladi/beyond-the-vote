@@ -1,9 +1,9 @@
 
 
-import { use, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react'
-import { usePacDetail } from '@/hooks/queries/useDonors'
+import { usePacDetail, useGeneratePacSummary } from '@/hooks/queries/useDonors'
 interface PacDetailRecipient {
   bioguideId: string
   name: string
@@ -15,7 +15,6 @@ interface PacDetailRecipient {
   ieFor: number
   type: string
 }
-import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
@@ -157,8 +156,17 @@ type PartyFilter = 'all' | Party
 
 export default function PacDetailPage({ cmteId }: { cmteId: string }) {
   const { data: pac, isLoading: loading, error: _pacError } = usePacDetail(cmteId)
-  const summaryLoading = false
+  const summaryMutation = useGeneratePacSummary(cmteId)
   const error = _pacError ? String(_pacError) : null
+
+  // Trigger AI summary generation on demand when PAC loads without one
+  useEffect(() => {
+    if (pac && !pac.summary && !summaryMutation.isPending && !summaryMutation.isSuccess && !summaryMutation.isError) {
+      summaryMutation.mutate()
+    }
+  }, [pac?.summary, pac != null])
+
+  const summaryLoading = summaryMutation.isPending
 
   const [sortKey, setSortKey] = useState<SortKey>('amount')
   const [partyFilter, setPartyFilter] = useState<PartyFilter>('all')
@@ -229,7 +237,6 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
       <DotGridBackground id="dot-grid-pac-detail" />
 
       <div className="relative z-10 flex flex-col flex-1">
-        <PageHeader title="Donors" />
         <main className="flex-1 px-6 pt-10 pb-8">
 
           {loading ? (

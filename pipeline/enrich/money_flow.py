@@ -3,7 +3,9 @@
 from pathlib import Path
 import networkx as nx
 import structlog
-from shared.db import upsert, get_supabase
+import psycopg2.extras
+
+from shared.db import upsert, get_conn
 from shared.parquet import duckdb_connect
 
 log = structlog.get_logger()
@@ -124,8 +126,9 @@ def extract_pac_transfers(parquet_path: Path) -> list[dict]:
 
 
 def run_money_flow(parquet_path: Path, cycle: int, max_depth: int = 3) -> int:
-    client = get_supabase()
-    client.schema("analytics").table("money_flow_attribution").delete().eq("cycle", cycle).execute()
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("DELETE FROM analytics.money_flow_attribution WHERE cycle = %s", (cycle,))
 
     transfers = extract_pac_transfers(parquet_path)
     if not transfers:

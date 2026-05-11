@@ -6,7 +6,9 @@ import numpy as np
 import structlog
 from sklearn.cluster import AgglomerativeClustering
 
-from shared.db import upsert, get_supabase
+import psycopg2.extras
+
+from shared.db import upsert, get_conn
 from shared.embeddings import get_model, embed_texts
 from shared.parquet import read_parquet_batched
 
@@ -134,8 +136,9 @@ def cluster_block(donors: list[dict], model, threshold: float = 0.15) -> list[di
 
 def run_donor_resolution(parquet_path: Path, threshold: float = 0.15, block_batch_size: int = 10_000) -> int:
     # Clear previous results for this model version
-    client = get_supabase()
-    client.schema("enrichment").table("donor_canonical").delete().eq("model_version", MODEL_VERSION).execute()
+    conn = get_conn()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cur.execute("DELETE FROM enrichment.donor_canonical WHERE model_version = %s", (MODEL_VERSION,))
 
     model = get_model()
     donors = extract_donors_from_parquet(parquet_path)

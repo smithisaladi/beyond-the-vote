@@ -1,6 +1,7 @@
 
 
 import { useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { Modal } from './Modal'
 import { authClient } from '@/lib/auth/neon'
 import { useAuth } from '@/components/auth/AuthContext'
@@ -13,6 +14,7 @@ interface SignUpModalProps {
 
 export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
   const { refreshSession } = useAuth()
+  const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -35,6 +37,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
       } else {
         await refreshSession()
         onClose()
+        navigate({ to: '/home' })
       }
     } catch (err: any) {
       setError(err.message || 'Sign up failed')

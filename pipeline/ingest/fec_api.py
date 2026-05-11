@@ -221,6 +221,31 @@ def fetch_committees(
     return all_results
 
 
+def fetch_candidate_totals(candidate_ids: list[str], cycle: int = 2026) -> list[dict]:
+    """Fetch candidate financial totals from the FEC API.
+
+    Returns pre-computed totals including individual contributions,
+    PAC contributions, etc. for each candidate.
+    """
+    url = f"{BASE_URL}/candidates/totals/"
+    all_results = []
+
+    # Batch by 10 candidate IDs at a time
+    for i in range(0, len(candidate_ids), 10):
+        batch = candidate_ids[i:i + 10]
+        params = {
+            "candidate_id": batch,
+            "cycle": cycle,
+            "per_page": 100,
+        }
+        data = _rate_limited_get(url, params)
+        if data:
+            all_results.extend(data.get("results", []))
+
+    log.info("candidate_totals_fetched", total=len(all_results), cycle=cycle)
+    return all_results
+
+
 def transform_api_pac_contribution(record: dict, cycle: int) -> dict | None:
     """Transform an OpenFEC Schedule A record to our fec.pac_to_candidate schema."""
     sub_id = record.get("sub_id")
