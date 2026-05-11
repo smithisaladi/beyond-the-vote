@@ -1,0 +1,206 @@
+# apps/api/app/routers/politicians.py
+"""Politician endpoints: search + detail."""
+import asyncio
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.deps import get_db
+
+router = APIRouter(prefix="/api/politicians", tags=["politicians"])
+
+
+@router.get("/search")
+async def search_politicians(
+    q: str = Query(..., min_length=2),
+    db: AsyncSession = Depends(get_db),
+):
+    sql = """
+    SELECT l.bioguide_id, l.full_name, l.title, l.party, l.state, l.state_full,
+           l.district, l.photo_url, l.chamber, l.term_start,
+           ms.nominate_dim1
+    FROM congress.legislators l
+    LEFT JOIN congress.member_scores ms
+        ON ms.bioguide_id = l.bioguide_id
+        AND ms.congress = (SELECT MAX(congress) FROM congress.member_scores WHERE bioguide_id = l.bioguide_id)
+    WHERE l.full_name ILIKE :pattern OR l.last_name ILIKE :pattern
+    ORDER BY l.in_office DESC, l.full_name
+    LIMIT 10
+    """
+    result = await db.execute(text(sql), {"pattern": f"%{q}%"})
+    rows = result.mappings().all()
+
+    politicians = []
+    seen = set()
+    for r in rows:
+        if r["bioguide_id"] in seen:
+            continue
+        seen.add(r["bioguide_id"])
+        district_str = f"{r['district']}th District" if r.get("district") else None
+        politicians.append({
+            "id": r["bioguide_id"],
+            "bioguideId": r["bioguide_id"],
+            "name": r["full_name"],
+            "title": f"U.S. {r['title']}",
+            "party": r["party"],
+            "state": r["state"],
+            "district": district_str,
+            "photo": r.get("photo_url"),
+            "ideologyScore": float(r["nominate_dim1"]) if r.get("nominate_dim1") is not None else None,
+        })
+
+    return {"politicians": politicians}
+
+
+@router.get("/{bioguide_id}")
+async def politician_detail(bioguide_id: str, db: AsyncSession = Depends(get_db)):
+    results = await asyncio.gather(
+        _get_profile(db, bioguide_id),
+        _get_ideology(db, bioguide_id),
+        _get_committees(db, bioguide_id),
+        _get_recent_votes(db, bioguide_id),
+        _get_funding(db, bioguide_id),
+        _get_top_pacs(db, bioguide_id),
+        _get_top_contributors(db, bioguide_id),
+        return_exceptions=True,
+    )
+
+    profile = results[0] if not isinstance(results[0], Exception) else None
+    if not profile:
+        raise HTTPException(status_code=404, detail="Politician not found")
+
+    ideology = results[1] if not isinstance(results[1], Exception) else None
+    committees = results[2] if not isinstance(results[2], Exception) else []
+    votes = results[3] if not isinstance(results[3], Exception) else []
+    funding = results[4] if not isinstance(results[4], Exception) else {}
+    top_pacs = results[5] if not isinstance(results[5], Exception) else []
+    top_contributors = results[6] if not isinstance(results[6], Exception) else []
+
+    district_str = f"{profile['district']}th District" if profile.get("district") else None
+    years_in_office = None
+    if profile.get("term_start"):
+        from datetime import date
+        years_in_office = (date.today() - profile["term_start"]).days // 365
+
+    ideology_score = float(ideology["nominate_dim1"]) if ideology and ideology.get("nominate_dim1") is not None else None
+    ideology_label = _ideology_label(ideology_score) if ideology_score is not None else None
+
+    return {
+        "politician": {
+            "id": profile["bioguide_id"],
+            "bioguideId": profile["bioguide_id"],
+            "name": profile["full_name"],
+            "title": f"U.S. {profile['title']}",
+            "party": profile["party"],
+            "state": profile["state_full"],
+            "stateCode": profile["state"],
+            "district": district_str,
+            "since": str(profile["term_start"].year) if profile.get("term_start") else None,
+            "photo": profile.get("photo_url"),
+            "website": profile.get("website"),
+            "address": profile.get("address"),
+            "phone": profile.get("phone"),
+            "twitter": profile.get("twitter"),
+            "nextElectionYear": profile.get("next_election"),
+            "stats": {
+                "yearsInOffice": years_in_office,
+                "ideologyScore": ideology_score,
+                "ideologyLabel": ideology_label,
+            },
+            "votes": votes,
+            "committees": committees,
+            "pacDonors": top_pacs,
+            "topContributors": top_contributors,
+            "fundingBreakdown": funding,
+        }
+    }
+
+
+async def _get_profile(db: AsyncSession, bioguide_id: str) -> dict | None:
+    result = await db.execute(
+        text("SELECT * FROM congress.legislators WHERE bioguide_id = :id"), {"id": bioguide_id})
+    row = result.mappings().first()
+    return dict(row) if row else None
+
+
+async def _get_ideology(db: AsyncSession, bioguide_id: str) -> dict | None:
+    result = await db.execute(
+        text("SELECT * FROM congress.member_scores WHERE bioguide_id = :id ORDER BY congress DESC LIMIT 1"),
+        {"id": bioguide_id})
+    row = result.mappings().first()
+    return dict(row) if row else None
+
+
+async def _get_committees(db: AsyncSession, bioguide_id: str) -> list[dict]:
+    result = await db.execute(
+        text("""SELECT c.name, c.url, c.chamber, cm.role
+                FROM congress.committee_memberships cm
+                JOIN congress.committees c ON c.thomas_id = cm.committee_id
+                WHERE cm.bioguide_id = :id"""), {"id": bioguide_id})
+    return [{"name": r["name"], "url": r.get("url"), "chamber": r.get("chamber"), "title": r.get("role")}
+            for r in result.mappings().all()]
+
+
+async def _get_recent_votes(db: AsyncSession, bioguide_id: str) -> list[dict]:
+    result = await db.execute(
+        text("""SELECT vs.id, vs.date, vs.chamber, vs.question, vs.result,
+                       vs.yea_total, vs.nay_total, vs.bill_id, vp.position,
+                       b.title as bill_title
+                FROM congress.bill_vote_positions vp
+                JOIN congress.bill_vote_summaries vs ON vs.id = vp.vote_id
+                LEFT JOIN congress.bills b ON b.bill_id = vs.bill_id
+                WHERE vp.bioguide_id = :id
+                ORDER BY vs.date DESC LIMIT 50"""), {"id": bioguide_id})
+    return [{"date": str(r["date"]), "chamber": r["chamber"], "question": r.get("question"),
+             "result": r["result"], "position": r["position"], "billId": r.get("bill_id"),
+             "billTitle": r.get("bill_title")} for r in result.mappings().all()]
+
+
+async def _get_funding(db: AsyncSession, bioguide_id: str) -> dict:
+    result = await db.execute(
+        text("SELECT * FROM derived.legislator_funding_summary WHERE bioguide_id = :id ORDER BY cycle DESC"),
+        {"id": bioguide_id})
+    rows = result.mappings().all()
+    if not rows:
+        return {}
+    latest = dict(rows[0])
+    return {
+        "cycle": latest.get("cycle"),
+        "pacDirectTotal": float(latest.get("pac_direct_total") or 0),
+        "largeDonorTotal": float(latest.get("large_donor_total") or 0),
+        "smallDonorTotal": float(latest.get("small_donor_total") or 0),
+        "superpacIeFor": float(latest.get("superpac_ie_for") or 0),
+        "superpacIeAgainst": float(latest.get("superpac_ie_against") or 0),
+        "inStateTotal": float(latest.get("in_state_total") or 0),
+        "outOfStateTotal": float(latest.get("out_of_state_total") or 0),
+    }
+
+
+async def _get_top_pacs(db: AsyncSession, bioguide_id: str) -> list[dict]:
+    result = await db.execute(
+        text("""SELECT * FROM derived.legislator_top_pacs
+                WHERE bioguide_id = :id ORDER BY cycle DESC, total_support DESC LIMIT 20"""),
+        {"id": bioguide_id})
+    return [{"cmteId": r["cmte_id"], "cmteName": r.get("cmte_name"), "industry": r.get("industry"),
+             "directContribution": float(r.get("direct_contribution") or 0),
+             "ieFor": float(r.get("ie_for") or 0), "totalSupport": float(r.get("total_support") or 0)}
+            for r in result.mappings().all()]
+
+
+async def _get_top_contributors(db: AsyncSession, bioguide_id: str) -> list[dict]:
+    result = await db.execute(
+        text("""SELECT * FROM derived.legislator_top_contributors
+                WHERE bioguide_id = :id ORDER BY cycle DESC, grand_total DESC LIMIT 20"""),
+        {"id": bioguide_id})
+    return [{"orgName": r["org_name"], "individualTotal": float(r.get("individual_total") or 0),
+             "pacTotal": float(r.get("pac_total") or 0), "grandTotal": float(r.get("grand_total") or 0)}
+            for r in result.mappings().all()]
+
+
+def _ideology_label(score: float) -> str:
+    if score < -0.3:
+        return "Liberal"
+    elif score > 0.3:
+        return "Conservative"
+    return "Moderate"
