@@ -29,7 +29,8 @@ export function useBillDetail(billId: string) {
     queryFn: async () => {
       const resp = await apiFetch(`/api/bills/${billId}`);
       if (!resp.ok) throw new Error("Bill not found");
-      return resp.json();
+      const data = await resp.json();
+      return data.bill || data;
     },
     enabled: !!billId,
   });
