@@ -14,6 +14,8 @@ _session_factory = None
 
 
 def _get_session_factory():
+    # Note: Lazy initialization is safe for single-worker uvicorn.
+    # For multi-worker deployments, initialize in the lifespan handler.
     global _engine, _session_factory
     if _session_factory is None:
         _engine = get_engine(settings.async_database_url)

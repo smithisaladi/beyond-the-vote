@@ -1,6 +1,5 @@
 # apps/api/app/routers/politicians.py
 """Politician endpoints: search + detail."""
-import asyncio
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
@@ -55,27 +54,41 @@ async def search_politicians(
 
 @router.get("/{bioguide_id}")
 async def politician_detail(bioguide_id: str, db: AsyncSession = Depends(get_db)):
-    results = await asyncio.gather(
-        _get_profile(db, bioguide_id),
-        _get_ideology(db, bioguide_id),
-        _get_committees(db, bioguide_id),
-        _get_recent_votes(db, bioguide_id),
-        _get_funding(db, bioguide_id),
-        _get_top_pacs(db, bioguide_id),
-        _get_top_contributors(db, bioguide_id),
-        return_exceptions=True,
-    )
-
-    profile = results[0] if not isinstance(results[0], Exception) else None
+    profile = await _get_profile(db, bioguide_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Politician not found")
 
-    ideology = results[1] if not isinstance(results[1], Exception) else None
-    committees = results[2] if not isinstance(results[2], Exception) else []
-    votes = results[3] if not isinstance(results[3], Exception) else []
-    funding = results[4] if not isinstance(results[4], Exception) else {}
-    top_pacs = results[5] if not isinstance(results[5], Exception) else []
-    top_contributors = results[6] if not isinstance(results[6], Exception) else []
+    ideology = None
+    committees = []
+    votes = []
+    funding = {}
+    top_pacs = []
+    top_contributors = []
+
+    try:
+        ideology = await _get_ideology(db, bioguide_id)
+    except Exception:
+        pass
+    try:
+        committees = await _get_committees(db, bioguide_id)
+    except Exception:
+        pass
+    try:
+        votes = await _get_recent_votes(db, bioguide_id)
+    except Exception:
+        pass
+    try:
+        funding = await _get_funding(db, bioguide_id)
+    except Exception:
+        pass
+    try:
+        top_pacs = await _get_top_pacs(db, bioguide_id)
+    except Exception:
+        pass
+    try:
+        top_contributors = await _get_top_contributors(db, bioguide_id)
+    except Exception:
+        pass
 
     district_str = f"{profile['district']}th District" if profile.get("district") else None
     years_in_office = None

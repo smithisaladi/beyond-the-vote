@@ -19,7 +19,7 @@ class Legislator(Base):
 
     bioguide_id: Mapped[str] = mapped_column(Text, primary_key=True)
     lis_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    icpsr_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    icpsr_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     govtrack_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     thomas_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     fec_ids: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)

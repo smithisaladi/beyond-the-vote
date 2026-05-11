@@ -52,6 +52,9 @@ async def validate_token(token: str) -> dict:
             jwks = await _get_jwks()
             payload = jwt.decode(token, jwks, algorithms=["RS256"], options={"verify_aud": False})
             return payload
-        except (JWTError, httpx.HTTPError):
-            pass
+        except httpx.HTTPError:
+            pass  # Network error — fall back to secret
+        except JWTError:
+            # Token validation failed with JWKS — don't silently fall back
+            raise ValueError("Invalid token")
     return decode_jwt(token)

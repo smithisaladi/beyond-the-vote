@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     debug: bool = False
     supabase_jwt_issuer: str = ""
     rate_limit: str = "60/minute"
+    cors_origins: str = "http://localhost:5173,http://localhost:3000"
     geocodio_api_key: str = ""
     anthropic_api_key: str = ""
 

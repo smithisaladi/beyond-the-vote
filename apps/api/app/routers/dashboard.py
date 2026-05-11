@@ -8,30 +8,60 @@ from app.deps import get_db, get_current_user
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 @router.get("/followed")
-async def get_followed(db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+async def get_followed(
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
     user_id = str(user["user_id"])
-    sql = """SELECT l.bioguide_id, l.full_name, l.title, l.party, l.state, l.state_full, l.district, l.photo_url
-    FROM app.followed_politicians fp JOIN congress.legislators l ON l.bioguide_id = fp.politician_id
-    WHERE fp.user_id = :user_id ORDER BY l.full_name"""
+
+    sql = """
+    WITH followed AS (
+        SELECT politician_id FROM app.followed_politicians WHERE user_id = :user_id
+    ),
+    latest_votes AS (
+        SELECT DISTINCT ON (vp.bioguide_id)
+            vp.bioguide_id,
+            vs.bill_id, vs.question, vs.date, vp.position, b.title as bill_title
+        FROM congress.bill_vote_positions vp
+        JOIN congress.bill_vote_summaries vs ON vs.id = vp.vote_id
+        LEFT JOIN congress.bills b ON b.bill_id = vs.bill_id
+        WHERE vp.bioguide_id IN (SELECT politician_id FROM followed)
+        ORDER BY vp.bioguide_id, vs.date DESC
+    )
+    SELECT l.bioguide_id, l.full_name, l.title, l.party, l.state, l.state_full,
+           l.district, l.photo_url,
+           lv.bill_id, lv.question, lv.date as vote_date, lv.position, lv.bill_title
+    FROM followed f
+    JOIN congress.legislators l ON l.bioguide_id = f.politician_id
+    LEFT JOIN latest_votes lv ON lv.bioguide_id = l.bioguide_id
+    ORDER BY l.full_name
+    """
     result = await db.execute(text(sql), {"user_id": user_id})
-    legislators = result.mappings().all()
+    rows = result.mappings().all()
+
     politicians = []
-    for r in legislators:
-        vote_sql = """SELECT vs.bill_id, vs.question, vs.date, vp.position, b.title as bill_title
-        FROM congress.bill_vote_positions vp JOIN congress.bill_vote_summaries vs ON vs.id = vp.vote_id
-        LEFT JOIN congress.bills b ON b.bill_id = vs.bill_id WHERE vp.bioguide_id = :bio_id
-        ORDER BY vs.date DESC LIMIT 1"""
-        vote_result = await db.execute(text(vote_sql), {"bio_id": r["bioguide_id"]})
-        latest_vote = vote_result.mappings().first()
+    for r in rows:
         district_str = f"{r['district']}th District" if r.get("district") else None
-        entry = {"id": r["bioguide_id"], "name": r["full_name"], "title": f"U.S. {r['title']}",
-                 "party": r["party"], "state": r["state_full"], "photo": r.get("photo_url"),
-                 "district": district_str, "latestVote": None}
-        if latest_vote:
-            entry["latestVote"] = {"billId": latest_vote.get("bill_id"), "billTitle": latest_vote.get("bill_title"),
-                                   "date": str(latest_vote["date"]), "vote": latest_vote["position"],
-                                   "question": latest_vote.get("question")}
+        entry = {
+            "id": r["bioguide_id"],
+            "name": r["full_name"],
+            "title": f"U.S. {r['title']}",
+            "party": r["party"],
+            "state": r["state_full"],
+            "photo": r.get("photo_url"),
+            "district": district_str,
+            "latestVote": None,
+        }
+        if r.get("vote_date"):
+            entry["latestVote"] = {
+                "billId": r.get("bill_id"),
+                "billTitle": r.get("bill_title"),
+                "date": str(r["vote_date"]),
+                "vote": r["position"],
+                "question": r.get("question"),
+            }
         politicians.append(entry)
+
     return {"politicians": politicians}
 
 @router.get("/tracked-bills")

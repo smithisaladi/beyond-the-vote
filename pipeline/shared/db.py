@@ -1,4 +1,5 @@
 import os
+from datetime import datetime, timezone
 from supabase import create_client, Client
 import structlog
 
@@ -87,7 +88,7 @@ def log_run_end(
     client = get_supabase()
     update = {
         "status": status,
-        "finished_at": "now()",
+        "finished_at": datetime.now(timezone.utc).isoformat(),
         "rows_processed": rows_processed,
     }
     if error_detail:
