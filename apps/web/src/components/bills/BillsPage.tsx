@@ -44,7 +44,7 @@ function BillsContent() {
   const _toggleTrack = (_billId: string) => {}
 
   const { data, isLoading: billsLoading, error: _billsError, refetch } = useBills({ q: debouncedQuery, sort })
-  const bills = data ?? []
+  const bills = data?.bills ?? []
   const billsError = _billsError ? String(_billsError) : null
   // TODO: port pagination
   const loadingMore = false
