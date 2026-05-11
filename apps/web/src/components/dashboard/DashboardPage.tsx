@@ -5,10 +5,10 @@ import { Link } from '@tanstack/react-router'
 import { LogOut, UserMinus } from 'lucide-react'
 import type { User } from '@supabase/supabase-js'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
-import { useAuth } from '@/hooks/useAuth'
-import { useDashboard } from '@/hooks/useDashboard'
-import { useActivitySeen } from '@/hooks/useActivitySeen'
-import { useUnfollowPolitician } from '@/hooks/useUnfollowPolitician'
+import { useAuth } from '@/components/auth/AuthContext'
+// TODO: port useDashboard hook
+// TODO: port useActivitySeen hook
+// TODO: port useUnfollowPolitician hook
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { Card } from '@/components/ui/Card'
@@ -48,23 +48,23 @@ function formatToday(): string {
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth()
-  const {
-    followedPoliticians: politicians,
-    trackedBillDetails: trackedBills,
-    activity: activityFeed,
-    loading,
-  } = useDashboard(user)
+  // TODO: port useDashboard hook — stubbed for now
+  const politicians: any[] = []
+  const trackedBills: any[] = []
+  const activityFeed: any[] = []
+  const loading = false
 
   const [photoErrors, setPhotoErrors] = useState<Set<string>>(new Set())
-  const { unfollowing, handleUnfollow, filterUnfollowed } = useUnfollowPolitician(user?.id)
+  // TODO: port useUnfollowPolitician hook — stubbed for now
+  const unfollowing = new Set<string>()
+  const handleUnfollow = (_id: string) => {}
+  const filterUnfollowed = (pols: any[]) => pols
 
-  // Filter out unfollowed politicians optimistically (no page reload needed)
   const visiblePoliticians = filterUnfollowed(politicians)
 
-  // Track which activity items the user hasn't seen yet. Uses the full feed
-  // (not the filtered view) so switching tabs doesn't change the "seen" cursor.
-  const maxActivityTimestamp = useMemo(() => activityFeed.reduce((acc, a) => Math.max(acc, a.timestamp), 0), [activityFeed])
-  const { isNew } = useActivitySeen(user, maxActivityTimestamp)
+  const maxActivityTimestamp = useMemo(() => activityFeed.reduce((acc: number, a: any) => Math.max(acc, a.timestamp), 0), [activityFeed])
+  // TODO: port useActivitySeen hook — stubbed for now
+  const isNew = (_timestamp: number) => false
 
   return (
     <div className="relative flex-1 flex flex-col min-h-screen overflow-hidden">

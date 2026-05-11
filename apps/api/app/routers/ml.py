@@ -124,6 +124,8 @@ async def vote_prediction(
     policy = (bill.get("policy_area") or "").lower()
     is_health = 1.0 if "health" in policy else 0.0
 
+    # Feature vector must match pipeline/enrich/vote_prediction.py FEATURE_NAMES:
+    # ["nominate_dim1", "nominate_dim2", "same_party", "topic_count", "is_policy_health"]
     features = [dim1, dim2, same_party, topic_count, is_health]
 
     prediction = predict_vote(congress, features)

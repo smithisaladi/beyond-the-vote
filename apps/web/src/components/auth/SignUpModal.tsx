@@ -1,7 +1,8 @@
 
 
+import { useState } from 'react'
 import { Modal } from './Modal'
-import { useSignUpForm } from '@/hooks/useSignUpForm'
+// TODO: port useSignUpForm hook
 
 interface SignUpModalProps {
   isOpen: boolean
@@ -10,17 +11,16 @@ interface SignUpModalProps {
 }
 
 export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalProps) {
-  const {
-    name, setName,
-    email, setEmail,
-    password, setPassword,
-    confirmPassword, setConfirmPassword,
-    error,
-    loading,
-    handleClose,
-    handleSubmit,
-    handleGoogleSignUp,
-  } = useSignUpForm(onClose)
+  // TODO: port useSignUpForm hook — stubbed for now
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [error] = useState('')
+  const [loading] = useState(false)
+  const handleClose = () => { onClose() }
+  const handleSubmit = async (e: React.FormEvent) => { e.preventDefault() }
+  const handleGoogleSignUp = async () => {}
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>

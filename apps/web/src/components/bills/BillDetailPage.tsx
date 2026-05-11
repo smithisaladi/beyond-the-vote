@@ -4,9 +4,11 @@ import { useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
-import { useAuth } from '@/hooks/useAuth'
-import { useTrackedBills } from '@/hooks/useTrackedBills'
-import { useFetchBillDetail, type BillDetail } from '@/hooks/useFetchBillDetail'
+import { useAuth } from '@/components/auth/AuthContext'
+import { useTrackedBills } from '@/hooks/queries/useDashboard'
+import { useBillDetail } from '@/hooks/queries/useBills'
+// TODO: define BillDetail type properly
+type BillDetail = any
 import { PARTY_STYLES, STATUS_STYLES, getPartyStyle } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
 import { formatDate, formatShortDate } from '@/lib/format'
@@ -83,7 +85,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
   const [showAllCosponsors, setShowAllCosponsors] = useState(false)
 
   const { user } = useAuth()
-  const { bill, loading, error } = useFetchBillDetail(id, initialBill)
+  const { bill, loading, error } = useBillDetail(id, initialBill)
   const { trackedBills, toggleTrack } = useTrackedBills(user?.id ?? null)
   const tracked = trackedBills.has(id)
 

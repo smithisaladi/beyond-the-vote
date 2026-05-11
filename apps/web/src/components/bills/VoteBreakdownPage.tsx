@@ -9,8 +9,10 @@ import { formatDate } from '@/lib/format'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton as SkeletonBox } from '@/components/ui/Skeleton'
-import { useFetchBillDetail } from '@/hooks/useFetchBillDetail'
-import type { Vote, MemberPosition } from '@/hooks/useFetchBillDetail'
+import { useBillDetail } from '@/hooks/queries/useBills'
+// TODO: define Vote and MemberPosition types properly
+type Vote = any
+type MemberPosition = any
 import type { Party } from '@/lib/types'
 
 const FILTERS = ['All', 'Yea', 'Nay', 'Not Voting'] as const
@@ -322,7 +324,7 @@ export default function VoteBreakdownPage({ params }: { params: Promise<{ id: st
   const searchParams = useSearchParams()
   const fromParam = searchParams.get('from')
   const billBackHref = `/bills/${id}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`
-  const { bill, loading, error } = useFetchBillDetail(id)
+  const { bill, loading, error } = useBillDetail(id)
 
   const vote = bill?.votes.find(v => v.id === decodeURIComponent(voteId)) ?? null
 

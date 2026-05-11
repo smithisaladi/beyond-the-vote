@@ -3,7 +3,9 @@
 import { use, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react'
-import { useFetchPacDetail, type PacDetailRecipient } from '@/hooks/useFetchPacDetail'
+import { usePacDetail } from '@/hooks/queries/useDonors'
+// TODO: define PacDetailRecipient type properly
+type PacDetailRecipient = any
 import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -145,7 +147,9 @@ type PartyFilter = 'all' | Party
 
 export default function PacDetailPage({ params }: { params: Promise<{ cmteId: string }> }) {
   const { cmteId } = use(params)
-  const { pac, loading, summaryLoading, error } = useFetchPacDetail(cmteId)
+  const { data: pac, isLoading: loading, error: _pacError } = usePacDetail(cmteId)
+  const summaryLoading = false
+  const error = _pacError ? String(_pacError) : null
 
   const [sortKey, setSortKey] = useState<SortKey>('amount')
   const [partyFilter, setPartyFilter] = useState<PartyFilter>('all')

@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import type { ActivityItem } from '@/hooks/useDashboard'
+// TODO: define ActivityItem type properly
+type ActivityItem = any
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 

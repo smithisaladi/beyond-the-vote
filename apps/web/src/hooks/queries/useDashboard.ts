@@ -1,12 +1,9 @@
 // apps/web/src/hooks/queries/useDashboard.ts
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/lib/auth/supabase";
+import { apiFetch } from "@/lib/api/fetch";
 
 async function authFetch(url: string) {
-  const { data } = await supabase.auth.getSession();
-  const resp = await fetch(url, {
-    headers: { Authorization: `Bearer ${data.session?.access_token}` },
-  });
+  const resp = await apiFetch(url);
   if (!resp.ok) throw new Error(`Failed: ${url}`);
   return resp.json();
 }

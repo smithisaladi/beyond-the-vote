@@ -1,7 +1,18 @@
 
 
 import type { User } from '@supabase/supabase-js'
-import type { BillFiltersState } from '@/hooks/useBillFilters'
+// TODO: port useBillFilters hook — type defined inline for now
+interface BillFiltersState {
+  query: string; setQuery: (q: string) => void; debouncedQuery: string;
+  selectedStatuses: Set<string>; toggleStatus: (s: string) => void;
+  selectedTopics: Set<string>; toggleTopic: (t: string) => void;
+  dateFilter: string; setDateFilter: (d: string) => void;
+  sort: string; setSort: (s: string) => void;
+  showTrackedOnly: boolean; setShowTrackedOnly: (fn: (prev: boolean) => boolean) => void;
+  hasFilters: boolean; clearAll: () => void;
+  openDropdown: string | null; setOpenDropdown: (d: string | null) => void;
+  dropdownRef: React.RefObject<HTMLDivElement | null>;
+}
 import type { Topic } from '@/lib/topics'
 import type { BillStatus as Status } from '@/lib/types'
 import { ALL_TOPICS } from '@/lib/topics'

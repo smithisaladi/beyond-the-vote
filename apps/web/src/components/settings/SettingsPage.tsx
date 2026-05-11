@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect } from 'react'
-import { useAccountSettings } from '@/hooks/useAccountSettings'
+// TODO: port useAccountSettings hook
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 
@@ -45,15 +45,14 @@ function DeleteModal({ onConfirm, onCancel, loading }: {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  const {
-    user,
-    displayName, setDisplayName,
-    updateName,
-    changePassword,
-    signOut,
-    name: nameState,
-    password: passwordState,
-  } = useAccountSettings()
+  // TODO: port useAccountSettings hook — stubbed for now
+  const user = null as any
+  const [displayName, setDisplayName] = useState('')
+  const updateName = async (e: React.FormEvent) => { e.preventDefault() }
+  const changePassword = async (_newPw: string, _confirmPw: string) => {}
+  const signOut = async () => {}
+  const nameState = { loading: false, error: '', success: false }
+  const passwordState = { loading: false, error: '', success: false }
 
   // Password fields (transient form state — not persisted)
   const [currentPassword, setCurrentPassword] = useState('')

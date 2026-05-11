@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import List, Optional
 
 from sqlalchemy import ARRAY, Boolean, Date, DateTime, ForeignKey, Integer, SmallInteger, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -88,6 +88,7 @@ class Bill(Base):
     referenced_agencies: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
     referenced_laws: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
     referenced_usc: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
+    search_vector = mapped_column(TSVECTOR, nullable=True)
     synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     sponsor: Mapped[Optional["Legislator"]] = relationship("Legislator", back_populates="bills")

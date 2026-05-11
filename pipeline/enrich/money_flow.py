@@ -33,11 +33,17 @@ def trace_money_flow(graph: nx.DiGraph, entity_id: str, direction: str = "inboun
         while queue:
             current, path, depth = queue.pop(0)
             if depth > 0:
-                amount = _compute_attribution(graph, path + [current], entity_id)
+                # path is destination-first: [entity_id, intermediate..., current]
+                # Reverse to get origin-first path for _compute_attribution: [current, ..., last_hop]
+                # Drop the last element after reversing because that's entity_id (the destination),
+                # which must NOT be included in the path per _compute_attribution's contract.
+                reversed_full = list(reversed(path + [current]))
+                origin_first_path = reversed_full[:-1]  # exclude destination from path
+                amount = _compute_attribution(graph, origin_first_path, entity_id)
                 flows.append({
                     "destination_committee_id": entity_id, "origin_entity_id": current,
                     "origin_entity_type": "pac", "attributed_amount": amount,
-                    "hop_count": depth, "path": path + [current], "model_version": MODEL_VERSION,
+                    "hop_count": depth, "path": origin_first_path, "model_version": MODEL_VERSION,
                 })
             if depth < max_depth:
                 for pred in graph.predecessors(current):
@@ -66,24 +72,39 @@ def trace_money_flow(graph: nx.DiGraph, entity_id: str, direction: str = "inboun
     return flows
 
 
-def _compute_attribution(graph: nx.DiGraph, path: list[str], destination: str) -> float:
-    # path is stored destination-first (e.g. [dest, intermediate..., origin]).
-    # Reverse to get the forward origin-to-destination chain.
-    if len(path) < 2:
+def _compute_attribution(
+    graph: nx.DiGraph,
+    path: list[str],
+    destination: str,
+) -> float:
+    """Compute weighted attribution along a path to the destination.
+
+    Path is origin-first: [origin, ..., last_hop_node].
+    The destination is NOT in the path.
+    Attribution = direct_edge_weight * product of (edge_weight / total_outflow) along intermediate hops.
+    """
+    if not path:
         return 0.0
-    forward = list(reversed(path))
-    # forward[0] is the origin, forward[-1] is the destination
-    amount = graph[forward[-2]][forward[-1]]["weight"] if graph.has_edge(forward[-2], forward[-1]) else 0.0
-    if amount == 0.0:
+
+    # The last node in path connects directly to destination
+    last_node = path[-1]
+    if not graph.has_edge(last_node, destination):
         return 0.0
-    for i in range(len(forward) - 2):
-        src, dst = forward[i], forward[i + 1]
+
+    # Start with the direct contribution from last_node to destination
+    amount = graph[last_node][destination]["weight"]
+
+    # Walk backwards through intermediate nodes, applying proportional attribution
+    for i in range(len(path) - 1, 0, -1):
+        src = path[i - 1]
+        dst = path[i]
         if not graph.has_edge(src, dst):
             return 0.0
         edge_weight = graph[src][dst]["weight"]
         total_outflow = sum(graph[src][succ]["weight"] for succ in graph.successors(src))
         if total_outflow > 0:
             amount *= edge_weight / total_outflow
+
     return round(amount, 2)
 
 

@@ -2,10 +2,10 @@
 
 import { Suspense } from 'react'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
-import { useAuth } from '@/hooks/useAuth'
-import { useBillFilters } from '@/hooks/useBillFilters'
-import { useFetchBills, type BillFilters as BillFiltersType } from '@/hooks/useFetchBills'
-import { useTrackedBills } from '@/hooks/useTrackedBills'
+import { useAuth } from '@/components/auth/AuthContext'
+// TODO: port useBillFilters hook — using inline state for now
+import { useBills } from '@/hooks/queries/useBills'
+import { useTrackedBills } from '@/hooks/queries/useDashboard'
 import { topicToSlug } from '@/lib/topics'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -38,7 +38,7 @@ function BillsContent() {
   const {
     bills, loading: billsLoading, error: billsError,
     loadingMore, loadMore, hasMore, refetch,
-  } = useFetchBills(debouncedQuery, fetchFilters)
+  } = useBills(debouncedQuery, fetchFilters)
 
   const handleToggleTrack = (billId: string) => {
     if (!user) { openSignIn(); return }

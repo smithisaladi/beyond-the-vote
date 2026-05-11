@@ -3,7 +3,8 @@
 import { Link } from '@tanstack/react-router'
 import { PARTY_STYLES, resultBadge } from '@/lib/ui'
 import { formatShortDate } from '@/lib/format'
-import type { Vote } from '@/hooks/useFetchBillDetail'
+// TODO: define Vote type properly
+type Vote = any
 
 
 function VoteEntryContent({ vote }: { vote: Vote }) {

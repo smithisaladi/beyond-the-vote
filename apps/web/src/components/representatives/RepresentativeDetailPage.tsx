@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/components/auth/AuthContext'
 import { useTabState } from '@/hooks/useTabState'
-import { useFollowPolitician } from '@/hooks/useFollowPolitician'
-import { useFetchPoliticianDetail, type Politician } from '@/hooks/useFetchPoliticianDetail'
+// TODO: port useFollowPolitician hook
+import { usePoliticianDetail } from '@/hooks/queries/usePoliticians'
+// TODO: define Politician type properly
+type Politician = any
 import { DonorTab } from '@/components/representatives/DonorTab'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -31,12 +33,12 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
   const { openSignIn } = useAuthModal()
 
   const { user } = useAuth()
-  const { politician, loading, error } = useFetchPoliticianDetail(id, initialPolitician)
-  const { following, loading: followLoading, toggleFollow: handleFollow } = useFollowPolitician(
-    id,
-    user?.id ?? null,
-    openSignIn,
-  )
+  const { data: politician, isLoading: loading, error: _error } = usePoliticianDetail(id)
+  // TODO: port useFollowPolitician hook
+  const following = false
+  const followLoading = false
+  const handleFollow = () => { if (!user) openSignIn() }
+  const error = _error ? String(_error) : null
 
   useEffect(() => {
     setPhotoError(false)

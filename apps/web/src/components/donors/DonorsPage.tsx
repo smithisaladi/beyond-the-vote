@@ -3,7 +3,10 @@
 import { useState, Suspense } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useSearch } from '@tanstack/react-router'
-import { useFetchDonors, type ContributorEntry, type ContributorRecipient } from '@/hooks/useFetchDonors'
+import { useDonors } from '@/hooks/queries/useDonors'
+// TODO: define ContributorEntry and ContributorRecipient types properly
+type ContributorEntry = any
+type ContributorRecipient = any
 import { useDebounce } from '@/hooks/useDebounce'
 import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
@@ -125,10 +128,13 @@ function DonorsContent() {
   const [query, setQuery] = useState(searchParams.get('q') ?? '')
   const debouncedQuery = useDebounce(query, 300)
 
-  const {
-    contributors, loading, error,
-    loadingMore, loadMore, hasMore, refetch,
-  } = useFetchDonors(debouncedQuery)
+  const { data, isLoading: loading, error: _donorError, refetch } = useDonors({ q: debouncedQuery })
+  const contributors = data ?? []
+  const error = _donorError ? String(_donorError) : null
+  // TODO: port pagination
+  const loadingMore = false
+  const loadMore = () => {}
+  const hasMore = false
 
   return (
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">

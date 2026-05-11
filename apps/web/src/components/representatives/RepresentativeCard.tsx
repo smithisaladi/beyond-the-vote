@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
-import { useFollowPolitician } from '@/hooks/useFollowPolitician'
+// TODO: port useFollowPolitician hook
 import type { Party } from '@/lib/types'
 import { PARTY_STYLES } from '@/lib/ui'
 import { Card } from '@/components/ui/Card'
@@ -40,7 +40,10 @@ export function RepresentativeCard({
   id, name, title, party, state, district, since, photo, userId, onSignInRequired,
 }: RepresentativeCardProps) {
   const badge = PARTY_STYLES[party]
-  const { following, loading: followLoading, toggleFollow } = useFollowPolitician(id, userId, onSignInRequired)
+  // TODO: port useFollowPolitician hook
+  const following = false
+  const followLoading = false
+  const toggleFollow = () => { if (!userId) onSignInRequired() }
   const [photoError, setPhotoError] = useState(false)
 
   return (

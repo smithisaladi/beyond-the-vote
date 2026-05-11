@@ -2,7 +2,8 @@
 
 import { Link } from '@tanstack/react-router'
 import type { User } from '@supabase/supabase-js'
-import type { Bill } from '@/hooks/useFetchBills'
+// TODO: define Bill type properly
+type Bill = any
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
 import { Card } from '@/components/ui/Card'

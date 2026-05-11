@@ -9,6 +9,9 @@ from app.deps import get_db
 
 router = APIRouter(prefix="/api/politicians", tags=["politicians"])
 
+_IDEOLOGY_LIBERAL_THRESHOLD = -0.3
+_IDEOLOGY_CONSERVATIVE_THRESHOLD = 0.3
+
 
 @router.get("/search")
 async def search_politicians(
@@ -212,8 +215,8 @@ async def _get_top_contributors(db: AsyncSession, bioguide_id: str) -> list[dict
 
 
 def _ideology_label(score: float) -> str:
-    if score < -0.3:
+    if score < _IDEOLOGY_LIBERAL_THRESHOLD:
         return "Liberal"
-    elif score > 0.3:
+    elif score > _IDEOLOGY_CONSERVATIVE_THRESHOLD:
         return "Conservative"
     return "Moderate"
