@@ -181,4 +181,18 @@ def load_bills(bill_jsons: list[dict]) -> int:
         if row:
             rows.append(row)
     log.info("bills_transformed", total=len(rows))
+
+    # Null out sponsor FKs that don't exist in legislators table (current-only DB)
+    from shared.db import get_supabase
+    client = get_supabase()
+    result = client.schema("congress").table("legislators").select("bioguide_id").execute()
+    valid_ids = {r["bioguide_id"] for r in result.data}
+    nulled = 0
+    for row in rows:
+        if row.get("sponsor_bioguide_id") and row["sponsor_bioguide_id"] not in valid_ids:
+            row["sponsor_bioguide_id"] = None
+            nulled += 1
+    if nulled:
+        log.info("sponsor_fks_nulled", count=nulled)
+
     return upsert("bills", rows, on_conflict="bill_id", schema="congress")
