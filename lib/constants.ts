@@ -1,4 +1,0 @@
-export const SEARCH_DEBOUNCE_MS = 300
-export const MIN_PASSWORD_LENGTH = 8
-export const SIDEBAR_EXPANDED_WIDTH = 208
-export const SIDEBAR_COLLAPSED_WIDTH = 60

@@ -87,7 +87,8 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
           >
             <div className="space-y-0.5 min-w-0">
               <Link
-                href={`/bills/${v.billId}`}
+                to="/bills/$billId"
+                params={{ billId: v.billId }}
                 className="text-[#1C1C1A] hover:text-[#7B5E8A] transition-colors truncate block"
               >
                 {v.billId.toUpperCase().replace(/-/g, ' ').replace(/(\d+) (\w+) (\d+)/, '$1 $2. $3')}

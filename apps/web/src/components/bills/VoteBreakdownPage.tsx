@@ -10,9 +10,28 @@ import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton as SkeletonBox } from '@/components/ui/Skeleton'
 import { useBillDetail } from '@/hooks/queries/useBills'
-// TODO: define Vote and MemberPosition types properly
-type Vote = any
-type MemberPosition = any
+interface MemberPosition {
+  bioguideId: string
+  name: string
+  party: string
+  state: string
+  position: string
+}
+
+interface Vote {
+  id: string
+  date: string
+  chamber: string
+  question: string | null
+  result: string
+  yeas: number
+  nays: number
+  present: number
+  notVoting: number
+  partyBreakdown: Record<string, { yea: number; nay: number }>
+  memberPositions?: MemberPosition[]
+  sourceUrl: string | null
+}
 import type { Party } from '@/lib/types'
 
 const FILTERS = ['All', 'Yea', 'Nay', 'Not Voting'] as const
@@ -52,7 +71,8 @@ function MemberRow({ m }: { m: MemberPosition }) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-[rgba(28,28,26,0.04)] last:border-0">
       <Link
-        href={`/representatives/${m.bioguideId}`}
+        to="/representatives/$id"
+        params={{ id: m.bioguideId }}
         className="text-sm text-[#1C1C1A]/70 hover:text-[#7B5E8A] transition-colors truncate mr-3"
       >
         {m.name}
@@ -91,14 +111,14 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
 
   const filtered = useMemo(() => {
     let list = vote.memberPositions ?? []
-    if (filter !== 'All') list = list.filter(m => m.position === filter)
-    if (partyFilter !== 'All') list = list.filter(m => m.party === partyFilter)
+    if (filter !== 'All') list = list.filter((m: any) => m.position === filter)
+    if (partyFilter !== 'All') list = list.filter((m: any) => m.party === partyFilter)
     return list
   }, [filter, partyFilter, vote.memberPositions])
 
   const counts = useMemo(() => {
     const c = { Yea: 0, Nay: 0, 'Not Voting': 0, Present: 0 }
-    for (const m of vote.memberPositions ?? []) {
+    for (const m of (vote.memberPositions ?? []) as any[]) {
       if (m.position in c) c[m.position as keyof typeof c]++
     }
     return c
@@ -107,7 +127,9 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <Link
-        href={`/bills/${billId}${fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''}`}
+        to="/bills/$billId"
+        params={{ billId }}
+        search={fromParam ? { from: fromParam } : {}}
         className="inline-flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -271,7 +293,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
 
             <div className="max-h-[36rem] overflow-y-auto">
               {filtered.length > 0 ? (
-                filtered.map(m => <MemberRow key={m.bioguideId} m={m} />)
+                filtered.map((m: any) => <MemberRow key={m.bioguideId} m={m} />)
               ) : (
                 <p className="text-sm text-[#1C1C1A]/30 italic py-6 text-center">No members match these filters.</p>
               )}
@@ -327,7 +349,7 @@ export default function VoteBreakdownPage({ params }: { params: Promise<{ id: st
   const { data: bill, isLoading: loading, error: _billError } = useBillDetail(id)
   const error = _billError ? String(_billError) : null
 
-  const vote = bill?.votes.find(v => v.id === decodeURIComponent(voteId)) ?? null
+  const vote = bill?.votes.find((v: any) => v.id === decodeURIComponent(voteId)) ?? null
 
   return (
     <div className="relative flex flex-col min-h-screen overflow-hidden">
@@ -340,7 +362,7 @@ export default function VoteBreakdownPage({ params }: { params: Promise<{ id: st
             <div className="max-w-4xl mx-auto flex items-center justify-center py-24">
               <div className="text-center">
                 <p className="text-[#1C1C1A]/40 mb-4">Failed to load vote details.</p>
-                <Link to={billBackHref} className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]">
+                <Link to={billBackHref as any} className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]">
                   ← Back to bill
                 </Link>
               </div>
@@ -349,7 +371,7 @@ export default function VoteBreakdownPage({ params }: { params: Promise<{ id: st
             <div className="max-w-4xl mx-auto flex items-center justify-center py-24">
               <div className="text-center">
                 <p className="text-[#1C1C1A]/40 mb-4">Vote not found.</p>
-                <Link to={billBackHref} className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]">
+                <Link to={billBackHref as any} className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]">
                   ← Back to bill
                 </Link>
               </div>

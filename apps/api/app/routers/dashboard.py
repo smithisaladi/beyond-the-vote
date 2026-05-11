@@ -1,6 +1,6 @@
 # apps/api/app/routers/dashboard.py
 """Dashboard endpoints — all require authentication."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_db, get_current_user
@@ -63,6 +63,70 @@ async def get_followed(
         politicians.append(entry)
 
     return {"politicians": politicians}
+
+@router.post("/follow/{politician_id}")
+async def follow_politician(
+    politician_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    user_id = str(user["user_id"])
+    await db.execute(
+        text("""INSERT INTO app.followed_politicians (user_id, politician_id)
+                VALUES (:user_id, :politician_id)
+                ON CONFLICT DO NOTHING"""),
+        {"user_id": user_id, "politician_id": politician_id},
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/follow/{politician_id}")
+async def unfollow_politician(
+    politician_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    user_id = str(user["user_id"])
+    await db.execute(
+        text("DELETE FROM app.followed_politicians WHERE user_id = :user_id AND politician_id = :politician_id"),
+        {"user_id": user_id, "politician_id": politician_id},
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/track/{bill_id:path}")
+async def track_bill(
+    bill_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    user_id = str(user["user_id"])
+    await db.execute(
+        text("""INSERT INTO app.tracked_bills (user_id, bill_id)
+                VALUES (:user_id, :bill_id)
+                ON CONFLICT DO NOTHING"""),
+        {"user_id": user_id, "bill_id": bill_id},
+    )
+    await db.commit()
+    return {"ok": True}
+
+
+@router.delete("/track/{bill_id:path}")
+async def untrack_bill(
+    bill_id: str,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    user_id = str(user["user_id"])
+    await db.execute(
+        text("DELETE FROM app.tracked_bills WHERE user_id = :user_id AND bill_id = :bill_id"),
+        {"user_id": user_id, "bill_id": bill_id},
+    )
+    await db.commit()
+    return {"ok": True}
+
 
 @router.get("/tracked-bills")
 async def get_tracked_bills(db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):

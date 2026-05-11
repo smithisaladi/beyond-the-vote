@@ -45,6 +45,9 @@ shared/openapi/
 # Parquet data
 *.parquet
 
+# Docs
+docs/
+
 # Testing
 coverage/
 playwright-report/

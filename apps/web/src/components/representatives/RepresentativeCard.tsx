@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
-// TODO: port useFollowPolitician hook
+import { useFollowedPoliticians, useFollowPolitician } from '@/hooks/queries/useDashboard'
 import type { Party } from '@/lib/types'
 import { PARTY_STYLES } from '@/lib/ui'
 import { Card } from '@/components/ui/Card'
@@ -40,14 +40,19 @@ export function RepresentativeCard({
   id, name, title, party, state, district, since, photo, userId, onSignInRequired,
 }: RepresentativeCardProps) {
   const badge = PARTY_STYLES[party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
-  // TODO: port useFollowPolitician hook
-  const following = false
-  const followLoading = false
-  const toggleFollow = () => { if (!userId) onSignInRequired() }
+  const { data: followedData } = useFollowedPoliticians()
+  const followMutation = useFollowPolitician()
+  const followedIds = new Set((followedData?.politicians ?? []).map((p: any) => p.id))
+  const following = followedIds.has(id)
+  const followLoading = followMutation.isPending
+  const toggleFollow = () => {
+    if (!userId) { onSignInRequired(); return }
+    followMutation.mutate({ politicianId: id, follow: !following })
+  }
   const [photoError, setPhotoError] = useState(false)
 
   return (
-    <Link to={`/representatives/${id}`} className="block group">
+    <Link to="/representatives/$id" params={{ id }} className="block group">
       <Card hoverable padding="md" className="flex flex-col items-center text-center gap-3 h-full">
         {photo && !photoError
           ? <img src={photo} alt={name} width={80} height={96} className="w-20 h-24 rounded-full object-cover flex-shrink-0" onError={() => setPhotoError(true)} />

@@ -7,7 +7,7 @@ import { AuthModalProvider } from "@/components/auth/AuthModalContext";
 
 export const Route = createRootRoute({
   component: () => (
-    <NeonAuthUIProvider authClient={authClient}>
+    <NeonAuthUIProvider authClient={authClient as any}>
       <TooltipProvider>
         <AuthProvider>
           <AuthModalProvider>

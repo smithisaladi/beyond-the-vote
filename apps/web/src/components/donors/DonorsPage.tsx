@@ -1,12 +1,25 @@
 
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useSearch } from '@tanstack/react-router'
 import { useDonors } from '@/hooks/queries/useDonors'
-// TODO: define ContributorEntry and ContributorRecipient types properly
-type ContributorEntry = any
-type ContributorRecipient = any
+interface ContributorRecipient {
+  name: string
+  party: string
+  amount: number
+}
+
+interface ContributorEntry {
+  cmteId: string
+  cmteName: string
+  totalContributions: number
+  directTotal: number
+  ieForTotal: number
+  ieAgainstTotal: number
+  recipientCount: number
+  topRecipients: ContributorRecipient[]
+}
 import { useDebounce } from '@/hooks/useDebounce'
 import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
@@ -20,8 +33,8 @@ import { Skeleton } from '@/components/ui/Skeleton'
 
 type Lean = { label: string; party: 'Democrat' | 'Republican' | null; pct: number }
 
-function computeLean(recipients: ContributorRecipient[]): Lean | null {
-  if (recipients.length === 0) return null
+function computeLean(recipients?: ContributorRecipient[]): Lean | null {
+  if (!recipients || recipients.length === 0) return null
   let demTotal = 0, repTotal = 0
   for (const r of recipients) {
     if (r.party === 'Democrat') demTotal += r.amount
@@ -87,7 +100,7 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
   const lean = computeLean(contributor.topRecipients)
 
   return (
-    <Link to={`/donors/${contributor.cmteId}`} className="block group">
+    <Link to="/donors/$cmteId" params={{ cmteId: contributor.cmteId }} className="block group">
       <Card as="article" hoverable className="cursor-pointer">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -101,9 +114,11 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
                 {contributor.cmteName}
               </h2>
             </div>
-            <span className="text-xs text-[#1C1C1A]/38 pl-7">
-              {contributor.recipientCount} candidate{contributor.recipientCount !== 1 ? 's' : ''} supported
-            </span>
+            {contributor.recipientCount != null && (
+              <span className="text-xs text-[#1C1C1A]/38 pl-7">
+                {contributor.recipientCount} candidate{contributor.recipientCount !== 1 ? 's' : ''} supported
+              </span>
+            )}
           </div>
 
           {/* Total + lean pill */}
@@ -127,14 +142,19 @@ function DonorsContent() {
 
   const [query, setQuery] = useState(searchParams['q'] ?? '')
   const debouncedQuery = useDebounce(query, 300)
+  const [offset, setOffset] = useState(0)
+  const limit = 20
 
-  const { data, isLoading: loading, error: _donorError, refetch } = useDonors({ q: debouncedQuery })
-  const contributors = data ?? []
+  // Reset offset when search changes
+  useEffect(() => { setOffset(0) }, [debouncedQuery])
+
+  const { data, isLoading: loading, error: _donorError, refetch } = useDonors({ q: debouncedQuery, limit, offset })
+  const contributors = data?.contributors ?? data ?? []
+  const total = data?.pagination?.total ?? 0
   const error = _donorError ? String(_donorError) : null
-  // TODO: port pagination
+  const hasMore = offset + limit < total
   const loadingMore = false
-  const loadMore = () => {}
-  const hasMore = false
+  const loadMore = () => setOffset(prev => prev + limit)
 
   return (
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
@@ -219,7 +239,7 @@ function DonorsContent() {
               ) : (
                 <>
                   <div className="space-y-4">
-                    {contributors.map((c) => (
+                    {contributors.map((c: any) => (
                       <ContributorCard key={c.cmteId} contributor={c} rank={c.rank} />
                     ))}
                   </div>

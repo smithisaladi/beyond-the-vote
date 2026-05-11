@@ -4,8 +4,17 @@ import { use, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { usePacDetail } from '@/hooks/queries/useDonors'
-// TODO: define PacDetailRecipient type properly
-type PacDetailRecipient = any
+interface PacDetailRecipient {
+  bioguideId: string
+  name: string
+  party: string
+  state: string
+  chamber: string
+  amount: number
+  direct: number
+  ieFor: number
+  type: string
+}
 import { PageHeader } from '@/components/layout/PageHeader'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -74,7 +83,8 @@ function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
 
   return (
     <Link
-      href={`/representatives/${recipient.bioguideId}`}
+      to="/representatives/$id"
+      params={{ id: recipient.bioguideId }}
       className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-3 hover:bg-[#F5F0E8]/60 transition-colors group"
     >
       <div className="min-w-0">
@@ -158,7 +168,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
     if (!pac) return []
     const list = partyFilter === 'all'
       ? pac.recipients
-      : pac.recipients.filter(r => toParty(r.party) === partyFilter)
+      : pac.recipients.filter((r: any) => toParty(r.party) === partyFilter)
     const sorted = [...list]
     if (sortKey === 'amount') {
       sorted.sort((a, b) => b.amount - a.amount)
@@ -282,7 +292,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                   ) : pac.summary ? (
                     <>
                       <div className="text-sm text-[#1C1C1A]/70 leading-relaxed space-y-3">
-                        {pac.summary.split('\n\n').map((paragraph, i) => (
+                        {pac.summary.split('\n\n').map((paragraph: string, i: number) => (
                           <p key={i}>{paragraph}</p>
                         ))}
                       </div>

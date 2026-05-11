@@ -3,8 +3,28 @@
 import { Link } from '@tanstack/react-router'
 import { PARTY_STYLES, resultBadge } from '@/lib/ui'
 import { formatShortDate } from '@/lib/format'
-// TODO: define Vote type properly
-type Vote = any
+interface MemberPosition {
+  bioguideId: string
+  name: string
+  party: string
+  state: string
+  position: string
+}
+
+interface Vote {
+  id: string
+  date: string
+  chamber: string
+  question: string | null
+  result: string
+  yeas: number
+  nays: number
+  present: number
+  notVoting: number
+  partyBreakdown: Record<string, { yea: number; nay: number }>
+  memberPositions?: MemberPosition[]
+  sourceUrl: string | null
+}
 
 
 function VoteEntryContent({ vote }: { vote: Vote }) {
@@ -77,7 +97,7 @@ function VoteEntry({ vote, showBorder, billId, fromParam }: { vote: Vote; showBo
   if (vote.id) {
     return (
       <Link
-        href={`/bills/${billId}/votes/${encodeURIComponent(vote.id)}${fromQs}`}
+        to={`/bills/${billId}/votes/${encodeURIComponent(vote.id)}${fromQs}` as any}
         className={`block -mx-2 px-2 py-1 -my-1 rounded-lg hover:bg-[#7B5E8A]/[0.04] transition-colors cursor-pointer ${base}`}
       >
         <VoteEntryContent vote={vote} />

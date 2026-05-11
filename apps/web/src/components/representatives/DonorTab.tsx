@@ -6,11 +6,16 @@ import type { FecTermKey } from '@/lib/fec'
 import { formatTotal } from '@/lib/format'
 
 interface Donor {
-  rank: number
-  name: string
-  amount: string
-  category: string
+  rank?: number
+  name?: string
+  cmteId?: string
+  cmteName?: string | null
+  amount?: string
+  category?: string
   summary?: string
+  directContribution?: number
+  ieFor?: number
+  totalSupport?: number
 }
 
 interface FundingBreakdown {
@@ -35,6 +40,10 @@ interface FundingBreakdown {
   outOfStatePct: number
   cycle: number
   minCycle?: number
+  // Simple API shape
+  pacDirectTotal?: number
+  superpacIeFor?: number
+  superpacIeAgainst?: number
 }
 
 interface TopContributor {
@@ -55,8 +64,22 @@ const UNINFORMATIVE = new Set(['OTHER', 'N/A', 'NONE', 'VARIOUS', 'UNKNOWN', 'NA
 
 function cleanList(list: Donor[]): Donor[] {
   return list
-    .filter(d => !UNINFORMATIVE.has(d.name.toUpperCase()))
+    .filter(d => {
+      const label = d.name || d.cmteName || ''
+      return label && !UNINFORMATIVE.has(label.toUpperCase())
+    })
     .slice(0, 6)
+}
+
+function donorDisplayName(d: Donor): string {
+  return d.name || d.cmteName || 'Unknown'
+}
+
+function donorDisplayAmount(d: Donor): string {
+  if (d.amount) return d.amount
+  if (d.totalSupport != null) return formatTotal(d.totalSupport)
+  if (d.directContribution != null) return formatTotal(d.directContribution)
+  return '$0'
 }
 
 function cycleLabel(bd: FundingBreakdown): string {
@@ -134,7 +157,8 @@ function FundingRow({
 }
 
 export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl }: DonorTabProps) {
-  const bd = fundingBreakdown && fundingBreakdown.total > 0 ? fundingBreakdown : null
+  // Support both rich (OpenSecrets-style) and simple (FEC-computed) funding data
+  const bd = fundingBreakdown && (fundingBreakdown.total > 0 || (fundingBreakdown.pacDirectTotal ?? 0) > 0) ? fundingBreakdown : null
   const cleanPacDonors = cleanList(pacDonors)
   const hasContributors = topContributors.length > 0
   const hasDonorData = hasContributors || cleanPacDonors.length > 0
@@ -310,7 +334,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
               )
 
               return c.cmteId ? (
-                <Link key={`${c.rank}-${c.orgName}`} href={`/donors/${c.cmteId}`} className="block group hover:bg-[#F5F0E8]/60 -mx-2 px-2 rounded-lg transition-colors">
+                <Link key={`${c.rank}-${c.orgName}`} to="/donors/$cmteId" params={{ cmteId: c.cmteId }} className="block group hover:bg-[#F5F0E8]/60 -mx-2 px-2 rounded-lg transition-colors">
                   {content}
                 </Link>
               ) : (
@@ -319,6 +343,68 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Top PAC Donors (from API) ── */}
+      {cleanPacDonors.length > 0 && !hasContributors && (
+        <div className="border-t border-[rgba(28,28,26,0.08)] pt-6">
+          <SectionLabel tooltipTerm="pacAndCorporate">
+            Top PAC Donors
+          </SectionLabel>
+          <div className="divide-y divide-[rgba(28,28,26,0.06)]">
+            {cleanPacDonors.map((d, i) => {
+              const label = donorDisplayName(d)
+              const amt = donorDisplayAmount(d)
+              const content = (
+                <div className="flex items-center gap-3 py-3">
+                  <span className="w-5 h-5 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0 text-[10px] text-[#1C1C1A]/45 tabular-nums font-medium">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm text-[#1C1C1A] leading-snug truncate flex-1 group-hover:text-[#7B5E8A] transition-colors">
+                    {label}
+                  </span>
+                  <span className="flex-shrink-0 text-sm font-medium text-[#1C1C1A] tabular-nums" style={{ fontFamily: 'var(--font-serif)' }}>
+                    {amt}
+                  </span>
+                </div>
+              )
+              return d.cmteId ? (
+                <Link key={d.cmteId} to="/donors/$cmteId" params={{ cmteId: d.cmteId }} className="block group hover:bg-[#F5F0E8]/60 -mx-2 px-2 rounded-lg transition-colors">
+                  {content}
+                </Link>
+              ) : (
+                <div key={`${i}-${label}`}>{content}</div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Simple Funding Summary (when no rich breakdown) ── */}
+      {!bd?.total && bd?.pacDirectTotal != null && (
+        <div className="border-t border-[rgba(28,28,26,0.08)] pt-6">
+          <SectionLabel>Funding Summary</SectionLabel>
+          <div className="space-y-2">
+            {bd.pacDirectTotal > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-[#1C1C1A]/60">PAC Direct</span>
+                <span className="text-[#1C1C1A] tabular-nums" style={{ fontFamily: 'var(--font-serif)' }}>{formatTotal(bd.pacDirectTotal)}</span>
+              </div>
+            )}
+            {(bd.superpacIeFor ?? 0) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-[#1C1C1A]/60">Super PAC Support</span>
+                <span className="text-[#68B085] tabular-nums" style={{ fontFamily: 'var(--font-serif)' }}>{formatTotal(bd.superpacIeFor!)}</span>
+              </div>
+            )}
+            {(bd.superpacIeAgainst ?? 0) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-[#1C1C1A]/60">Super PAC Opposition</span>
+                <span className="text-[#B85C38] tabular-nums" style={{ fontFamily: 'var(--font-serif)' }}>{formatTotal(bd.superpacIeAgainst!)}</span>
+              </div>
+            )}
           </div>
         </div>
       )}

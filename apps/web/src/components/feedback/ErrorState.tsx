@@ -85,7 +85,7 @@ export function ErrorState({
             Try again
           </button>
           <Link
-            href={backHref}
+            to={backHref as any}
             className="px-4 py-2 text-sm text-[#1C1C1A]/60 border border-[rgba(28,28,26,0.15)] rounded-lg hover:text-[#1C1C1A] hover:border-[rgba(28,28,26,0.3)] transition-colors"
           >
             {backLabel}

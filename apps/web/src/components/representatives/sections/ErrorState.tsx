@@ -6,7 +6,7 @@ export function ErrorState({ message }: { message: string }) {
       <div className="text-center">
         <p className="text-[#1C1C1A]/40 mb-4">{message}</p>
         <Link
-          href="/representatives"
+          to="/representatives"
           className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
         >
           ← Back to representatives

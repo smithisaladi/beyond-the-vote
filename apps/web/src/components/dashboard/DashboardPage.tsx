@@ -1,14 +1,12 @@
 
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { LogOut, UserMinus } from 'lucide-react'
 
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { useAuth } from '@/components/auth/AuthContext'
-import { useFollowedPoliticians, useTrackedBills, useTopicPreferences } from "@/hooks/queries/useDashboard"
-// TODO: port useActivitySeen hook
-// TODO: port useUnfollowPolitician hook
+import { useFollowedPoliticians, useFollowPolitician, useTrackedBills, useTopicPreferences } from "@/hooks/queries/useDashboard"
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { Card } from '@/components/ui/Card'
@@ -18,7 +16,7 @@ function EmptyState({ message, href, linkLabel }: { message: string; href: strin
   return (
     <Card padding="none" className="px-6 py-10 text-center">
       <p className="text-sm text-[#1C1C1A]/45 mb-3">{message}</p>
-      <Link to={href} className="text-sm text-[#7B5E8A] hover:underline underline-offset-2">
+      <Link to={href as any} className="text-sm text-[#7B5E8A] hover:underline underline-offset-2">
         {linkLabel}
       </Link>
     </Card>
@@ -56,16 +54,24 @@ export default function DashboardPage() {
   const loading = loadingFollowed || loadingTracked
 
   const [photoErrors, setPhotoErrors] = useState<Set<string>>(new Set())
-  // TODO: port useUnfollowPolitician hook — stubbed for now
-  const unfollowing = new Set<string>()
-  const handleUnfollow = (_id: string) => {}
-  const filterUnfollowed = (pols: any[]) => pols
+  const unfollowMutation = useFollowPolitician()
+  const handleUnfollow = (politicianId: string) => {
+    unfollowMutation.mutate({ politicianId, follow: false })
+  }
 
-  const visiblePoliticians = filterUnfollowed(politicians)
+  const visiblePoliticians = politicians
 
   const maxActivityTimestamp = useMemo(() => activityFeed.reduce((acc: number, a: any) => Math.max(acc, a.timestamp), 0), [activityFeed])
-  // TODO: port useActivitySeen hook — stubbed for now
-  const isNew = (_timestamp: number) => false
+  const [lastSeenTimestamp] = useState(() => {
+    const stored = localStorage.getItem('activitySeenAt')
+    return stored ? Number(stored) : 0
+  })
+  useEffect(() => {
+    if (maxActivityTimestamp > 0) {
+      localStorage.setItem('activitySeenAt', String(maxActivityTimestamp))
+    }
+  }, [maxActivityTimestamp])
+  const isNew = (timestamp: number) => timestamp > lastSeenTimestamp
 
   return (
     <div className="relative flex-1 flex flex-col min-h-screen overflow-hidden">
@@ -134,18 +140,18 @@ export default function DashboardPage() {
                   />
                 ) : (
                   <Card padding="none" className="overflow-hidden max-h-[340px] overflow-y-auto">
-                    {visiblePoliticians.map((pol, idx) => {
-                      const badge = PARTY_STYLES[pol.party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
+                    {visiblePoliticians.map((pol: any, idx: number) => {
+                      const badge = PARTY_STYLES[pol.party as keyof typeof PARTY_STYLES] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
                       return (
                         <div
                           key={pol.id}
                           className={`flex items-center gap-3 px-5 py-3.5 ${idx < visiblePoliticians.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''}`}
                         >
-                          <Link to={`/representatives/${pol.id}`} className="flex items-center gap-3 flex-1 min-w-0 group">
+                          <Link to="/representatives/$id" params={{ id: pol.id }} className="flex items-center gap-3 flex-1 min-w-0 group">
                             <div className="relative w-9 h-9 flex-shrink-0">
                               <div className="w-9 h-9 rounded-full bg-[#E8E3DA] flex items-center justify-center">
                                 <span className="text-xs text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
-                                  {pol.name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()}
+                                  {pol.name.split(' ').map((p: any) => p[0]).join('').slice(0, 2).toUpperCase()}
                                 </span>
                               </div>
                               {pol.photo && !photoErrors.has(pol.id) && (
@@ -169,7 +175,7 @@ export default function DashboardPage() {
                           </Link>
                           <button
                             onClick={() => handleUnfollow(pol.id)}
-                            disabled={unfollowing.has(pol.id)}
+                            disabled={unfollowMutation.isPending}
                             aria-label={`Unfollow ${pol.name}`}
                             className="flex-shrink-0 p-1.5 rounded-lg text-[#1C1C1A]/25 hover:text-[#B85C38] hover:bg-[#B85C38]/8 transition-colors disabled:opacity-40"
                           >
@@ -189,7 +195,7 @@ export default function DashboardPage() {
                     <h2 className="text-lg font-semibold text-[#1C1C1A]" style={{ fontFamily: 'var(--font-serif)' }}>Tracked Bills</h2>
                     {!loading && <span className="text-sm text-[#1C1C1A]/38" style={{ fontFamily: 'var(--font-serif)' }}>{trackedBills.length}</span>}
                   </div>
-                  <Link to="/bills?tracked=true" className="text-xs text-[#7B5E8A] hover:underline underline-offset-2">View all</Link>
+                  <Link to={"/bills?tracked=true" as any} className="text-xs text-[#7B5E8A] hover:underline underline-offset-2">View all</Link>
                 </div>
 
                 {loading ? (
@@ -210,12 +216,13 @@ export default function DashboardPage() {
                   />
                 ) : (
                   <Card padding="none" className="overflow-hidden max-h-[400px] overflow-y-auto">
-                    {trackedBills.map((bill, idx) => {
+                    {trackedBills.map((bill: any, idx: number) => {
                       const s = STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active
                       return (
                         <Link
                           key={bill.id}
-                          href={`/bills/${bill.id}`}
+                          to="/bills/$billId"
+                          params={{ billId: bill.id }}
                           className={`block px-5 py-4 hover:bg-[#F8F5F0] hover:-translate-y-px transition-all duration-150 cursor-pointer ${idx < trackedBills.length - 1 ? 'border-b border-[rgba(28,28,26,0.05)]' : ''}`}
                         >
                           <div className="flex items-start justify-between gap-2 mb-1.5">

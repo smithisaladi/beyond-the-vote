@@ -2,8 +2,16 @@
 
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-// TODO: define ActivityItem type properly
-type ActivityItem = any
+interface ActivityItem {
+  id: string
+  politician: string | null
+  action: string
+  subject: string
+  date: string
+  timestamp: number
+  href: string | null
+  isAlert: boolean
+}
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 
@@ -99,7 +107,7 @@ export function ActivityFeed({ activityFeed, loading, isNew }: ActivityFeedProps
               </>
             )
             return item.href ? (
-              <Link key={item.id} href={item.href} className={`block ${rowClass}`}>
+              <Link key={item.id} to={item.href as any} className={`block ${rowClass}`}>
                 {inner}
               </Link>
             ) : (

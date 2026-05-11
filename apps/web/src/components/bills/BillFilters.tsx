@@ -1,7 +1,6 @@
 
 
 
-// TODO: port useBillFilters hook — type defined inline for now
 interface BillFiltersState {
   query: string; setQuery: (q: string) => void; debouncedQuery: string;
   selectedStatuses: Set<string>; toggleStatus: (s: string) => void;
@@ -62,6 +61,8 @@ function FilterCheckbox({
     </label>
   )
 }
+
+interface User { id: string; email: string; name?: string }
 
 interface BillFiltersProps {
   filters: BillFiltersState

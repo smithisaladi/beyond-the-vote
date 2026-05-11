@@ -5,10 +5,9 @@ import { Link } from '@tanstack/react-router'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useTabState } from '@/hooks/useTabState'
-// TODO: port useFollowPolitician hook
 import { usePoliticianDetail } from '@/hooks/queries/usePoliticians'
-// TODO: define Politician type properly
-type Politician = any
+import { useFollowedPoliticians, useFollowPolitician } from '@/hooks/queries/useDashboard'
+import type { Politician } from '@/lib/types/politicians'
 import { DonorTab } from '@/components/representatives/DonorTab'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -34,10 +33,17 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
 
   const { user } = useAuth()
   const { data: politician, isLoading: loading, error: _error } = usePoliticianDetail(id)
-  // TODO: port useFollowPolitician hook
-  const following = false
-  const followLoading = false
-  const handleFollow = () => { if (!user) openSignIn() }
+  const { data: followedData } = useFollowedPoliticians()
+  const followMutation = useFollowPolitician()
+  const followedIds = new Set(
+    (followedData?.politicians ?? []).map((p: any) => p.id)
+  )
+  const following = followedIds.has(id)
+  const followLoading = followMutation.isPending
+  const handleFollow = () => {
+    if (!user) { openSignIn(); return }
+    followMutation.mutate({ politicianId: id, follow: !following })
+  }
   const error = _error ? String(_error) : null
 
   useEffect(() => {
@@ -67,7 +73,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
           ) : !politician ? null : (
             <div className="max-w-5xl mx-auto space-y-6">
               <Link
-                href="/representatives"
+                to="/representatives"
                 className="flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

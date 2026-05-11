@@ -1,14 +1,16 @@
 """Neon Auth (Better Auth) JWT validation.
 
-Validates JWTs issued by Neon Auth using the configured secret.
-Falls back to JWKS-based validation if a JWKS endpoint is available.
+Validates JWTs issued by Neon Auth using JWKS (EdDSA/Ed25519).
 """
+import ssl
 import time
 from typing import Any
 
+import certifi
 import httpx
+import jwt
+from jwt import PyJWK
 import structlog
-from jose import jwt, JWTError
 
 from app.config import settings
 
@@ -19,8 +21,8 @@ _jwks_cache_ttl: float = 0
 _JWKS_CACHE_DURATION = 3600
 
 
-async def _get_jwks() -> dict | None:
-    """Try to fetch JWKS from Neon Auth endpoint."""
+async def _fetch_jwks() -> dict | None:
+    """Fetch JWKS from Neon Auth endpoint using httpx (handles SSL properly)."""
     global _jwks_cache, _jwks_cache_ttl
 
     if _jwks_cache and time.time() < _jwks_cache_ttl:
@@ -29,7 +31,6 @@ async def _get_jwks() -> dict | None:
     if not settings.neon_auth_url:
         return None
 
-    # Better Auth JWKS endpoint
     jwks_url = f"{settings.neon_auth_url}/.well-known/jwks.json"
     try:
         async with httpx.AsyncClient() as client:
@@ -37,48 +38,48 @@ async def _get_jwks() -> dict | None:
             if resp.status_code == 200:
                 _jwks_cache = resp.json()
                 _jwks_cache_ttl = time.time() + _JWKS_CACHE_DURATION
-                log.info("jwks_refreshed", url=jwks_url)
+                log.info("jwks_refreshed", url=jwks_url, keys=len(_jwks_cache.get("keys", [])))
                 return _jwks_cache
-    except httpx.HTTPError:
-        pass
+    except httpx.HTTPError as e:
+        log.error("jwks_fetch_failed", url=jwks_url, error=str(e))
 
     return None
 
 
-def decode_jwt_with_secret(token: str) -> dict:
-    """Decode JWT using the configured secret (HS256)."""
-    if not token:
-        raise ValueError("Missing token")
-    if not settings.neon_auth_jwt_secret:
-        raise ValueError("NEON_AUTH_JWT_SECRET not configured")
+def _find_signing_key(jwks: dict, token: str) -> Any:
+    """Find the correct signing key from JWKS for the given token."""
+    unverified_header = jwt.get_unverified_header(token)
+    kid = unverified_header.get("kid")
+    alg = unverified_header.get("alg")
 
-    try:
-        payload = jwt.decode(
-            token,
-            settings.neon_auth_jwt_secret,
-            algorithms=["HS256"],
-            options={"verify_aud": False},
-        )
-        return payload
-    except JWTError as e:
-        raise ValueError(f"Invalid token: {e}")
+    for key_data in jwks.get("keys", []):
+        if kid and key_data.get("kid") != kid:
+            continue
+        jwk = PyJWK(key_data)
+        return jwk.key, key_data.get("alg", alg)
+
+    raise ValueError(f"No matching key found for kid={kid}")
 
 
 async def validate_token(token: str) -> dict:
-    """Validate a Neon Auth JWT. Tries JWKS first, falls back to secret."""
+    """Validate a Neon Auth JWT using JWKS."""
     if not token:
         raise ValueError("Missing token")
 
-    # Try JWKS-based validation
-    jwks = await _get_jwks()
-    if jwks:
-        try:
-            payload = jwt.decode(token, jwks, algorithms=["RS256"], options={"verify_aud": False})
-            return payload
-        except httpx.HTTPError:
-            pass  # Network error — fall back to secret
-        except JWTError:
-            raise ValueError("Invalid token")
+    jwks = await _fetch_jwks()
+    if jwks is None:
+        raise ValueError("Auth not configured or JWKS unavailable")
 
-    # Fall back to HS256 with secret
-    return decode_jwt_with_secret(token)
+    try:
+        key, alg = _find_signing_key(jwks, token)
+        payload = jwt.decode(
+            token,
+            key,
+            algorithms=[alg, "EdDSA", "RS256", "ES256"],
+            options={"verify_aud": False},
+        )
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise ValueError("Token expired")
+    except jwt.InvalidTokenError as e:
+        raise ValueError(f"Invalid token: {e}")

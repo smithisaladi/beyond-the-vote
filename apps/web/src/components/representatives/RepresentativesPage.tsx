@@ -40,7 +40,11 @@ function RepresentativesContent() {
     setAddress(addressParam)
   }, [addressParam])
 
-  // TODO: port useUrlState hook
+  // Sync search mode with URL
+  useEffect(() => {
+    if (modeParam === 'address' && searchMode !== 'address') setSearchMode('address')
+    if (modeParam === 'name' && searchMode !== 'name') setSearchMode('name')
+  }, [modeParam])
 
   const { data: representatives = [], isLoading: loading, error: _repError } = useRepresentatives(addressParam)
   const error = _repError ? String(_repError) : ''
@@ -223,7 +227,7 @@ function RepresentativesContent() {
 
               {!displayLoading && !displayError && displayRepresentatives.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                  {displayRepresentatives.map((rep) => (
+                  {displayRepresentatives.map((rep: any) => (
                     <RepresentativeCard
                       key={rep.id}
                       {...rep}

@@ -6,8 +6,8 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<Res
   const headers = new Headers(options?.headers);
 
   try {
-    // Try to get JWT token from Neon Auth
-    const token = await authClient.getJWTToken();
+    const session = await authClient.getSession();
+    const token = session?.data?.session?.token;
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }

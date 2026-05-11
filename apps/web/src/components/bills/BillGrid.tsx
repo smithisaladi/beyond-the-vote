@@ -2,8 +2,17 @@
 
 import { Link } from '@tanstack/react-router'
 
-// TODO: define Bill type properly
-type Bill = any
+interface Bill {
+  id: string
+  number: string | null
+  title: string
+  sponsor: string | null
+  party: string | null
+  status: string | null
+  topics: string[]
+  lastAction: string | null
+  summary: string | null
+}
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
 import { Card } from '@/components/ui/Card'
@@ -45,11 +54,11 @@ function BillCard({
   tracked: boolean
   onToggleTrack: () => void
 }) {
-  const party = PARTY_STYLES[bill.party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
-  const status = STATUS_STYLES[bill.status] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
+  const party = PARTY_STYLES[bill.party as keyof typeof PARTY_STYLES] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
+  const status = STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
 
   return (
-    <Link to={`/bills/${bill.id}`} className="block group">
+    <Link to="/bills/$billId" params={{ billId: bill.id }} className="block group">
       <Card as="article" hoverable className="cursor-pointer">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">

@@ -1,7 +1,8 @@
 
 
 import { useState, useEffect } from 'react'
-// TODO: port useAccountSettings hook
+import { useAuth } from '@/components/auth/AuthContext'
+import { authClient } from '@/lib/auth/neon'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 
@@ -45,14 +46,15 @@ function DeleteModal({ onConfirm, onCancel, loading }: {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
-  // TODO: port useAccountSettings hook — stubbed for now
-  const user = null as any
-  const [displayName, setDisplayName] = useState('')
-  const updateName = async (e: React.FormEvent) => { e.preventDefault() }
-  const changePassword = async (_newPw: string, _confirmPw: string) => {}
-  const signOut = async () => {}
-  const nameState = { loading: false, error: '', success: false }
-  const passwordState = { loading: false, error: '', success: false }
+  const { user, signOut } = useAuth()
+  const [displayName, setDisplayName] = useState(user?.name ?? '')
+  const [nameState, setNameState] = useState({ loading: false, error: '', success: false })
+  const [passwordState, setPasswordState] = useState({ loading: false, error: '', success: false })
+
+  // Sync displayName when user changes
+  useEffect(() => {
+    if (user?.name) setDisplayName(user.name)
+  }, [user?.name])
 
   // Password fields (transient form state — not persisted)
   const [currentPassword, setCurrentPassword] = useState('')
@@ -72,14 +74,39 @@ export default function SettingsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  const handleDeleteAccount = async () => {
-    setDeleteLoading(true)
-    await signOut()
+  const updateName = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setNameState({ loading: true, error: '', success: false })
+    try {
+      await authClient.updateUser({ name: displayName })
+      setNameState({ loading: false, error: '', success: true })
+    } catch (err: any) {
+      setNameState({ loading: false, error: err?.message ?? 'Failed to update name', success: false })
+    }
   }
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    await changePassword(newPassword, confirmPassword)
+    if (newPassword !== confirmPassword) {
+      setPasswordState({ loading: false, error: 'Passwords do not match', success: false })
+      return
+    }
+    setPasswordState({ loading: true, error: '', success: false })
+    try {
+      await authClient.changePassword({ currentPassword, newPassword })
+      setPasswordState({ loading: false, error: '', success: true })
+    } catch (err: any) {
+      setPasswordState({ loading: false, error: err?.message ?? 'Failed to update password', success: false })
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true)
+    try {
+      await signOut()
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────

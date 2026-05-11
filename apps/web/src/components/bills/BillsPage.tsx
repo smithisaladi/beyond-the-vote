@@ -1,11 +1,11 @@
 
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useRef, useCallback, useEffect } from 'react'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
-// TODO: port useBillFilters hook — using inline state for now
+import { useDebounce } from '@/hooks/useDebounce'
 import { useBills } from '@/hooks/queries/useBills'
-import { useTrackedBills } from '@/hooks/queries/useDashboard'
+import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
 import { topicToSlug } from '@/lib/topics'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -17,47 +17,108 @@ function BillsContent() {
   const { user } = useAuth()
   const { openSignIn } = useAuthModal()
 
-  // TODO: port useBillFilters hook — inline state for now
+  // Filter state
   const [query, setQuery] = useState('')
-  const [debouncedQuery] = useState('')
-  const selectedStatuses = new Set<string>()
-  const selectedTopics = new Set<string>()
-  const dateFilter = 'all'
-  const sort = 'newest'
-  const showTrackedOnly = false
-  const clearAll = () => {}
+  const debouncedQuery = useDebounce(query, 300)
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set())
+  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set())
+  const [dateFilter, setDateFilter] = useState('all')
+  const [sort, setSort] = useState('newest')
+  const [showTrackedOnly, setShowTrackedOnly] = useState(false)
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const toggleStatus = useCallback((s: string) => {
+    setSelectedStatuses(prev => {
+      const next = new Set(prev)
+      next.has(s) ? next.delete(s) : next.add(s)
+      return next
+    })
+  }, [])
+
+  const toggleTopic = useCallback((t: string) => {
+    setSelectedTopics(prev => {
+      const next = new Set(prev)
+      next.has(t) ? next.delete(t) : next.add(t)
+      return next
+    })
+  }, [])
+
+  const hasFilters = selectedStatuses.size > 0 || selectedTopics.size > 0 || dateFilter !== 'all' || showTrackedOnly
+  const clearAll = useCallback(() => {
+    setSelectedStatuses(new Set())
+    setSelectedTopics(new Set())
+    setDateFilter('all')
+    setSort('newest')
+    setShowTrackedOnly(false)
+  }, [])
+
   const filters = {
     query, setQuery, debouncedQuery,
-    selectedStatuses, toggleStatus: () => {},
-    selectedTopics, toggleTopic: () => {},
-    dateFilter, setDateFilter: () => {},
-    sort, setSort: () => {},
-    showTrackedOnly, setShowTrackedOnly: () => {},
-    hasFilters: false, clearAll,
-    openDropdown: null as string | null, setOpenDropdown: () => {},
-    dropdownRef: { current: null },
+    selectedStatuses, toggleStatus,
+    selectedTopics, toggleTopic,
+    dateFilter, setDateFilter,
+    sort, setSort,
+    showTrackedOnly, setShowTrackedOnly: (fn: (prev: boolean) => boolean) => setShowTrackedOnly(fn),
+    hasFilters, clearAll,
+    openDropdown, setOpenDropdown,
+    dropdownRef,
   }
 
-  // TODO: useTrackedBills returns React Query shape
-  const { data: _trackedData } = useTrackedBills()
-  const trackedBills = new Set<string>()
-  const _toggleTrack = (_billId: string) => {}
+  // Tracked bills
+  const { data: trackedData } = useTrackedBills()
+  const trackMutation = useTrackBill()
+  const trackedBills = new Set<string>((trackedData?.bills ?? []).map((b: any) => b.id))
 
-  const { data, isLoading: billsLoading, error: _billsError, refetch } = useBills({ q: debouncedQuery, sort })
+  // Build query params
+  const statusParam = selectedStatuses.size > 0 ? [...selectedStatuses].join(',') : undefined
+  const topicsParam = selectedTopics.size > 0 ? [...selectedTopics].map(t => topicToSlug(t as any)).join(',') : undefined
+
+  // Pagination
+  const [offset, setOffset] = useState(0)
+  const limit = 20
+
+  // Reset offset when filters change
+  useEffect(() => {
+    setOffset(0)
+  }, [debouncedQuery, statusParam, topicsParam, sort])
+
+  const { data, isLoading: billsLoading, error: _billsError, refetch } = useBills({
+    q: debouncedQuery || undefined,
+    status: statusParam,
+    topics: topicsParam,
+    sort: debouncedQuery ? undefined : sort,
+    limit,
+    offset,
+  })
+
   const bills = data?.bills ?? []
+  const total = data?.pagination?.total ?? 0
   const billsError = _billsError ? String(_billsError) : null
-  // TODO: port pagination
+  const hasMore = offset + limit < total
   const loadingMore = false
-  const loadMore = () => {}
-  const hasMore = false
+
+  const loadMore = () => {
+    setOffset(prev => prev + limit)
+  }
+
+  // Filter by tracked if showTrackedOnly
+  const displayBills = showTrackedOnly ? bills.filter((b: any) => trackedBills.has(b.id)) : bills
 
   const handleToggleTrack = (billId: string) => {
     if (!user) { openSignIn(); return }
-    _toggleTrack(billId)
-  }
-
-  const handleClearFiltersFromGrid = () => {
-    clearAll()
+    trackMutation.mutate({ billId, track: !trackedBills.has(billId) })
   }
 
   return (
@@ -93,7 +154,7 @@ function BillsContent() {
 
             {/* Bill list */}
             <BillGrid
-              bills={bills}
+              bills={displayBills}
               loading={billsLoading}
               loadingMore={loadingMore}
               error={billsError}
@@ -102,7 +163,7 @@ function BillsContent() {
               trackedBills={trackedBills}
               onToggleTrack={handleToggleTrack}
               showTrackedOnly={showTrackedOnly}
-              onClearFilters={handleClearFiltersFromGrid}
+              onClearFilters={clearAll}
               onRefetch={refetch}
             />
           </div>

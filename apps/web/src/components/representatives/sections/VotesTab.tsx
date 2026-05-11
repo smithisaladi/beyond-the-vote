@@ -66,13 +66,15 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
             const displayTitle = v.billTitle
               ? `${question}: ${v.billTitle}`
               : v.billId ? `${question}: ${formatBillId(v.billId)}` : v.bill
+            const vote = v.position ?? v.vote
             return (
               <div key={v.id} className="px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div>
                     {v.billId ? (
                       <Link
-                        href={`/bills/${v.billId}?from=/representatives/${politicianId}`}
+                        to="/bills/$billId"
+                        params={{ billId: v.billId }}
                         className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] hover:underline transition-colors"
                       >
                         {displayTitle}
@@ -83,13 +85,13 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
                     <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
                   </div>
                   <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
-                    v.vote === 'Yea' ? 'bg-[#68B085]/[0.12] text-[#68B085]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
+                    vote === 'Yea' ? 'bg-[#68B085]/[0.12] text-[#68B085]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
                   }`}>
-                    {v.vote}
+                    {vote}
                   </span>
                 </div>
                 {(v.donorAlignments?.length ?? 0) > 0 && (
-                  <DonorAlignmentPanel alignments={v.donorAlignments} />
+                  <DonorAlignmentPanel alignments={v.donorAlignments!} />
                 )}
               </div>
             )

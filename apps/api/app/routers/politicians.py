@@ -64,6 +64,7 @@ async def politician_detail(bioguide_id: str, db: AsyncSession = Depends(get_db)
     ideology = None
     committees = []
     votes = []
+    bills = []
     funding = {}
     top_pacs = []
     top_contributors = []
@@ -78,6 +79,10 @@ async def politician_detail(bioguide_id: str, db: AsyncSession = Depends(get_db)
         pass
     try:
         votes = await _get_recent_votes(db, bioguide_id)
+    except Exception:
+        pass
+    try:
+        bills = await _get_sponsored_bills(db, bioguide_id)
     except Exception:
         pass
     try:
@@ -125,6 +130,7 @@ async def politician_detail(bioguide_id: str, db: AsyncSession = Depends(get_db)
                 "ideologyLabel": ideology_label,
             },
             "votes": votes,
+            "bills": bills,
             "committees": committees,
             "pacDonors": top_pacs,
             "topContributors": top_contributors,
@@ -171,6 +177,21 @@ async def _get_recent_votes(db: AsyncSession, bioguide_id: str) -> list[dict]:
     return [{"date": str(r["date"]), "chamber": r["chamber"], "question": r.get("question"),
              "result": r["result"], "position": r["position"], "billId": r.get("bill_id"),
              "billTitle": r.get("bill_title")} for r in result.mappings().all()]
+
+
+async def _get_sponsored_bills(db: AsyncSession, bioguide_id: str) -> list[dict]:
+    result = await db.execute(
+        text("""SELECT bill_id, bill_number, title, status, introduced_date,
+                       last_action_date, last_action_text, policy_area, topics
+                FROM congress.bills
+                WHERE sponsor_bioguide_id = :id
+                ORDER BY introduced_date DESC NULLS LAST
+                LIMIT 50"""), {"id": bioguide_id})
+    return [{"id": r["bill_id"], "number": r.get("bill_number"), "title": r["title"],
+             "status": r.get("status"), "introducedDate": str(r["introduced_date"]) if r.get("introduced_date") else None,
+             "lastAction": str(r["last_action_date"]) if r.get("last_action_date") else None,
+             "policyArea": r.get("policy_area"), "topics": r.get("topics", [])}
+            for r in result.mappings().all()]
 
 
 async def _get_funding(db: AsyncSession, bioguide_id: str) -> dict:

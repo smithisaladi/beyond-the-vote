@@ -10,21 +10,26 @@ export interface DonorAlignment {
 
 export interface PoliticianVote {
   id: string
-  bill: string
+  bill?: string
   billId: string | null
-  billTitle: string
+  billTitle: string | null
   date: string
-  vote: 'Yea' | 'Nay'
+  vote?: 'Yea' | 'Nay'
+  position?: 'Yea' | 'Nay'
   question: string | null
-  donorAlignments: DonorAlignment[]
+  donorAlignments?: DonorAlignment[]
 }
 
 export interface PoliticianBill {
   id: string
-  name: string
-  number: string
-  status: 'Passed' | 'Pending' | 'Failed'
-  date: string
+  title?: string
+  name?: string
+  number: string | null
+  status: string | null
+  introducedDate?: string | null
+  lastAction?: string | null
+  policyArea?: string | null
+  topics?: string[]
 }
 
 export interface Donor {
