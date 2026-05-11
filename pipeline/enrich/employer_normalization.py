@@ -1,4 +1,8 @@
-"""Tier 1b: Employer normalization via embedding + HDBSCAN clustering."""
+"""Tier 1b: Employer normalization via embedding + HDBSCAN clustering.
+
+Uses blocking by first 3 characters to keep cluster sizes manageable.
+947K unique employers → ~15K blocks → HDBSCAN per block.
+"""
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -12,33 +16,34 @@ from enrich.stopwords import is_non_employer, normalize_employer_string
 
 log = structlog.get_logger()
 
-MODEL_VERSION = "employer_norm_v1_minilm_hdbscan"
+MODEL_VERSION = "employer_norm_v2_blocked_hdbscan"
+
+# Max block size before we skip HDBSCAN and just use exact-match grouping
+MAX_BLOCK_FOR_HDBSCAN = 5000
 
 
 def extract_unique_employers(parquet_path: Path) -> list[str]:
-    with duckdb_connect() as conn:
-        result = conn.execute(f"""
-            SELECT DISTINCT employer
-            FROM read_parquet('{parquet_path}')
-            WHERE employer IS NOT NULL AND employer != ''
-        """).fetchdf()
+    """Extract unique non-stopword employer strings from individual contributions."""
+    from shared.parquet import read_parquet_batched
 
-    employers = []
     seen = set()
-    for _, row in result.iterrows():
-        raw = str(row["employer"])
-        if is_non_employer(raw):
-            continue
-        normalized = normalize_employer_string(raw)
-        if normalized and normalized not in seen:
-            seen.add(normalized)
-            employers.append(raw.strip())
+    employers = []
+    for batch in read_parquet_batched(parquet_path, batch_size=200_000):
+        for row in batch:
+            raw = str(row.get("employer") or "")
+            if not raw or is_non_employer(raw):
+                continue
+            normalized = normalize_employer_string(raw)
+            if normalized and normalized not in seen:
+                seen.add(normalized)
+                employers.append(raw.strip())
 
     log.info("unique_employers_extracted", count=len(employers))
     return employers
 
 
 def pick_canonical_name(variants: list[str]) -> str:
+    """Pick the best canonical name from a list of variants."""
     if not variants:
         return ""
     if len(variants) == 1:
@@ -55,16 +60,38 @@ def pick_canonical_name(variants: list[str]) -> str:
     candidates = by_lower[best_lower]
     for c in candidates:
         if c != c.upper() and c != c.lower():
-            return c
+            return c  # Prefer mixed case
     return candidates[0]
 
 
-def cluster_employers(employers: list[str], model, min_cluster_size: int = 2) -> list[list[int]]:
+def _blocking_key(employer: str) -> str:
+    """Generate a blocking key from the first 3 chars of the normalized employer."""
+    normalized = normalize_employer_string(employer)
+    if len(normalized) < 3:
+        return normalized or "_short"
+    return normalized[:3]
+
+
+def cluster_block(employers: list[str], model, min_cluster_size: int = 2) -> list[list[int]]:
+    """Cluster a single block of employers. Returns list of clusters (each is list of indices)."""
     if not employers:
         return []
 
-    if model is None:
+    # Exact-match fallback for testing or oversized blocks
+    if model is None or len(employers) > MAX_BLOCK_FOR_HDBSCAN:
         groups: dict[str, list[int]] = defaultdict(list)
+        for i, emp in enumerate(employers):
+            groups[emp.lower()].append(i)
+        return list(groups.values())
+
+    # Single employer = its own cluster
+    if len(employers) == 1:
+        return [[0]]
+
+    # Need at least min_cluster_size for HDBSCAN
+    if len(employers) < min_cluster_size + 1:
+        # Too few for HDBSCAN — use exact match
+        groups = defaultdict(list)
         for i, emp in enumerate(employers):
             groups[emp.lower()].append(i)
         return list(groups.values())
@@ -93,6 +120,7 @@ def cluster_employers(employers: list[str], model, min_cluster_size: int = 2) ->
 
 
 def run_employer_normalization(parquet_path: Path) -> int:
+    """Run employer normalization with blocking. Returns rows uploaded."""
     model = get_model()
     employers = extract_unique_employers(parquet_path)
 
@@ -100,24 +128,48 @@ def run_employer_normalization(parquet_path: Path) -> int:
         log.warning("no_employers_to_normalize")
         return 0
 
-    clusters = cluster_employers(employers, model)
-    log.info("employer_clusters", count=len(clusters))
+    # Build blocks by prefix
+    blocks: dict[str, list[int]] = defaultdict(list)
+    for i, emp in enumerate(employers):
+        key = _blocking_key(emp)
+        blocks[key].append(i)
 
-    rows = []
-    for cluster_indices in clusters:
-        variants = [employers[i] for i in cluster_indices]
-        canonical_name = pick_canonical_name(variants)
-        canonical_id = f"emp_{hash(canonical_name.lower()) & 0xFFFFFFFF:08x}"
+    log.info("employer_blocks_built", blocks=len(blocks), employers=len(employers))
 
-        for idx in cluster_indices:
-            rows.append({
-                "canonical_employer_id": canonical_id,
-                "raw_string": employers[idx],
-                "canonical_name": canonical_name,
-                "confidence": 1.0 if len(cluster_indices) == 1 else 0.85,
-                "model_version": MODEL_VERSION,
-            })
+    all_rows = []
+    processed = 0
 
-    total = upsert("employer_canonical", rows, schema="enrichment")
-    log.info("employer_normalization_complete", clusters=len(clusters), rows=total)
+    for block_key, indices in blocks.items():
+        block_employers = [employers[i] for i in indices]
+        clusters = cluster_block(block_employers, model)
+
+        for cluster_indices in clusters:
+            variants = [block_employers[i] for i in cluster_indices]
+            canonical_name = pick_canonical_name(variants)
+            canonical_id = f"emp_{hash(canonical_name.lower()) & 0xFFFFFFFF:08x}"
+
+            for idx in cluster_indices:
+                original_idx = indices[idx]
+                all_rows.append({
+                    "canonical_employer_id": canonical_id,
+                    "raw_string": employers[original_idx],
+                    "canonical_name": canonical_name,
+                    "confidence": 1.0 if len(cluster_indices) == 1 else 0.85,
+                    "model_version": MODEL_VERSION,
+                })
+
+        processed += 1
+
+        # Upload in batches of 10K rows
+        if len(all_rows) >= 10000:
+            upsert("employer_canonical", all_rows, schema="enrichment")
+            log.info("employer_batch_uploaded", rows=len(all_rows), blocks_done=processed, total_blocks=len(blocks))
+            all_rows = []
+
+    # Upload remaining
+    if all_rows:
+        upsert("employer_canonical", all_rows, schema="enrichment")
+
+    total = sum(len(indices) for indices in blocks.values())
+    log.info("employer_normalization_complete", total=total, blocks=len(blocks))
     return total
