@@ -148,7 +148,7 @@ def run_suspicious_clusters(parquet_path: Path) -> int:
     # Clear old results
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute(f"DELETE FROM anomalies.suspicious_contribution_events WHERE model_version = '{MODEL_VERSION}'")
+    cur.execute("DELETE FROM anomalies.suspicious_contribution_events WHERE model_version = %s", (MODEL_VERSION,))
 
     import json
     for e in events:

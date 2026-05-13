@@ -25,6 +25,9 @@ def csv_to_parquet(
     columns: list[str] | None = None,
     header: bool = False,
 ) -> int:
+    # NOTE: DuckDB SQL does not support parameterized file paths in read_csv/read_parquet.
+    # The paths below are interpolated via f-strings. Callers must ensure paths are trusted
+    # (from config or internal logic, never from user input).
     with duckdb_connect() as conn:
         if columns and not header:
             names_str = ", ".join(f"'{c}'" for c in columns)

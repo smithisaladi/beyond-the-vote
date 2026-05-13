@@ -27,12 +27,13 @@ def main() -> None:
     run_id = log_run_start(SCRIPT)
     total_rows = 0
     try:
+        # Donor clustering runs once (reads from DB, not per-cycle parquet)
+        if not args.skip_clustering:
+            log.info("stage_donor_clustering")
+            total_rows += run_donor_clustering()
+
         for cycle in cycles:
-            indiv_parquet = DATA_DIR / "fec" / str(cycle) / "indiv.parquet"
             pas2_parquet = DATA_DIR / "fec" / str(cycle) / "pas2.parquet"
-            if not args.skip_clustering and indiv_parquet.exists():
-                log.info("stage_donor_clustering", cycle=cycle)
-                total_rows += run_donor_clustering(indiv_parquet)
             if not args.skip_money_flow and pas2_parquet.exists():
                 log.info("stage_money_flow", cycle=cycle)
                 total_rows += run_money_flow(pas2_parquet, cycle)

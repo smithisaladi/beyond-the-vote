@@ -112,14 +112,27 @@ def _compute_attribution(
 
 def extract_pac_transfers(parquet_path: Path) -> list[dict]:
     with duckdb_connect() as conn:
+        # PAC-to-candidate transfers (cand_id = H/S/P...)
+        # plus PAC-to-PAC transfers (other_id = C...)
         df = conn.execute(f"""
-            SELECT cmte_id as source_cmte, cand_id as dest_cmte,
-                   SUM(CAST(transaction_amt AS DOUBLE)) as amount
-            FROM read_parquet('{parquet_path}')
-            WHERE cand_id LIKE 'C%' AND transaction_tp IN ('24K', '24Z', '24A', '24E')
-            GROUP BY cmte_id, cand_id
+            SELECT source_cmte, dest_id, SUM(amount) as amount FROM (
+                -- PAC to candidate
+                SELECT cmte_id as source_cmte, cand_id as dest_id,
+                       CAST(transaction_amt AS DOUBLE) as amount
+                FROM read_parquet('{parquet_path}')
+                WHERE cand_id IS NOT NULL AND cand_id != ''
+                  AND transaction_tp IN ('24K', '24Z', '24A', '24E')
+                UNION ALL
+                -- PAC to PAC (other_id starts with C = committee)
+                SELECT cmte_id as source_cmte, other_id as dest_id,
+                       CAST(transaction_amt AS DOUBLE) as amount
+                FROM read_parquet('{parquet_path}')
+                WHERE other_id LIKE 'C%'
+                  AND transaction_tp IN ('24K', '24Z')
+            )
+            GROUP BY source_cmte, dest_id
         """).fetchdf()
-    transfers = [{"source_cmte": row["source_cmte"], "dest_cmte": row["dest_cmte"], "amount": float(row["amount"])}
+    transfers = [{"source_cmte": row["source_cmte"], "dest_cmte": row["dest_id"], "amount": float(row["amount"])}
                  for _, row in df.iterrows()]
     log.info("pac_transfers_extracted", count=len(transfers))
     return transfers

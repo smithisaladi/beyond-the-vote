@@ -14,6 +14,7 @@ FEC_CYCLES = [2024, 2026]
 PAS2_COLS = ["cmte_id", "amndt_ind", "rpt_tp", "transaction_pgi", "image_num", "transaction_tp", "entity_tp", "name", "city", "state", "zip_code", "employer", "occupation", "transaction_dt", "transaction_amt", "other_id", "cand_id", "tran_id", "file_num", "memo_cd", "memo_text", "sub_id"]
 INDIV_COLS = ["cmte_id", "amndt_ind", "rpt_tp", "transaction_pgi", "image_num", "transaction_tp", "entity_tp", "name", "city", "state", "zip_code", "employer", "occupation", "transaction_dt", "transaction_amt", "other_id", "tran_id", "file_num", "memo_cd", "memo_text", "sub_id"]
 CM_COLS = ["cmte_id", "cmte_nm", "tres_nm", "cmte_st1", "cmte_st2", "cmte_city", "cmte_st", "cmte_zip", "cmte_dsgn", "cmte_tp", "cmte_pty_affiliation", "cmte_filing_freq", "org_tp", "connected_org_nm", "cand_id"]
+CN_COLS = ["cand_id", "cand_name", "cand_pty_affiliation", "cand_election_yr", "cand_office_st", "cand_office", "cand_office_district", "cand_ici", "cand_status", "cand_pcc", "cand_st1", "cand_st2", "cand_city", "cand_st", "cand_zip"]
 
 def download_fec_file(cycle: int, file_type: str, dest_dir: Path) -> Path:
     yy = str(cycle)[-2:]
@@ -55,7 +56,7 @@ def download_and_convert_cycle(cycle: int, data_dir: Path) -> dict[str, Path]:
     fec_dir = data_dir / "fec" / str(cycle)
     fec_dir.mkdir(parents=True, exist_ok=True)
     results = {}
-    for file_type, cols in [("pas2", PAS2_COLS), ("indiv", INDIV_COLS), ("cm", CM_COLS)]:
+    for file_type, cols in [("pas2", PAS2_COLS), ("indiv", INDIV_COLS), ("cm", CM_COLS), ("cn", CN_COLS)]:
         txt_path = download_fec_file(cycle, file_type, fec_dir)
         parquet_path = fec_dir / f"{file_type}.parquet"
         convert_to_parquet(txt_path, parquet_path, cols)

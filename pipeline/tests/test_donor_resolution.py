@@ -46,21 +46,25 @@ def test_extract_donors_from_parquet(tmp_path):
 def test_cluster_block_single_donor():
     donors = [
         {"sub_id": 1, "name": "SMITH, JOHN", "employer": "GOLDMAN SACHS",
-         "address": "123 MAIN ST NEW YORK NY 10001", "zip5": "10001"},
+         "city": "NEW YORK", "state": "NY", "zip5": "10001"},
     ]
     results = cluster_block(donors, model=None, threshold=0.15)
+    # Returns dict[int, list[int]] — one cluster with one index
     assert len(results) == 1
-    assert results[0]["canonical_id"] is not None
-    assert results[0]["confidence"] == 1.0
+    assert 0 in results
+    assert results[0] == [0]
 
 
 def test_cluster_block_identical_donors_same_cluster():
     donors = [
         {"sub_id": 1, "name": "SMITH, JOHN", "employer": "GOLDMAN SACHS",
-         "address": "123 MAIN ST NEW YORK NY", "zip5": "10001"},
+         "city": "NEW YORK", "state": "NY", "zip5": "10001"},
         {"sub_id": 2, "name": "SMITH, JOHN", "employer": "GOLDMAN SACHS",
-         "address": "123 MAIN ST NEW YORK NY", "zip5": "10001"},
+         "city": "NEW YORK", "state": "NY", "zip5": "10001"},
     ]
     results = cluster_block(donors, model=None, threshold=0.15)
-    assert len(results) == 2
-    assert results[0]["canonical_id"] == results[1]["canonical_id"]
+    # Identical donors should be in one cluster with both indices
+    assert len(results) == 1
+    cluster_indices = list(results.values())[0]
+    assert 0 in cluster_indices
+    assert 1 in cluster_indices

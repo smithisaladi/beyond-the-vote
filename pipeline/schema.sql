@@ -234,20 +234,25 @@ CREATE INDEX ON fec.candidates (cycle);
 -- enrichment.* — ML-produced clean data (Tier 1)
 -- ============================================================
 
+-- One row per canonical donor (condensed from resolved contributions).
+-- Only donors with total contributions > $200 are stored.
 CREATE TABLE enrichment.donor_canonical (
-    id              bigserial PRIMARY KEY,
-    canonical_id    text NOT NULL,
-    contribution_id bigint NOT NULL,
-    raw_name        text,
-    raw_employer    text,
-    raw_address     text,
+    canonical_id    text PRIMARY KEY,
+    display_name    text NOT NULL,
+    employer        text,
+    city            text,
+    state           text,
+    zip5            text,
+    total_amount    numeric(12,2) NOT NULL DEFAULT 0,
+    contribution_count integer NOT NULL DEFAULT 0,
+    cmte_ids        text[] NOT NULL DEFAULT '{}',
     confidence      real NOT NULL,
     model_version   text NOT NULL,
     created_at      timestamptz DEFAULT now()
 );
 
-CREATE INDEX ON enrichment.donor_canonical (canonical_id);
-CREATE INDEX ON enrichment.donor_canonical (model_version);
+CREATE INDEX ON enrichment.donor_canonical (state);
+CREATE INDEX ON enrichment.donor_canonical (total_amount DESC);
 
 CREATE TABLE enrichment.employer_canonical (
     id              bigserial PRIMARY KEY,
@@ -538,6 +543,23 @@ CREATE TABLE derived.contributor_leaderboard_cache (
 
 CREATE INDEX ON derived.contributor_leaderboard_cache (total_contributions DESC);
 CREATE INDEX ON derived.contributor_leaderboard_cache USING gin(cmte_name gin_trgm_ops);
+
+CREATE TABLE derived.pac_top_funders (
+    cmte_id             text NOT NULL,
+    canonical_donor_id  text NOT NULL,
+    display_name        text NOT NULL,
+    employer            text,
+    state               text,
+    total_amount        numeric(12,2) NOT NULL,
+    contribution_count  integer NOT NULL,
+    confidence          real NOT NULL,
+    rank                integer NOT NULL,
+    cycle               smallint NOT NULL,
+    computed_at         timestamptz DEFAULT now(),
+    PRIMARY KEY (cmte_id, cycle, canonical_donor_id)
+);
+
+CREATE INDEX ON derived.pac_top_funders (cmte_id, cycle, rank);
 
 -- ============================================================
 -- ops.* — Pipeline operations

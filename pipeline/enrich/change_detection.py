@@ -189,7 +189,7 @@ def run_change_detection(parquet_path: Path) -> int:
     # Clear old results
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute(f"DELETE FROM anomalies.committee_change_points WHERE model_version = '{MODEL_VERSION}'")
+    cur.execute("DELETE FROM anomalies.committee_change_points WHERE model_version = %s", (MODEL_VERSION,))
 
     total = upsert("committee_change_points", all_changes, schema="anomalies")
     log.info("change_points_uploaded", count=total)
