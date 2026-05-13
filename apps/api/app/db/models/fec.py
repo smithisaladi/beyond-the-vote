@@ -36,6 +36,19 @@ class IndependentExpenditure(Base):
     cycle: Mapped[Optional[int]] = mapped_column(SmallInteger, nullable=True)
 
 
+class Candidate(Base):
+    __tablename__ = "candidates"
+    __table_args__ = {"schema": "fec"}
+
+    cand_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    cand_name: Mapped[str] = mapped_column(Text)
+    cand_party: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    cand_office: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    cand_state: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    cand_district: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    cycle: Mapped[int] = mapped_column(SmallInteger)
+
+
 class CmteName(Base):
     __tablename__ = "cmte_names"
     __table_args__ = {"schema": "fec"}

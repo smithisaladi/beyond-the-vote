@@ -13,12 +13,15 @@ router = APIRouter(prefix="/api/representatives", tags=["representatives"])
 async def lookup_representatives(address: str = Query(..., min_length=5), db: AsyncSession = Depends(get_db)):
     if not settings.geocodio_api_key:
         raise HTTPException(status_code=503, detail="Geocoding not configured")
-    async with httpx.AsyncClient() as client:
-        resp = await client.get("https://api.geocod.io/v1.7/geocode",
-                                params={"q": address, "fields": "cd", "api_key": settings.geocodio_api_key}, timeout=10)
-        if resp.status_code != 200:
-            raise HTTPException(status_code=502, detail="Geocoding failed")
-        data = resp.json()
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://api.geocod.io/v1.7/geocode",
+                                    params={"q": address, "fields": "cd", "api_key": settings.geocodio_api_key}, timeout=10)
+            if resp.status_code != 200:
+                raise HTTPException(status_code=502, detail="Geocoding failed")
+            data = resp.json()
+    except httpx.HTTPError as e:
+        raise HTTPException(status_code=502, detail=f"Geocoding service unavailable: {e}")
     results = data.get("results", [])
     if not results:
         return {"representatives": []}

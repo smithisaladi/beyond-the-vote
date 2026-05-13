@@ -1,12 +1,14 @@
 import pytest
-from app.auth import decode_jwt_with_secret
+from app.auth import validate_token
 
 
-def test_decode_jwt_missing_token():
+@pytest.mark.asyncio
+async def test_validate_token_missing():
     with pytest.raises(ValueError, match="Missing"):
-        decode_jwt_with_secret("")
+        await validate_token("")
 
 
-def test_decode_jwt_malformed_token():
+@pytest.mark.asyncio
+async def test_validate_token_malformed():
     with pytest.raises(ValueError):
-        decode_jwt_with_secret("not-a-jwt-token")
+        await validate_token("not-a-jwt-token")

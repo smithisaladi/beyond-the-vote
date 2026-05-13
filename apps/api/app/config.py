@@ -17,7 +17,6 @@ class Settings(BaseSettings):
 
     # Neon Auth
     neon_auth_url: str = ""  # e.g. https://ep-xxx.neonauth.us-east-1.aws.neon.tech/neondb/auth
-    neon_auth_jwt_secret: str = ""  # Better Auth secret for HS256 validation
 
     model_config = {"env_prefix": "", "env_file": ".env", "extra": "ignore"}
 

@@ -1,6 +1,7 @@
 # apps/api/app/routers/politicians.py
 """Politician endpoints: search + detail."""
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,10 +9,13 @@ from cachetools import TTLCache
 
 from app.deps import get_db
 
+log = structlog.get_logger()
+
 router = APIRouter(prefix="/api/politicians", tags=["politicians"])
 
 # Cache top contributors for 24 hours (keyed by bioguide_id)
 _contributors_cache: TTLCache = TTLCache(maxsize=500, ttl=60 * 60 * 24)
+_top_pacs_cache: TTLCache = TTLCache(maxsize=500, ttl=60 * 60 * 24)
 
 _IDEOLOGY_LIBERAL_THRESHOLD = -0.3
 _IDEOLOGY_CONSERVATIVE_THRESHOLD = 0.3
@@ -75,32 +79,32 @@ async def politician_detail(bioguide_id: str, db: AsyncSession = Depends(get_db)
 
     try:
         ideology = await _get_ideology(db, bioguide_id)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("politician_subquery_failed", query="ideology", bioguide_id=bioguide_id, error=str(e))
     try:
         committees = await _get_committees(db, bioguide_id)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("politician_subquery_failed", query="committees", bioguide_id=bioguide_id, error=str(e))
     try:
         votes = await _get_recent_votes(db, bioguide_id)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("politician_subquery_failed", query="votes", bioguide_id=bioguide_id, error=str(e))
     try:
         bills = await _get_sponsored_bills(db, bioguide_id)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("politician_subquery_failed", query="bills", bioguide_id=bioguide_id, error=str(e))
     try:
         funding = await _get_funding(db, bioguide_id)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("politician_subquery_failed", query="funding", bioguide_id=bioguide_id, error=str(e))
     try:
         top_pacs = await _get_top_pacs(db, bioguide_id)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("politician_subquery_failed", query="top_pacs", bioguide_id=bioguide_id, error=str(e))
     try:
         top_contributors = await _get_top_contributors(db, bioguide_id)
-    except Exception:
-        pass
+    except Exception as e:
+        log.warning("politician_subquery_failed", query="top_contributors", bioguide_id=bioguide_id, error=str(e))
 
     district_str = f"{profile['district']}th District" if profile.get("district") else None
     years_in_office = None
@@ -250,6 +254,8 @@ async def _get_funding(db: AsyncSession, bioguide_id: str) -> dict:
 
 async def _get_top_pacs(db: AsyncSession, bioguide_id: str) -> list[dict]:
     """Compute top PACs live from FEC tables."""
+    if bioguide_id in _top_pacs_cache:
+        return _top_pacs_cache[bioguide_id]
     result = await db.execute(
         text("""
         WITH fec_ids AS (
@@ -281,14 +287,16 @@ async def _get_top_pacs(db: AsyncSession, bioguide_id: str) -> list[dict]:
         ORDER BY c.total_support DESC
         LIMIT 20"""),
         {"id": bioguide_id})
-    return [{"cmteId": r["cmte_id"], "cmteName": r.get("cmte_name"),
+    rows = [{"cmteId": r["cmte_id"], "cmteName": r.get("cmte_name"),
              "directContribution": float(r.get("direct_contribution") or 0),
              "ieFor": float(r.get("ie_for") or 0), "totalSupport": float(r.get("total_support") or 0)}
             for r in result.mappings().all()]
+    _top_pacs_cache[bioguide_id] = rows
+    return rows
 
 
 async def _get_top_contributors(db: AsyncSession, bioguide_id: str) -> list[dict]:
-    """Top employers/orgs: group PAC contributions by connected_org (parent organization)."""
+    """Top employers/orgs: group PAC contributions + IE support by connected_org."""
     if bioguide_id in _contributors_cache:
         return _contributors_cache[bioguide_id]
     result = await db.execute(
@@ -296,28 +304,47 @@ async def _get_top_contributors(db: AsyncSession, bioguide_id: str) -> list[dict
         WITH fec_ids AS (
             SELECT unnest(fec_ids) as cand_id FROM congress.legislators WHERE bioguide_id = :id
         ),
-        pac_contributions AS (
-            SELECT p.cmte_id, p.transaction_amt
-            FROM fec.pac_to_candidate p
-            WHERE p.cand_id IN (SELECT cand_id FROM fec_ids)
+        pac_direct AS (
+            SELECT cmte_id, SUM(transaction_amt) as direct, 0::numeric as ie_for
+            FROM fec.pac_to_candidate
+            WHERE cand_id IN (SELECT cand_id FROM fec_ids)
+            GROUP BY cmte_id
+        ),
+        ie_support AS (
+            SELECT cmte_id, 0::numeric as direct, SUM(transaction_amt) as ie_for
+            FROM fec.independent_expenditures
+            WHERE cand_id IN (SELECT cand_id FROM fec_ids) AND sup_opp = 'S'
+            GROUP BY cmte_id
+        ),
+        all_contributions AS (
+            SELECT * FROM pac_direct
+            UNION ALL
+            SELECT * FROM ie_support
+        ),
+        by_cmte AS (
+            SELECT cmte_id, SUM(direct) as direct, SUM(ie_for) as ie_for,
+                   SUM(direct) + SUM(ie_for) as total
+            FROM all_contributions
+            GROUP BY cmte_id
         ),
         by_org AS (
             SELECT COALESCE(NULLIF(cn.connected_org, ''), cn.cmte_name) as org_name,
-                   cn.cmte_id,
-                   SUM(pc.transaction_amt) as total
-            FROM pac_contributions pc
-            JOIN fec.cmte_names cn ON cn.cmte_id = pc.cmte_id
-            GROUP BY COALESCE(NULLIF(cn.connected_org, ''), cn.cmte_name), cn.cmte_id
+                   bc.cmte_id, bc.direct, bc.ie_for, bc.total
+            FROM by_cmte bc
+            JOIN fec.cmte_names cn ON cn.cmte_id = bc.cmte_id
         )
-        SELECT org_name, cmte_id, total,
+        SELECT org_name, cmte_id, direct, ie_for, total,
                ROW_NUMBER() OVER (ORDER BY total DESC) as rank
         FROM by_org
         WHERE org_name IS NOT NULL
         ORDER BY total DESC
         LIMIT 10"""),
         {"id": bioguide_id})
-    rows = [{"rank": int(r["rank"]), "orgName": r["org_name"], "total": f"${float(r['total']):,.0f}",
-              "cmteId": r.get("cmte_id")}
+    rows = [{"rank": int(r["rank"]), "orgName": r["org_name"],
+             "total": f"${float(r['total']):,.0f}",
+             "direct": float(r.get("direct") or 0),
+             "ieFor": float(r.get("ie_for") or 0),
+             "cmteId": r.get("cmte_id")}
              for r in result.mappings().all()]
     _contributors_cache[bioguide_id] = rows
     return rows

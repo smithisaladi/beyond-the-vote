@@ -96,6 +96,23 @@ class LegislatorTopContributor(Base):
     rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
 
+class PacTopFunders(Base):
+    __tablename__ = "pac_top_funders"
+    __table_args__ = {"schema": "derived"}
+
+    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    cycle: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
+    canonical_donor_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    display_name: Mapped[str] = mapped_column(Text)
+    employer: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    total_amount: Mapped[float] = mapped_column(Numeric(12, 2))
+    contribution_count: Mapped[int] = mapped_column(Integer)
+    confidence: Mapped[float] = mapped_column(Numeric(5, 3))
+    rank: Mapped[int] = mapped_column(Integer)
+    computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class ContributorLeaderboardCache(Base):
     __tablename__ = "contributor_leaderboard_cache"
     __table_args__ = {"schema": "derived"}

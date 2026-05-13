@@ -1,5 +1,6 @@
 # apps/api/app/routers/bills.py
 """Bill endpoints: list, search, detail, by-topic."""
+from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,7 +17,7 @@ async def list_bills(
     q: str | None = None,
     status: str | None = None,
     topics: str | None = None,
-    sort: str = "newest",
+    sort: Literal["newest", "oldest"] = "newest",
     limit: int = Query(default=20, le=250),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),

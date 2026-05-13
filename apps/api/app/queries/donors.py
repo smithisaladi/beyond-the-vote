@@ -3,7 +3,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 
-async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit: int = 20, offset: int = 0) -> tuple[list[dict], int]:
+async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle: int | None = None, limit: int = 20, offset: int = 0) -> tuple[list[dict], int]:
     """Live leaderboard from fec.pac_to_candidate + fec.independent_expenditures."""
     params: dict = {"limit": limit, "offset": offset}
 
@@ -12,14 +12,18 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit:
         name_filter = "AND cmte_name ILIKE :pattern"
         params["pattern"] = f"%{q}%"
 
+    cycle_filter_pac = ""
+    cycle_filter_ie = ""
+    if cycle:
+        cycle_filter_pac = "WHERE cycle = :cycle"
+        cycle_filter_ie = "WHERE cycle = :cycle"
+        params["cycle"] = cycle
+
     sql = f"""
-    WITH congress_cand_ids AS (
-        SELECT unnest(fec_ids) AS cand_id FROM congress.legislators
-    ),
-    pac_totals AS (
+    WITH pac_totals AS (
         SELECT cmte_id, SUM(transaction_amt) as direct_total
         FROM fec.pac_to_candidate
-        WHERE cand_id IN (SELECT cand_id FROM congress_cand_ids)
+        {cycle_filter_pac}
         GROUP BY cmte_id
     ),
     ie_totals AS (
@@ -27,7 +31,7 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit:
                SUM(CASE WHEN sup_opp = 'S' THEN transaction_amt ELSE 0 END) as ie_for_total,
                SUM(CASE WHEN sup_opp = 'O' THEN transaction_amt ELSE 0 END) as ie_against_total
         FROM fec.independent_expenditures
-        WHERE cand_id IN (SELECT cand_id FROM congress_cand_ids)
+        {cycle_filter_ie}
         GROUP BY cmte_id
     ),
     combined AS (
@@ -61,23 +65,29 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, limit:
     return [dict(r) for r in rows], total
 
 
-async def pac_detail(session: AsyncSession, cmte_id: str) -> dict | None:
-    """Get PAC detail with aggregated contributions and top recipients."""
-    sql = """
-    WITH congress_cand_ids AS (
-        SELECT unnest(fec_ids) AS cand_id FROM congress.legislators
-    ),
-    cmte_info AS (
+async def pac_detail(session: AsyncSession, cmte_id: str, cycle: int | None = None) -> dict | None:
+    """Get PAC detail with aggregated contributions and top recipients (all candidates)."""
+    params: dict = {"cmte_id": cmte_id}
+
+    cycle_filter_pac = ""
+    cycle_filter_ie = ""
+    if cycle:
+        cycle_filter_pac = "AND cycle = :cycle"
+        cycle_filter_ie = "AND cycle = :cycle"
+        params["cycle"] = cycle
+
+    sql = f"""
+    WITH cmte_info AS (
         SELECT cmte_id, cmte_name, connected_org FROM fec.cmte_names WHERE cmte_id = :cmte_id
     ),
     direct AS (
         SELECT cand_id, SUM(transaction_amt) AS direct_total FROM fec.pac_to_candidate
-        WHERE cmte_id = :cmte_id AND cand_id IN (SELECT cand_id FROM congress_cand_ids)
+        WHERE cmte_id = :cmte_id {cycle_filter_pac}
         GROUP BY cand_id
     ),
     ie AS (
         SELECT cand_id, sup_opp, SUM(transaction_amt) AS ie_total FROM fec.independent_expenditures
-        WHERE cmte_id = :cmte_id AND cand_id IN (SELECT cand_id FROM congress_cand_ids)
+        WHERE cmte_id = :cmte_id {cycle_filter_ie}
         GROUP BY cand_id, sup_opp
     ),
     per_candidate AS (
@@ -92,14 +102,18 @@ async def pac_detail(session: AsyncSession, cmte_id: str) -> dict | None:
     SELECT ci.cmte_name, ci.connected_org,
            pc.cand_id, pc.direct, pc.ie_for, pc.ie_against,
            pc.direct + pc.ie_for AS total_support,
-           l.bioguide_id, l.full_name, l.party, l.state, l.chamber
+           l.bioguide_id, COALESCE(l.full_name, fc.cand_name) as full_name,
+           COALESCE(l.party, fc.cand_party) as party,
+           COALESCE(l.state, fc.cand_state) as state,
+           l.chamber
     FROM cmte_info ci
     CROSS JOIN per_candidate pc
     LEFT JOIN congress.legislators l ON pc.cand_id = ANY(l.fec_ids)
+    LEFT JOIN fec.candidates fc ON fc.cand_id = pc.cand_id
+    WHERE pc.direct + pc.ie_for + pc.ie_against > 0
     ORDER BY total_support DESC
-    LIMIT 20
     """
-    result = await session.execute(text(sql), {"cmte_id": cmte_id})
+    result = await session.execute(text(sql), params)
     rows = result.mappings().all()
     if not rows:
         return None
