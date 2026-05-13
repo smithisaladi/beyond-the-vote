@@ -1,5 +1,16 @@
 export const FEC_DISPLAY_CYCLES = '2023–2026'
 
+export const FEC_CYCLE_OPTIONS = [
+  { value: null, label: 'All Cycles (2024 + 2026)' },
+  { value: 2024, label: '2024 Cycle' },
+  { value: 2026, label: '2026 Cycle' },
+] as const
+
+export function cycleLabel(cycle: number | null): string {
+  if (!cycle) return '2024–2026'
+  return String(cycle)
+}
+
 export const getFecCommitteeUrl = (cmteId: string) =>
   `https://www.fec.gov/data/committee/${cmteId}/`
 

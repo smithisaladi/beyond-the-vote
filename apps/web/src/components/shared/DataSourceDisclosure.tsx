@@ -16,6 +16,7 @@ export default function DataSourceDisclosure({ showAiDisclaimer, className = '' 
     <div className={className}>
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
         className="flex items-center gap-1.5 text-xs text-[#1C1C1A]/38 hover:text-[#1C1C1A]/55 transition-colors mx-auto"
       >
         <Info size={14} strokeWidth={1.8} />

@@ -1,6 +1,6 @@
 
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { LogOut, UserMinus } from 'lucide-react'
 
@@ -50,7 +50,7 @@ export default function DashboardPage() {
   const { data: trackedData, isLoading: loadingTracked } = useTrackedBills()
   const politicians = followedData?.politicians || []
   const trackedBills = trackedData?.bills || []
-  const activityFeed: any[] = []
+  const activityFeed: { id: string; politician: string | null; action: string; subject: string; date: string; timestamp: number; href: string | null; isAlert: boolean }[] = []
   const loading = loadingFollowed || loadingTracked
 
   const [photoErrors, setPhotoErrors] = useState<Set<string>>(new Set())
@@ -61,17 +61,7 @@ export default function DashboardPage() {
 
   const visiblePoliticians = politicians
 
-  const maxActivityTimestamp = useMemo(() => activityFeed.reduce((acc: number, a: any) => Math.max(acc, a.timestamp), 0), [activityFeed])
-  const [lastSeenTimestamp] = useState(() => {
-    const stored = localStorage.getItem('activitySeenAt')
-    return stored ? Number(stored) : 0
-  })
-  useEffect(() => {
-    if (maxActivityTimestamp > 0) {
-      localStorage.setItem('activitySeenAt', String(maxActivityTimestamp))
-    }
-  }, [maxActivityTimestamp])
-  const isNew = (timestamp: number) => timestamp > lastSeenTimestamp
+  const isNew = (_timestamp: number) => false
 
   return (
     <div className="relative flex-1 flex flex-col min-h-screen overflow-hidden">
@@ -141,7 +131,7 @@ export default function DashboardPage() {
                   />
                 ) : (
                   <Card padding="none" className="overflow-hidden max-h-[340px] overflow-y-auto">
-                    {visiblePoliticians.map((pol: any, idx: number) => {
+                    {visiblePoliticians.map((pol: { id: string; name: string; party: string; state: string; photo?: string }, idx: number) => {
                       const badge = PARTY_STYLES[pol.party as keyof typeof PARTY_STYLES] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
                       return (
                         <div
@@ -152,7 +142,7 @@ export default function DashboardPage() {
                             <div className="relative w-9 h-9 flex-shrink-0">
                               <div className="w-9 h-9 rounded-full bg-[#E8E3DA] flex items-center justify-center">
                                 <span className="text-xs text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
-                                  {pol.name.split(' ').map((p: any) => p[0]).join('').slice(0, 2).toUpperCase()}
+                                  {pol.name.split(' ').map((p: string) => p[0]).join('').slice(0, 2).toUpperCase()}
                                 </span>
                               </div>
                               {pol.photo && !photoErrors.has(pol.id) && (
@@ -216,7 +206,7 @@ export default function DashboardPage() {
                   />
                 ) : (
                   <Card padding="none" className="overflow-hidden max-h-[400px] overflow-y-auto">
-                    {trackedBills.map((bill: any, idx: number) => {
+                    {trackedBills.map((bill: { id: string; number: string; title: string; status: string }, idx: number) => {
                       const s = STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active
                       return (
                         <Link

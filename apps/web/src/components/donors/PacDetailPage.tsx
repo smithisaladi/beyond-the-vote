@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { usePacDetail, useGeneratePacSummary } from '@/hooks/queries/useDonors'
+import { MoneyFlowSection } from '@/components/donors/MoneyFlowSection'
 interface PacDetailRecipient {
   bioguideId: string
   name: string
@@ -164,7 +165,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
     if (pac && !pac.summary && !summaryMutation.isPending && !summaryMutation.isSuccess && !summaryMutation.isError) {
       summaryMutation.mutate()
     }
-  }, [pac?.summary, pac != null])
+  }, [pac, summaryMutation.isPending, summaryMutation.isSuccess, summaryMutation.isError])
 
   const summaryLoading = summaryMutation.isPending
 
@@ -176,7 +177,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
     if (!pac) return []
     const list = partyFilter === 'all'
       ? pac.recipients
-      : pac.recipients.filter((r: any) => toParty(r.party) === partyFilter)
+      : pac.recipients.filter((r: PacDetailRecipient) => toParty(r.party) === partyFilter)
     const sorted = [...list]
     if (sortKey === 'amount') {
       sorted.sort((a, b) => b.amount - a.amount)
@@ -209,7 +210,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
             sublabel="Supporting candidates"
             tooltip="ieFor"
             amount={pac.ieForTotal}
-            valueClassName="text-[#4A8B6F]"
+            valueClassName="text-[#68B085]"
           />
         ),
         pac.ieAgainstTotal > 0 && (
@@ -219,7 +220,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
             sublabel="Opposing candidates"
             tooltip="ieAgainst"
             amount={pac.ieAgainstTotal}
-            valueClassName="text-[#C4553A]"
+            valueClassName="text-[#B85C38]"
           />
         ),
       ].filter(Boolean)
@@ -310,6 +311,11 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                   ) : null}
                 </Card>
               )}
+
+              {/* Money flow — Follow the Money */}
+              <div className="mb-6">
+                <MoneyFlowSection cmteId={cmteId} cmteName={pac.name} />
+              </div>
 
               {/* Funding breakdown row — zero-value cards hidden */}
               {fundingCards.length > 0 && (

@@ -19,12 +19,13 @@ interface ContributorEntry {
   ieAgainstTotal: number
   recipientCount: number
   topRecipients: ContributorRecipient[]
+  rank: number
 }
 import { useDebounce } from '@/hooks/useDebounce'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
-import { FEC_DISPLAY_CYCLES } from '@/lib/fec'
+import { FEC_CYCLE_OPTIONS, cycleLabel } from '@/lib/fec'
 import { formatTotal } from '@/lib/format'
 import { PARTY_STYLES } from '@/lib/ui'
 import { Card } from '@/components/ui/Card'
@@ -141,18 +142,19 @@ function DonorsContent() {
 
   const [query, setQuery] = useState(searchParams['q'] ?? '')
   const debouncedQuery = useDebounce(query, 300)
+  const [selectedCycle, setSelectedCycle] = useState<number | null>(null)
   const [offset, setOffset] = useState(0)
-  const [accumulated, setAccumulated] = useState<any[]>([])
+  const [accumulated, setAccumulated] = useState<ContributorEntry[]>([])
   const limit = 20
 
-  // Reset offset and accumulated results when search changes
+  // Reset offset and accumulated results when search or cycle changes
   useEffect(() => {
     setOffset(0)
     setAccumulated([])
-  }, [debouncedQuery])
+  }, [debouncedQuery, selectedCycle])
 
-  const { data, isLoading: loading, isFetching, error: _donorError, refetch } = useDonors({ q: debouncedQuery, limit, offset })
-  const freshContributors = data?.contributors ?? data ?? []
+  const { data, isLoading: loading, isFetching, error: _donorError, refetch } = useDonors({ q: debouncedQuery, cycle: selectedCycle, limit, offset })
+  const freshContributors = data?.contributors ?? []
   const total = data?.pagination?.total ?? 0
   const error = _donorError ? String(_donorError) : null
 
@@ -192,7 +194,7 @@ function DonorsContent() {
               <p className="text-sm text-[#1C1C1A]/50">
                 PACs that spend the most supporting candidates across Congress.
                 <span className="inline-flex items-center ml-1.5 text-xs text-[#1C1C1A]/38">
-                  FEC · {FEC_DISPLAY_CYCLES}
+                  FEC · {cycleLabel(selectedCycle)}
                   <InfoTooltip term="fecCycle" />
                 </span>
               </p>
@@ -209,15 +211,26 @@ function DonorsContent() {
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   placeholder="Search organizations…"
+                  aria-label="Search organizations"
                   className="flex-1 bg-transparent outline-none text-[15px] text-[#1C1C1A] placeholder:text-[#1C1C1A]/35"
                 />
                 {query && (
-                  <button onClick={() => setQuery('')} className="text-[#1C1C1A]/35 hover:text-[#1C1C1A]/60 flex-shrink-0">
+                  <button onClick={() => setQuery('')} aria-label="Clear search" className="text-[#1C1C1A]/35 hover:text-[#1C1C1A]/60 flex-shrink-0">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                     </svg>
                   </button>
                 )}
+                <select
+                  value={selectedCycle ?? ''}
+                  onChange={e => setSelectedCycle(e.target.value ? Number(e.target.value) : null)}
+                  aria-label="Filter by election cycle"
+                  className="flex-shrink-0 bg-transparent text-[13px] text-[#1C1C1A]/60 border border-[rgba(28,28,26,0.12)] rounded-lg px-2.5 py-1.5 outline-none cursor-pointer hover:border-[#7B5E8A]/30 focus:border-[#7B5E8A]/50 transition-colors"
+                >
+                  {FEC_CYCLE_OPTIONS.map(opt => (
+                    <option key={opt.label} value={opt.value ?? ''}>{opt.label}</option>
+                  ))}
+                </select>
               </div>
             </Card>
 
@@ -255,7 +268,7 @@ function DonorsContent() {
               ) : (
                 <>
                   <div className="space-y-4">
-                    {contributors.map((c: any) => (
+                    {contributors.map((c) => (
                       <ContributorCard key={c.cmteId} contributor={c} rank={c.rank} />
                     ))}
                   </div>

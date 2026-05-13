@@ -78,14 +78,14 @@ function BillsContent() {
   // Tracked bills
   const { data: trackedData } = useTrackedBills()
   const trackMutation = useTrackBill()
-  const trackedBills = new Set<string>((trackedData?.bills ?? []).map((b: any) => b.id))
+  const trackedBills = new Set<string>((trackedData?.bills ?? []).map((b: { id: string }) => b.id))
 
   // Build query params
   const statusParam = selectedStatuses.size > 0 ? [...selectedStatuses].join(',') : undefined
   const topicsParam = selectedTopics.size > 0 ? [...selectedTopics].map(t => topicToSlug(t as any)).join(',') : undefined
 
   // Pagination — accumulate bills across pages
-  const [allBills, setAllBills] = useState<any[]>([])
+  const [allBills, setAllBills] = useState<{ id: string; number: string | null; title: string; sponsor: string | null; party: string | null; status: string | null; topics: string[]; lastAction: string | null; summary: string | null }[]>([])
   const [offset, setOffset] = useState(0)
   const [total, setTotal] = useState(0)
   const limit = 20
@@ -124,7 +124,7 @@ function BillsContent() {
   }
 
   // Filter by tracked if showTrackedOnly
-  const displayBills = showTrackedOnly ? bills.filter((b: any) => trackedBills.has(b.id)) : bills
+  const displayBills = showTrackedOnly ? bills.filter(b => trackedBills.has(b.id)) : bills
 
   const handleToggleTrack = (billId: string) => {
     if (!user) { openSignIn(); return }

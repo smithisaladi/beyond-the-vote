@@ -111,13 +111,14 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
           </h2>
           <div className="flex flex-wrap gap-2 justify-center">
             {ALL_TOPICS.map(t => (
-              <a
+              <Link
                 key={t}
-                href={`/bills?topics=${topicToSlug(t)}`}
+                to="/bills"
+                search={{ topics: topicToSlug(t) }}
                 className="text-sm font-medium text-[#1C1C1A]/60 bg-white border border-[rgba(28,28,26,0.1)] px-4 py-2 rounded-full hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors tracking-[0.01em]"
               >
                 {t}
-              </a>
+              </Link>
             ))}
           </div>
         </div>

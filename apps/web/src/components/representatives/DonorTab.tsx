@@ -184,7 +184,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
         { label: 'PAC & Corporate', amount: bd.pac, pct: bd.pacPct, color: 'bg-[#7B5E8A]', tooltipTerm: 'pacAndCorporate' as FecTermKey },
         { label: 'Large Individual', amount: bd.individualLarge, pct: bd.individualLargePct, color: 'bg-[#7B5E8A]/50', tooltipTerm: 'largeIndividual' as FecTermKey },
         { label: 'Small Donors', amount: bd.individualSmall, pct: bd.individualSmallPct, color: 'bg-[#7B5E8A]/25', tooltipTerm: 'smallDonors' as FecTermKey },
-        { label: 'Other', amount: bd.other, pct: bd.otherPct, color: 'bg-[#E8E3DA] border border-[rgba(28,28,26,0.12)]', tooltipTerm: 'otherFunding' as FecTermKey },
+        { label: 'Other', amount: bd.other, pct: bd.otherPct, color: 'bg-[#8A8A7A]/20', tooltipTerm: 'otherFunding' as FecTermKey },
       ]).filter(r => r.pct > 0)
     : []
 
@@ -224,7 +224,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
               <div className="bg-[#7B5E8A]/25" style={{ width: `${bd.individualSmallPct}%`, minWidth: 2 }} />
             )}
             {bd.otherPct > 0 && (
-              <div className="bg-[#E8E3DA]" style={{ width: `${bd.otherPct}%`, minWidth: 2 }} />
+              <div className="bg-[#8A8A7A]/20" style={{ width: `${bd.otherPct}%`, minWidth: 2 }} />
             )}
           </div>
 

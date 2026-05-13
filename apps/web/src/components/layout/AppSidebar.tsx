@@ -97,7 +97,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         {collapsed ? (
           <Link to="/home" aria-label="Beyond the Vote — home" className="flex items-center justify-center w-full">
             <span
-              className="text-2xl font-bold tracking-tight select-none leading-none"
+              className="text-2xl font-semibold tracking-tight select-none leading-none"
               style={{ fontFamily: 'var(--font-serif)' }}
             >
               <span className="text-[#1C1C1A]">B</span>
@@ -126,6 +126,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 key={item.label}
                 to={item.href}
                 title={item.label}
+                aria-label={item.label}
                 className={`flex items-center justify-center py-2.5 mx-2 rounded-lg transition-colors ${
                   active
                     ? 'bg-[#C8BED0]/40 text-[#7B5E8A]'
