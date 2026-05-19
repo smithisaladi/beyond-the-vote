@@ -15,7 +15,7 @@ RUN uv sync --frozen --no-dev
 COPY app/ app/
 
 # Expose port
-EXPOSE 8000
+EXPOSE 10000
 
-# Run with uvicorn
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run with uvicorn — Render expects port 10000 by default
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "10000"]
