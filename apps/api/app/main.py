@@ -27,17 +27,24 @@ if settings.sentry_dsn:
 limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])
 
 
-async def _load_models_background() -> None:
-    """Load ML models in background so the server starts accepting requests immediately."""
+def _load_models_sync() -> None:
+    """Load ML models in a thread so the event loop stays free for port binding."""
+    import asyncio
     try:
         from app.ml import load_all_models
         if settings.database_url:
             from app.deps import _get_session_factory
             factory = _get_session_factory()
-            async with factory() as session:
-                await load_all_models(db_session=session)
+            loop = asyncio.new_event_loop()
+            async def _run():
+                async with factory() as session:
+                    await load_all_models(db_session=session)
+            loop.run_until_complete(_run())
+            loop.close()
         else:
-            await load_all_models()
+            loop = asyncio.new_event_loop()
+            loop.run_until_complete(load_all_models())
+            loop.close()
     except Exception:
         log.exception("background_model_load_failed")
 
@@ -45,8 +52,9 @@ async def _load_models_background() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("app_starting", environment=settings.environment)
-    import asyncio
-    asyncio.create_task(_load_models_background())
+    import threading
+    thread = threading.Thread(target=_load_models_sync, daemon=True)
+    thread.start()
     yield
     log.info("app_shutting_down")
 
