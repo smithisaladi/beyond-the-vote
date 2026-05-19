@@ -27,17 +27,26 @@ if settings.sentry_dsn:
 limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])
 
 
+async def _load_models_background() -> None:
+    """Load ML models in background so the server starts accepting requests immediately."""
+    try:
+        from app.ml import load_all_models
+        if settings.database_url:
+            from app.deps import _get_session_factory
+            factory = _get_session_factory()
+            async with factory() as session:
+                await load_all_models(db_session=session)
+        else:
+            await load_all_models()
+    except Exception:
+        log.exception("background_model_load_failed")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("app_starting", environment=settings.environment)
-    from app.ml import load_all_models
-    if settings.database_url:
-        from app.deps import _get_session_factory
-        factory = _get_session_factory()
-        async with factory() as session:
-            await load_all_models(db_session=session)
-    else:
-        await load_all_models()
+    import asyncio
+    asyncio.create_task(_load_models_background())
     yield
     log.info("app_shutting_down")
 
