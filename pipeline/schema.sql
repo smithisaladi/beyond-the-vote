@@ -1,5 +1,5 @@
 -- Beyond the Ballot — Full Database Schema
--- 8 Postgres schemas organized by domain
+-- 7 Postgres schemas organized by domain
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -10,7 +10,6 @@ CREATE SCHEMA IF NOT EXISTS congress;
 CREATE SCHEMA IF NOT EXISTS fec;
 CREATE SCHEMA IF NOT EXISTS enrichment;
 CREATE SCHEMA IF NOT EXISTS analytics;
-CREATE SCHEMA IF NOT EXISTS anomalies;
 CREATE SCHEMA IF NOT EXISTS app;
 CREATE SCHEMA IF NOT EXISTS derived;
 CREATE SCHEMA IF NOT EXISTS ops;
@@ -231,7 +230,7 @@ CREATE TABLE fec.candidates (
 CREATE INDEX ON fec.candidates (cycle);
 
 -- ============================================================
--- enrichment.* — ML-produced clean data (Tier 1)
+-- enrichment.* — ML-produced clean data
 -- ============================================================
 
 -- One row per canonical donor (condensed from resolved contributions).
@@ -254,50 +253,6 @@ CREATE TABLE enrichment.donor_canonical (
 CREATE INDEX ON enrichment.donor_canonical (state);
 CREATE INDEX ON enrichment.donor_canonical (total_amount DESC);
 
-CREATE TABLE enrichment.employer_canonical (
-    id              bigserial PRIMARY KEY,
-    canonical_employer_id text NOT NULL,
-    raw_string      text NOT NULL,
-    canonical_name  text NOT NULL,
-    confidence      real NOT NULL,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON enrichment.employer_canonical (canonical_employer_id);
-CREATE INDEX ON enrichment.employer_canonical (raw_string);
-
-CREATE TABLE enrichment.employer_industry (
-    id              bigserial PRIMARY KEY,
-    canonical_employer_id text NOT NULL,
-    industry        text NOT NULL,
-    sub_industry    text,
-    confidence      real NOT NULL,
-    model_version   text NOT NULL,
-    classified_at   timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON enrichment.employer_industry (canonical_employer_id);
-CREATE INDEX ON enrichment.employer_industry (industry);
-
-CREATE TABLE enrichment.donor_address_normalized (
-    id              bigserial PRIMARY KEY,
-    contribution_id bigint NOT NULL,
-    street          text,
-    city            text,
-    state           text,
-    zip5            text,
-    zip4            text,
-    lat             real,
-    lon             real,
-    geocode_confidence real,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON enrichment.donor_address_normalized (zip5);
-CREATE INDEX ON enrichment.donor_address_normalized (state);
-
 CREATE TABLE enrichment.bill_embeddings (
     bill_id         text PRIMARY KEY REFERENCES congress.bills(bill_id) ON DELETE CASCADE,
     embedding       vector(384) NOT NULL,
@@ -311,59 +266,8 @@ CREATE INDEX ON enrichment.bill_embeddings
     WITH (m = 16, ef_construction = 64);
 
 -- ============================================================
--- analytics.* — Pattern detection (Tier 2)
+-- analytics.* — Money flow attribution
 -- ============================================================
-
-CREATE TABLE analytics.donor_cluster (
-    id              bigserial PRIMARY KEY,
-    canonical_donor_id text NOT NULL,
-    cluster_id      integer NOT NULL,
-    cluster_label   text,
-    distance_to_centroid real,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON analytics.donor_cluster (canonical_donor_id);
-CREATE INDEX ON analytics.donor_cluster (cluster_id);
-
-CREATE TABLE analytics.entity_community (
-    id              bigserial PRIMARY KEY,
-    entity_id       text NOT NULL,
-    entity_type     text NOT NULL,
-    community_id    integer NOT NULL,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON analytics.entity_community (entity_id, entity_type);
-CREATE INDEX ON analytics.entity_community (community_id);
-
-CREATE TABLE analytics.entity_centrality (
-    id              bigserial PRIMARY KEY,
-    entity_id       text NOT NULL,
-    entity_type     text NOT NULL,
-    pagerank        real,
-    betweenness     real,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON analytics.entity_centrality (entity_id, entity_type);
-
-CREATE TABLE analytics.bundling_events (
-    id              bigserial PRIMARY KEY,
-    committee_id    text NOT NULL,
-    event_date      date NOT NULL,
-    donor_count     integer NOT NULL,
-    total_amount    numeric(12,2),
-    signals         jsonb NOT NULL,
-    confidence      real NOT NULL,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON analytics.bundling_events (committee_id);
 
 CREATE TABLE analytics.money_flow_attribution (
     id              bigserial PRIMARY KEY,
@@ -380,79 +284,6 @@ CREATE TABLE analytics.money_flow_attribution (
 
 CREATE INDEX ON analytics.money_flow_attribution (destination_committee_id);
 CREATE INDEX ON analytics.money_flow_attribution (origin_entity_id);
-
-CREATE TABLE analytics.donor_feature_vectors (
-    canonical_donor_id text PRIMARY KEY,
-    embedding       vector(64) NOT NULL,
-    total_amount    numeric(12,2),
-    contribution_count integer,
-    party_split_d   real,
-    party_split_r   real,
-    recipient_type_candidate real,
-    recipient_type_pac real,
-    geographic_spread real,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON analytics.donor_feature_vectors
-    USING hnsw (embedding vector_cosine_ops)
-    WITH (m = 16, ef_construction = 64);
-
--- ============================================================
--- anomalies.* — Flagged patterns (Tier 3)
--- ============================================================
-
-CREATE TABLE anomalies.suspicious_contribution_events (
-    id              bigserial PRIMARY KEY,
-    committee_id    text NOT NULL,
-    event_date      date NOT NULL,
-    donor_count     integer NOT NULL,
-    total_amount    numeric(12,2),
-    signals         jsonb NOT NULL,
-    score           real NOT NULL,
-    confidence      real NOT NULL,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON anomalies.suspicious_contribution_events (committee_id);
-CREATE INDEX ON anomalies.suspicious_contribution_events (score);
-
-CREATE TABLE anomalies.committee_change_points (
-    id              bigserial PRIMARY KEY,
-    committee_id    text NOT NULL,
-    change_date     date NOT NULL,
-    metric          text NOT NULL,
-    magnitude       real NOT NULL,
-    direction       text,
-    confidence      real NOT NULL,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON anomalies.committee_change_points (committee_id);
-
-CREATE TABLE anomalies.geographic_anomalies (
-    id              bigserial PRIMARY KEY,
-    contribution_id bigint NOT NULL,
-    canonical_donor_id text,
-    anomaly_score   real NOT NULL,
-    donor_center_distance_km real,
-    employer_distance_km real,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE TABLE anomalies.amount_distribution_anomalies (
-    id              bigserial PRIMARY KEY,
-    committee_id    text NOT NULL,
-    anomaly_type    text NOT NULL,
-    magnitude       real NOT NULL,
-    examples        jsonb,
-    model_version   text NOT NULL,
-    created_at      timestamptz DEFAULT now()
-);
 
 -- ============================================================
 -- app.* — User-facing data
