@@ -13,10 +13,9 @@ Python data pipeline: FEC campaign finance, Congress.gov legislation, VoteView i
 | `uv run python -m scripts.sync.sync_legislators` | Sync: incremental legislator update |
 | `uv run python -m scripts.sync.sync_bills` | Sync: incremental bill update |
 | `uv run python -m scripts.embed_bills` | Generate bill embeddings for semantic search |
-| `uv run python -m scripts.enrich_tier1` | Enrich: donor resolution, employer norm, address std |
-| `uv run python -m scripts.enrich_tier2` | Enrich: donor clustering, money flow |
-| `uv run python -m scripts.enrich_tier3` | Enrich: suspicious clusters, change detection |
-| `uv run python -m scripts.populate_full` | Full enrichment run (all tiers) |
+| `uv run python -m scripts.enrich_donors --cycles 2024,2026` | Donor entity resolution |
+| `uv run python -m scripts.compute_pac_top_funders` | Top funders per PAC (requires donor_canonical) |
+| `uv run python -m scripts.enrich_money_flow --cycles 2024,2026` | Money flow tracing (requires pac_top_funders) |
 | `uv run python -m scripts.create_schema` | Create database schema |
 | `uv run pytest` | Run tests |
 
@@ -26,7 +25,7 @@ Python data pipeline: FEC campaign finance, Congress.gov legislation, VoteView i
 - **Ingest** (`ingest/`): data fetchers — `usc-run` for bills/votes, YAML for legislators, OpenFEC API, VoteView CSV
 - **Transform** (`transform/`): one module per data type — normalize, validate, map to DB schema
 - **Load** (`load/`): upsert to Postgres via `shared.db.upsert()`
-- **Enrich** (`enrich/`): ML enrichment — donor resolution, clustering, industry classification, anomaly detection
+- **Enrich** (`enrich/`): donor entity resolution (`donor_resolution.py`) + money flow tracing (`money_flow.py`)
 - **Sync scripts** (`scripts/sync/`): incremental updates via watermarks, run by GitHub Actions
 - **DuckDB**: in-memory engine for local FEC CSV/Parquet aggregation (never writes to DB directly)
 - **`ops.pipeline_runs`** table: tracks every execution with watermark timestamps for incremental fetches
@@ -55,7 +54,9 @@ Initial import must follow this sequence:
 | 4 | `ingest_all` → votes | congress.bill_vote_summaries, congress.bill_vote_positions |
 | 5 | `ingest_all` → FEC | fec.pac_to_candidate, fec.independent_expenditures, fec.cmte_names |
 | 6 | `embed_bills` | enrichment.bill_embeddings |
-| 7 | `enrich_tier1/2/3` | enrichment.*, analytics.*, anomalies.* |
+| 7 | `enrich_donors` | enrichment.donor_canonical |
+| 8 | `compute_pac_top_funders` | derived.pac_top_funders |
+| 9 | `enrich_money_flow` | analytics.money_flow_attribution |
 
 ## Key Modules
 
@@ -65,7 +66,7 @@ Initial import must follow this sequence:
 - **`ingest/`** — data fetchers (congress.py, legislators.py, fec.py, fec_api.py, voteview.py)
 - **`transform/`** — one module per data type (bills.py, legislators.py, votes_house.py, votes_senate.py, etc.)
 - **`load/`** — DB writers (bills.py, legislators.py, votes.py, scores.py, fec.py, embeddings.py)
-- **`enrich/`** — ML enrichment (donor_resolution, donor_clustering, industry_classification, money_flow, etc.)
+- **`enrich/`** — donor resolution (`donor_resolution.py`), money flow tracing (`money_flow.py`)
 
 ## Environment Variables
 
@@ -108,7 +109,6 @@ Loaded via `python-dotenv` from `.env` in pipeline root.
 - Load `individual_contributions`, `candidates`, or `fec_committees` to the database — local-only
 - Skip the run order (FK constraints will fail)
 - Hardcode credentials or API keys
-- Treat derived/enrichment tables as source tables — always computed
 
 ## Testing
 
