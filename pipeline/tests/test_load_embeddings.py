@@ -1,9 +1,6 @@
 """Tests for load/embeddings.py — robust bill embedding pipeline."""
 import pytest
 from unittest.mock import patch, MagicMock, call
-import numpy as np
-
-
 MODULE = "load.embeddings"
 
 
@@ -22,7 +19,7 @@ def mock_model():
 
 def _fake_embedding(n=1):
     """Return a list of n fake 384-dim embeddings."""
-    return [np.zeros(384).tolist() for _ in range(n)]
+    return [[0.0] * 384 for _ in range(n)]
 
 
 class TestSkipEmptyTextBills:
@@ -47,9 +44,8 @@ class TestSkipEmptyTextBills:
                 ("bill-5", "Healthcare", None),  # has title — should embed
             ],
             [],  # stale bills query
-            [(5,)],  # coverage: total_bills
-            [(2,)],  # coverage: embedded_bills
         ]
+        cursor.fetchone.side_effect = [(5,), (2,)]  # coverage counts
 
         mock_embed.return_value = _fake_embedding(2)
 
@@ -83,9 +79,8 @@ class TestStaleReEmbed:
             ],
             # stale bills: bill-3 had no summary before, now has one
             [("bill-3", "Stale Bill", "Fresh summary")],
-            [(3,)],  # coverage: total_bills
-            [(3,)],  # coverage: embedded_bills
         ]
+        cursor.fetchone.side_effect = [(3,), (3,)]  # coverage counts
 
         mock_embed.side_effect = [
             _fake_embedding(1),  # new bills batch (bill-2 only)
@@ -123,9 +118,8 @@ class TestBatchErrorHandling:
                 ("bill-4", "Bill Four", "Summary four"),
             ],
             [],  # stale
-            [(4,)],  # coverage: total
-            [(2,)],  # coverage: embedded
         ]
+        cursor.fetchone.side_effect = [(4,), (2,)]  # coverage counts
 
         # First batch fails, second succeeds
         mock_embed.side_effect = [
@@ -159,9 +153,8 @@ class TestCoverageLogging:
             [],  # existing
             [],  # all bills (none)
             [],  # stale
-            [(100,)],  # coverage: 100 total
-            [(50,)],   # coverage: 50 embedded → 50%
         ]
+        cursor.fetchone.side_effect = [(100,), (50,)]  # coverage: 50%
 
         from load.embeddings import load_bill_embeddings
         with patch(f"{MODULE}.log") as mock_log:
@@ -191,9 +184,8 @@ class TestHasSummaryTracking:
                 ("bill-2", "With Summary", "A real summary"),
             ],
             [],  # stale
-            [(2,)],  # coverage: total
-            [(2,)],  # coverage: embedded
         ]
+        cursor.fetchone.side_effect = [(2,), (2,)]  # coverage counts
 
         mock_embed.return_value = _fake_embedding(2)
 
