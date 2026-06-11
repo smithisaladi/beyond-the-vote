@@ -302,6 +302,7 @@ CREATE TABLE enrichment.bill_embeddings (
     bill_id         text PRIMARY KEY REFERENCES congress.bills(bill_id) ON DELETE CASCADE,
     embedding       vector(384) NOT NULL,
     model_version   text NOT NULL,
+    has_summary     boolean NOT NULL DEFAULT false,
     created_at      timestamptz DEFAULT now()
 );
 
