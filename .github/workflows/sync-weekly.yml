@@ -1,4 +1,4 @@
-name: Weekly Sync — FEC API + Legislators + VoteView + Enrichment
+name: Weekly Sync — FEC API + Legislators + VoteView
 
 on:
   schedule:
