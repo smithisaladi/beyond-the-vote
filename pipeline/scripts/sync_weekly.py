@@ -165,14 +165,6 @@ def sync_funding_summaries():
     return count
 
 
-def sync_employer_enrichment():
-    """Re-run employer normalization + industry classification on any new employers."""
-    from enrich.opensecrets import run_industry_classification_opensecrets
-    count = run_industry_classification_opensecrets(DATA_DIR)
-    log.info("industry_reclassified", count=count)
-    return count
-
-
 def main():
     run_id = log_run_start(SCRIPT)
     total = 0
@@ -183,7 +175,6 @@ def main():
         ("voteview", sync_voteview),
         ("fec_api", sync_fec_api),
         ("funding_summaries", sync_funding_summaries),
-        ("employer_enrichment", sync_employer_enrichment),
     ]
 
     for name, fn in steps:
