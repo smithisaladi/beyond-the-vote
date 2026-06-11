@@ -1,5 +1,5 @@
 # pipeline/tests/test_money_flow.py
-from enrich.money_flow import trace_money_flow, build_pac_graph
+from enrich.money_flow import trace_money_flow, build_pac_graph, add_individual_edges
 
 
 def test_build_pac_graph():
@@ -46,3 +46,28 @@ def test_trace_money_flow_outbound():
     assert len(flows) == 2
     dests = {f["destination_committee_id"] for f in flows}
     assert dests == {"C002", "C003"}
+
+
+def test_add_individual_edges():
+    """Individual donors from pac_top_funders should become inbound flow rows."""
+    top_funders = [
+        {"cmte_id": "C002", "canonical_donor_id": "d_12345", "display_name": "Jane Smith",
+         "total_amount": 50000, "cycle": 2024},
+        {"cmte_id": "C002", "canonical_donor_id": "d_67890", "display_name": "John Doe",
+         "total_amount": 25000, "cycle": 2024},
+    ]
+    flows = add_individual_edges(top_funders, cycle=2024)
+    assert len(flows) == 2
+    assert all(f["origin_entity_type"] == "individual" for f in flows)
+    assert all(f["destination_committee_id"] == "C002" for f in flows)
+    assert all(f["hop_count"] == 1 for f in flows)
+    assert all(f["cycle"] == 2024 for f in flows)
+    jane = [f for f in flows if f["origin_entity_id"] == "d_12345"][0]
+    assert jane["attributed_amount"] == 50000
+    assert jane["path"] == ["d_12345", "C002"]
+
+
+def test_add_individual_edges_empty():
+    """Empty top_funders list produces no flows."""
+    flows = add_individual_edges([], cycle=2024)
+    assert flows == []

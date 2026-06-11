@@ -138,6 +138,26 @@ def extract_pac_transfers(parquet_path: Path) -> list[dict]:
     return transfers
 
 
+def add_individual_edges(top_funders: list[dict], cycle: int) -> list[dict]:
+    """Create individual→PAC flow rows from pac_top_funders data.
+
+    Each top funder becomes a 1-hop inbound flow to their PAC.
+    """
+    flows = []
+    for funder in top_funders:
+        flows.append({
+            "destination_committee_id": funder["cmte_id"],
+            "origin_entity_id": funder["canonical_donor_id"],
+            "origin_entity_type": "individual",
+            "attributed_amount": float(funder["total_amount"]),
+            "hop_count": 1,
+            "path": [funder["canonical_donor_id"], funder["cmte_id"]],
+            "cycle": cycle,
+            "model_version": MODEL_VERSION,
+        })
+    return flows
+
+
 def run_money_flow(parquet_path: Path, cycle: int, max_depth: int = 3) -> int:
     conn = get_conn()
     cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
@@ -159,8 +179,18 @@ def run_money_flow(parquet_path: Path, cycle: int, max_depth: int = 3) -> int:
             flow["cycle"] = cycle
         all_flows.extend(flows)
 
+    # Individual→PAC edges from pac_top_funders
+    cur.execute(
+        "SELECT cmte_id, canonical_donor_id, display_name, total_amount "
+        "FROM derived.pac_top_funders WHERE cycle = %s",
+        (cycle,),
+    )
+    individual_flows = add_individual_edges([dict(row) for row in cur.fetchall()], cycle)
+    all_flows.extend(individual_flows)
+    log.info("individual_edges_added", count=len(individual_flows))
+
     if all_flows:
         upsert("money_flow_attribution", all_flows, schema="analytics")
 
-    log.info("money_flow_complete", flows=len(all_flows), committees_traced=len(top_nodes))
+    log.info("money_flow_complete", flows=len(all_flows), committees_traced=len(top_nodes), individual_edges=len(individual_flows))
     return len(all_flows)
