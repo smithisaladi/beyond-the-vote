@@ -18,10 +18,10 @@ export const STATUS_STYLES: Record<BillStatus, { bg: string; text: string; hex: 
 export const IDEOLOGY_GRADIENT = `linear-gradient(to right, ${PARTY_STYLES.Democrat.hex}, ${PARTY_STYLES.Independent.hex}, ${PARTY_STYLES.Republican.hex})`
 
 /** Standard card shell — dark surface, hairline border, no shadow. No padding; compose with your own. */
-export const CARD_CLASS = 'bg-surface rounded-xl border border-edge'
+export const CARD_CLASS = 'bg-surface rounded-lg border border-edge'
 
 /** Form/settings card — same surface, slightly stronger border. */
-export const CARD_LIGHT_BORDER_CLASS = 'bg-surface rounded-xl border border-fg/12'
+export const CARD_LIGHT_BORDER_CLASS = 'bg-surface rounded-lg border border-fg/12'
 
 /** Hover treatment for clickable tile cards. Must be placed inside a `group` wrapper. */
 export const CARD_HOVER_CLASS = 'group-hover:bg-raised group-hover:border-fg/15 transition-colors'

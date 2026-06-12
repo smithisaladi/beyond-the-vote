@@ -6,10 +6,10 @@ type CardBorder = 'standard' | 'light' | 'none'
 
 const PADDING_MAP: Record<CardPadding, string> = {
   none: '',
-  sm: 'p-3',
-  md: 'p-4',
-  lg: 'p-6',
-  xl: 'p-12',
+  sm: 'p-2.5',
+  md: 'p-3',
+  lg: 'p-4',
+  xl: 'p-8',
 }
 
 interface CardProps extends HTMLAttributes<HTMLElement> {
@@ -29,7 +29,7 @@ function joinClasses(...parts: Array<string | false | null | undefined>) {
 }
 
 /**
- * Standard card primitive. Defaults: `padding="lg"` (p-6), `border="standard"`. No shadows — elevation is expressed via background steps.
+ * Standard card primitive. Defaults: `padding="lg"` (p-4), `border="standard"`. No shadows — elevation is expressed via background steps.
  * Pass `className` to extend (e.g., extra margin, custom padding, overflow controls).
  */
 export function Card({
@@ -43,7 +43,7 @@ export function Card({
 }: CardProps) {
   const borderClass =
     border === 'light' ? CARD_LIGHT_BORDER_CLASS :
-    border === 'none'  ? 'bg-surface rounded-xl' :
+    border === 'none'  ? 'bg-surface rounded-lg' :
                          CARD_CLASS
   return (
     <Tag
