@@ -232,7 +232,7 @@ function HorizontalFlow({
                 {toTitleCase(f.name)}
               </div>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[11px] text-fg/45 truncate">
+                <span className="text-[10px] text-fg/45 truncate">
                   {f.type === "individual"
                     ? [f.employer && toTitleCase(f.employer), f.state]
                         .filter(Boolean)
@@ -311,7 +311,7 @@ function HorizontalFlow({
                 )}
               </div>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[11px] text-fg/45 truncate">
+                <span className="text-[10px] text-fg/45 truncate">
                   {spendingLabel(r)}
                 </span>
                 <span className="text-[13px] font-semibold font-mono text-fg/70 tabular-nums shrink-0">
@@ -442,7 +442,7 @@ function VerticalFlow({
                 <div className="font-semibold text-[13px] text-fg/80 truncate">
                   {toTitleCase(f.name)}
                 </div>
-                <div className="text-[11px] text-fg/45 truncate">
+                <div className="text-[10px] text-fg/45 truncate">
                   {f.type === "individual"
                     ? [f.employer && toTitleCase(f.employer), f.state]
                         .filter(Boolean)
@@ -515,7 +515,7 @@ function VerticalFlow({
                   </span>
                 </div>
                 {(() => { const label = spendingLabel(r); return label ? (
-                  <div className="text-[11px] text-fg/45 mt-0.5">{label}</div>
+                  <div className="text-[10px] text-fg/45 mt-0.5">{label}</div>
                 ) : null; })()}
               </div>
             );

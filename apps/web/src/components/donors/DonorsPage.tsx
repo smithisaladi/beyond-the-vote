@@ -186,7 +186,7 @@ function DonorsContent() {
 
             {/* Search card */}
             <Card padding="none">
-              <div className="flex items-center px-5 py-4 gap-3">
+              <div className="flex items-center px-4 py-3 gap-3">
                 <span className="text-fg/25 flex-shrink-0">
                   <Search size={16} strokeWidth={1.8} />
                 </span>
