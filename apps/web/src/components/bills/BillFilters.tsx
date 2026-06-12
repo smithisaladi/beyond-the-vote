@@ -178,9 +178,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
             }`}
           >
             {sort === 'newest' ? 'Latest first' : 'Oldest first'}
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
+            <ChevronDown size={10} strokeWidth={1.8} />
           </button>
           {openDropdown === 'sort' && (
             <div className="absolute top-full left-0 mt-1.5 min-w-[140px] z-20 bg-raised rounded-lg border border-edge p-3 space-y-2">

@@ -93,9 +93,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
             collapsed ? 'justify-center w-full mx-2' : 'px-3 w-full'
           }`}
         >
-          {collapsed ? <ChevronRight size={15} strokeWidth={2} /> : (
+          {collapsed ? <ChevronRight size={15} strokeWidth={1.8} /> : (
             <>
-              <ChevronLeft size={15} strokeWidth={2} />
+              <ChevronLeft size={15} strokeWidth={1.8} />
               <span>Collapse</span>
             </>
           )}

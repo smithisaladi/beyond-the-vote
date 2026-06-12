@@ -23,7 +23,7 @@ export default function DataSourceDisclosure({ showAiDisclaimer, className = '' 
         <span>About this data</span>
         <ChevronDown
           size={12}
-          strokeWidth={2}
+          strokeWidth={1.8}
           className={`transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
