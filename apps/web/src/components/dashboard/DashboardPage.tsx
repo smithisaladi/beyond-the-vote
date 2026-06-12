@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { LogOut, UserMinus } from 'lucide-react'
 
-import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
+import { PARTY_STYLES, STATUS_STYLES, DANGER_HOVER_CLASS } from '@/lib/ui'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useFollowedPoliticians, useFollowPolitician, useTrackedBills, useTopicPreferences } from "@/hooks/queries/useDashboard"
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
@@ -169,7 +169,7 @@ export default function DashboardPage() {
                               onClick={() => handleUnfollow(pol.id)}
                               disabled={unfollowMutation.isPending}
                               aria-label={`Unfollow ${pol.name}`}
-                              className={`group/unfollow flex-shrink-0 p-1.5 rounded-lg transition-colors disabled:opacity-40 ${STATUS_STYLES.Stalled.text} opacity-25 hover:opacity-90`}
+                              className={`group/unfollow flex-shrink-0 p-1.5 rounded-lg transition-colors disabled:opacity-40 ${DANGER_HOVER_CLASS}`}
                             >
                               <UserMinus size={15} strokeWidth={1.8} />
                             </button>

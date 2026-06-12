@@ -3,6 +3,7 @@ import {
   PARTY_STYLES,
   STATUS_STYLES,
   IDEOLOGY_GRADIENT,
+  DANGER_HOVER_CLASS,
   getPartyStyle,
   resultBadge,
 } from './ui'
@@ -70,6 +71,14 @@ describe('IDEOLOGY_GRADIENT', () => {
     expect(IDEOLOGY_GRADIENT).toBe(
       `linear-gradient(to right, ${PARTY_STYLES.Democrat.hex}, ${PARTY_STYLES.Independent.hex}, ${PARTY_STYLES.Republican.hex})`
     )
+  })
+})
+
+describe('DANGER_HOVER_CLASS', () => {
+  it('provides neutral at rest and danger color with background on hover', () => {
+    expect(DANGER_HOVER_CLASS).toContain('text-fg/25')
+    expect(DANGER_HOVER_CLASS).toContain('hover:text-[#C97A5A]')
+    expect(DANGER_HOVER_CLASS).toContain('hover:bg-[#B85C38]')
   })
 })
 
