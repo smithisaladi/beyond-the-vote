@@ -2,7 +2,45 @@
 
 @source "./**/*.{ts,tsx}";
 
-/* Page background */
+@theme {
+  /* Surfaces */
+  --color-bg: #161614;
+  --color-surface: #1F1F1D;
+  --color-raised: #262624;
+
+  /* Text */
+  --color-fg: #F5F0E8;
+
+  /* Borders */
+  --color-edge: rgba(245, 240, 232, 0.07);
+  --color-edge-soft: rgba(245, 240, 232, 0.05);
+
+  /* Accent (lightened purple for text/icons on dark; deep for fills) */
+  --color-accent: #9B7EAA;
+  --color-accent-deep: #7B5E8A;
+  --color-accent-deep-hover: #6A4F78;
+
+  /* Fonts */
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+}
+
 body {
-  background-color: #F5F0E8;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+}
+
+/* Money-flow stream shimmer */
+@keyframes flow-dash {
+  to { stroke-dashoffset: -32; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-flow { animation: none !important; }
+}
+
+.animate-flow {
+  stroke-dasharray: 4 28;
+  animation: flow-dash 1.6s linear infinite;
 }
