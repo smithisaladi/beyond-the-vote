@@ -305,7 +305,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                             <div>
                               <p className="text-[13px] text-fg">{c.name.replace(/\s*\[.*?\]\s*$/, '')}</p>
                               <div className="flex items-center gap-1.5 mt-0.5">
-                                <PartyBadge party={c.party} size="xs" />
+                                <PartyBadge party={c.party} />
                                 <span className="text-xs text-fg/30">·</span>
                                 <span className="text-xs text-fg/45">{c.state}</span>
                               </div>

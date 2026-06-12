@@ -44,7 +44,7 @@ export function ActivityFeed({ activityFeed, loading, isNew }: ActivityFeedProps
             <button
               key={tab}
               onClick={() => setActivityTab(tab)}
-              className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${
+              className={`text-xs font-medium px-3 py-2 rounded-lg border transition-colors ${
                 activityTab === tab
                   ? 'bg-accent-deep/10 text-accent border-accent/20'
                   : 'text-fg/45 hover:text-fg/70 border-transparent'
