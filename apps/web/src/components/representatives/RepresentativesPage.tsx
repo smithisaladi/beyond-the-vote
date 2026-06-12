@@ -209,16 +209,16 @@ function RepresentativesContent() {
 
               {displayError && !displayLoading && (
                 <Card padding="none" className="max-w-md mx-auto text-center px-8 py-10">
-                  <p className="text-sm text-fg/60">{displayError}</p>
+                  <p className="text-[13px] text-fg/60">{displayError}</p>
                 </Card>
               )}
 
               {!displayLoading && !displayError && displayRepresentatives.length === 0 && searchMode === 'name' && nameQuery.length >= 3 && (
-                <p className="text-center text-sm text-fg/50 py-8">No politicians found matching &ldquo;{nameQuery}&rdquo;</p>
+                <p className="text-center text-[13px] text-fg/50 py-8">No politicians found matching &ldquo;{nameQuery}&rdquo;</p>
               )}
 
               {!displayLoading && !displayError && searchMode === 'address' && representatives.length === 0 && hasResults && (
-                <p className="text-center text-sm text-fg/50 py-8">No representatives found for this address</p>
+                <p className="text-center text-[13px] text-fg/50 py-8">No representatives found for this address</p>
               )}
 
               {!displayLoading && !displayError && displayRepresentatives.length > 0 && (

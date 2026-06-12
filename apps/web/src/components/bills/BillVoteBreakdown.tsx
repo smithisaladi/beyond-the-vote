@@ -126,7 +126,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
-                    className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
                       filter === f
                         ? 'bg-accent/[0.12] text-accent border-accent/20'
                         : 'border-edge text-fg/45 hover:text-fg/70'

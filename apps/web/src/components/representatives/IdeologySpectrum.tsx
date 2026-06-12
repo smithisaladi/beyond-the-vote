@@ -23,7 +23,7 @@ export default function IdeologySpectrum({
 }: IdeologySpectrumProps) {
   if (score === null || score === undefined) {
     return (
-      <div className="text-sm text-fg/45 italic">Ideology score unavailable</div>
+      <div className="text-[13px] text-fg/45 italic">Ideology score unavailable</div>
     )
   }
 

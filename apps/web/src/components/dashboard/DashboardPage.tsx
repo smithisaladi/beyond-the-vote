@@ -68,7 +68,7 @@ export default function DashboardPage() {
       <PageTransition>
         <div className="flex flex-col flex-1">
           {/* ── Header ── */}
-          <header className="sticky top-0 bg-bg/90 backdrop-blur-sm border-b border-edge px-6 py-4 flex items-center justify-between">
+          <header className="sticky top-0 bg-bg/90 backdrop-blur-sm border-b border-edge px-6 py-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] tracking-[0.07em] uppercase text-fg/40 mb-0.5">{formatToday()}</p>
               <h1 className="text-[17px] text-fg tracking-tight">

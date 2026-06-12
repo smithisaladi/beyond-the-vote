@@ -130,7 +130,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
         to="/bills/$billId"
         params={{ billId }}
         search={fromParam ? { from: fromParam } : {}}
-        className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg transition-colors"
+        className="inline-flex items-center gap-2 text-[13px] text-fg/50 hover:text-fg transition-colors"
       >
         <ArrowLeft size={16} strokeWidth={1.8} />
         <span className="font-mono text-fg/38">{billNumber}</span>
@@ -352,7 +352,7 @@ export default function VoteBreakdownPage({ billId, voteId }: { billId: string; 
             <div className="max-w-4xl mx-auto flex items-center justify-center py-24">
               <div className="text-center">
                 <p className="text-fg/40 mb-4">Failed to load vote details.</p>
-                <Link to={billBackHref as any} className="text-sm text-accent hover:text-accent-deep-hover">
+                <Link to={billBackHref as any} className="text-[13px] text-accent hover:text-accent-deep-hover">
                   ← Back to bill
                 </Link>
               </div>
@@ -361,7 +361,7 @@ export default function VoteBreakdownPage({ billId, voteId }: { billId: string; 
             <div className="max-w-4xl mx-auto flex items-center justify-center py-24">
               <div className="text-center">
                 <p className="text-fg/40 mb-4">Vote not found.</p>
-                <Link to={billBackHref as any} className="text-sm text-accent hover:text-accent-deep-hover">
+                <Link to={billBackHref as any} className="text-[13px] text-accent hover:text-accent-deep-hover">
                   ← Back to bill
                 </Link>
               </div>

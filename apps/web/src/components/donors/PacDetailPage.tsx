@@ -235,12 +235,12 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
             <DetailSkeleton />
           ) : error || !pac ? (
             <div className="max-w-4xl mx-auto">
-              <Link to="/donors" className="inline-flex items-center gap-1.5 text-sm text-fg/50 hover:text-fg/70 transition-colors mb-8">
+              <Link to="/donors" className="inline-flex items-center gap-1.5 text-[13px] text-fg/50 hover:text-fg/70 transition-colors mb-8">
                 <BackArrow /> Top Contributors
               </Link>
               <Card padding="xl" className="text-center">
-                <p className="text-fg/45 text-sm">{error ?? 'PAC not found.'}</p>
-                <Link to="/donors" className="mt-3 inline-block text-sm text-accent hover:underline underline-offset-2">
+                <p className="text-fg/45 text-[13px]">{error ?? 'PAC not found.'}</p>
+                <Link to="/donors" className="mt-3 inline-block text-[13px] text-accent hover:underline underline-offset-2">
                   Back to leaderboard
                 </Link>
               </Card>
@@ -248,7 +248,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
           ) : (
             <div className="max-w-4xl mx-auto">
               {/* Back link */}
-              <Link to="/donors" className="inline-flex items-center gap-1.5 text-sm text-fg/50 hover:text-fg/70 transition-colors mb-6">
+              <Link to="/donors" className="inline-flex items-center gap-1.5 text-[13px] text-fg/50 hover:text-fg/70 transition-colors mb-6">
                 <BackArrow /> Top Contributors
               </Link>
 
@@ -259,7 +259,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                 </h1>
 
                 {pac.connectedOrg && (
-                  <p className="text-sm text-fg/50">
+                  <p className="text-[13px] text-fg/50">
                     Affiliated with {pac.connectedOrg}
                   </p>
                 )}
@@ -334,7 +334,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
 
                 {pac.recipients.length === 0 ? (
                   <Card padding="none" className="px-6 py-10 text-center">
-                    <p className="text-sm text-fg/45">
+                    <p className="text-[13px] text-fg/45">
                       No candidate recipients in this cycle range.
                     </p>
                   </Card>
@@ -378,7 +378,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                       </div>
                       {filteredRecipients.length === 0 ? (
                         <div className="px-6 py-10 text-center">
-                          <p className="text-sm text-fg/45">
+                          <p className="text-[13px] text-fg/45">
                             No recipients match this filter.
                           </p>
                         </div>

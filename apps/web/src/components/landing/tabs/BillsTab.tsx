@@ -75,7 +75,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
             Powerful search and filtering tools make it easy to find what matters to you.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Feature
               icon={<IconFilter />}
               title="Search & filter"

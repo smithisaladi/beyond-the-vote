@@ -27,14 +27,14 @@ function DeleteModal({ onConfirm, onCancel, loading }: {
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg border border-edge text-sm text-fg/70 hover:border-fg/40 transition-colors"
+            className="px-4 py-2 rounded-lg border border-edge text-[13px] text-fg/70 hover:border-fg/40 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className={`px-4 py-2 rounded-lg text-sm disabled:opacity-60 ${DANGER_BUTTON_CLASS}`}
+            className={`px-4 py-2 rounded-lg text-[13px] disabled:opacity-60 ${DANGER_BUTTON_CLASS}`}
           >
             {loading ? 'Deleting…' : 'Yes, delete my account'}
           </button>
@@ -224,7 +224,7 @@ export default function SettingsPage() {
                 </p>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className={`px-4 py-2 rounded-lg text-sm ${DANGER_BUTTON_CLASS}`}
+                  className={`px-4 py-2 rounded-lg text-[13px] ${DANGER_BUTTON_CLASS}`}
                 >
                   Delete account
                 </button>

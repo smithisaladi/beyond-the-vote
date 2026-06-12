@@ -157,7 +157,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   </p>
                   <Link
                     to={backHref as any}
-                    className="text-sm text-accent hover:text-accent-deep-hover"
+                    className="text-[13px] text-accent hover:text-accent-deep-hover"
                   >
                     ← {backLabel}
                   </Link>
@@ -170,7 +170,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
               {/* Back link */}
               <Link
                 to={backHref as any}
-                className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg transition-colors"
+                className="inline-flex items-center gap-2 text-[13px] text-fg/50 hover:text-fg transition-colors"
               >
                 <ArrowLeft size={16} strokeWidth={1.8} />
                 {backLabel}
@@ -339,7 +339,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                         {bill.topics.map((subject: any) => (
                           <span
                             key={subject}
-                            className="text-[10px] text-fg/55 bg-fg/[0.06] px-2 py-0.5 rounded-full"
+                            className="text-[10px] text-fg/55 bg-fg/[0.06] px-1.5 py-px rounded-full"
                           >
                             {subject}
                           </span>

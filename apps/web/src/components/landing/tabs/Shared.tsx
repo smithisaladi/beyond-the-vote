@@ -119,7 +119,7 @@ export function MockBillCard({ number, title, status, category }: {
       <p className="text-[13px] text-fg leading-snug mb-2.5 tracking-tight">
         {title}
       </p>
-      <span className="inline-block text-[10px] text-fg/40 bg-fg/[0.06] border border-edge px-2 py-0.5 rounded-full">
+      <span className="inline-block text-[10px] text-fg/40 bg-fg/[0.06] border border-edge px-1.5 py-px rounded-full">
         {category}
       </span>
     </Card>

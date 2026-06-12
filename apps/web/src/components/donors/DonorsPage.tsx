@@ -227,21 +227,21 @@ function DonorsContent() {
                 </div>
               ) : error ? (
                 <Card padding="xl" className="text-center">
-                  <p className="text-fg/40 text-sm mb-3">Failed to load contributors.</p>
+                  <p className="text-fg/40 text-[13px] mb-3">Failed to load contributors.</p>
                   <button
                     onClick={() => refetch()}
-                    className="text-sm text-accent hover:text-accent-deep-hover"
+                    className="text-[13px] text-accent hover:text-accent-deep-hover"
                   >
                     Try again
                   </button>
                 </Card>
               ) : contributors.length === 0 ? (
                 <Card padding="xl" className="text-center">
-                  <p className="text-fg/40 text-sm">No organizations match your search.</p>
+                  <p className="text-fg/40 text-[13px]">No organizations match your search.</p>
                   {query && (
                     <button
                       onClick={() => setQuery('')}
-                      className="mt-3 text-sm text-accent hover:text-accent-deep-hover"
+                      className="mt-3 text-[13px] text-accent hover:text-accent-deep-hover"
                     >
                       Clear search
                     </button>
@@ -259,7 +259,7 @@ function DonorsContent() {
                     <button
                       onClick={loadMore}
                       disabled={loadingMore}
-                      className="mt-4 w-full text-sm font-medium text-accent hover:text-accent-deep-hover disabled:opacity-50 bg-surface border border-accent/30 rounded-xl px-5 py-3 hover:bg-accent/[0.05] hover:border-accent/50 transition-colors"
+                      className="mt-4 w-full text-[13px] font-medium text-accent hover:text-accent-deep-hover disabled:opacity-50 bg-surface border border-accent/30 rounded-xl px-5 py-3 hover:bg-accent/[0.05] hover:border-accent/50 transition-colors"
                     >
                       {loadingMore ? 'Loading…' : 'Load more'}
                     </button>

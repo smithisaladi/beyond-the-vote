@@ -70,7 +70,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
             One platform to find, follow, and understand the people who represent you.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Feature
               icon={<IconUsers />}
               title="Find your representatives"

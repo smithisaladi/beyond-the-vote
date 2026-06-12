@@ -98,7 +98,7 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
             )
           })}
           {hasMore && (
-            <div className="px-6 py-4 flex justify-center">
+            <div className="px-6 py-3 flex justify-center">
               <button
                 onClick={() =>
                   setVoteLimits(prev => ({ ...prev, [voteFilter]: prev[voteFilter] + 10 }))

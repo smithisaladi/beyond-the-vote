@@ -78,7 +78,7 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
             Powerful tools to trace political money from source to candidate.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Feature
               icon={<IconDollar />}
               title="Search & explore PACs"

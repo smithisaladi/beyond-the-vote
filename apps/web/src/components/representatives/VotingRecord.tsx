@@ -25,7 +25,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
   const [filter, setFilter] = useState<'all' | 'Yea' | 'Nay' | 'with' | 'against'>('all')
 
   if (!votes || votes.length === 0) {
-    return <div className="text-sm text-fg/45 italic">No bill votes on record.</div>
+    return <div className="text-[13px] text-fg/45 italic">No bill votes on record.</div>
   }
 
   const filtered = votes.filter(v => {
@@ -128,7 +128,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-sm text-fg/45 italic py-4">No votes match this filter.</div>
+        <div className="text-[13px] text-fg/45 italic py-4">No votes match this filter.</div>
       )}
     </div>
   )
