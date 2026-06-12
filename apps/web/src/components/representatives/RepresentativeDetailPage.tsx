@@ -12,6 +12,7 @@ import type { Politician } from '@/lib/types/politicians'
 import { DonorTab } from '@/components/representatives/DonorTab'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
+import { PageTransition } from '@/components/ui/motion'
 import { ProfileSkeleton } from './sections/ProfileSkeleton'
 import { ErrorState } from './sections/ErrorState'
 import { HeroCard } from './sections/HeroCard'
@@ -57,6 +58,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
   ]
 
   return (
+    <PageTransition>
     <div className="relative flex flex-col min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-rep-detail" />
 
@@ -145,5 +147,6 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
       </div>
 
     </div>
+    </PageTransition>
   )
 }

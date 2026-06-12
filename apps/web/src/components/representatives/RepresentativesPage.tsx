@@ -12,7 +12,7 @@ import { useAuth } from '@/components/auth/AuthContext'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
-import { StaggerGrid, StaggerItem } from '@/components/ui/motion'
+import { PageTransition, StaggerGrid, StaggerItem } from '@/components/ui/motion'
 
 function RepresentativesContent() {
   const navigate = useNavigate()
@@ -75,6 +75,7 @@ function RepresentativesContent() {
   const displayHasResults = searchMode === 'name' ? nameResults.length > 0 || nameLoading || nameQuery.length >= 3 : hasResults
 
   return (
+    <PageTransition>
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-reps" />
 
@@ -240,6 +241,7 @@ function RepresentativesContent() {
       </main>
 
     </div>
+    </PageTransition>
   )
 }
 

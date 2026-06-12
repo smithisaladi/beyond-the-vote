@@ -7,6 +7,7 @@ import { ExternalLink } from 'lucide-react'
 import { PARTY_STYLES, STATUS_STYLES, getPartyStyle, resultBadge } from '@/lib/ui'
 import { formatDate } from '@/lib/format'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { PageTransition } from '@/components/ui/motion'
 import { Card } from '@/components/ui/Card'
 import { Skeleton as SkeletonBox } from '@/components/ui/Skeleton'
 import { useBillDetail } from '@/hooks/queries/useBills'
@@ -348,6 +349,7 @@ export default function VoteBreakdownPage({ billId, voteId }: { billId: string; 
   const vote = bill?.votes.find((v: any) => v.id === decodeURIComponent(voteId)) ?? null
 
   return (
+    <PageTransition>
     <div className="relative flex flex-col min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-vote" />
       <div className="relative z-10 flex flex-col flex-1">
@@ -378,5 +380,6 @@ export default function VoteBreakdownPage({ billId, voteId }: { billId: string; 
         </main>
       </div>
     </div>
+    </PageTransition>
   )
 }

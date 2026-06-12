@@ -24,6 +24,7 @@ interface ContributorEntry {
 import { useDebounce } from '@/hooks/useDebounce'
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { PageTransition } from '@/components/ui/motion'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { FEC_CYCLE_OPTIONS, cycleLabel } from '@/lib/fec'
 import { formatTotal } from '@/lib/format'
@@ -170,6 +171,7 @@ function DonorsContent() {
   const loadMore = () => setOffset(prev => prev + limit)
 
   return (
+    <PageTransition>
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-donors" />
 
@@ -283,6 +285,7 @@ function DonorsContent() {
         </main>
       </div>
     </div>
+    </PageTransition>
   )
 }
 

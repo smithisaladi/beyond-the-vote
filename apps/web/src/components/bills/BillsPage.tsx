@@ -8,6 +8,7 @@ import { useBills } from '@/hooks/queries/useBills'
 import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
 import { topicToSlug } from '@/lib/topics'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { PageTransition } from '@/components/ui/motion'
 import { BillSearchBar } from '@/components/bills/BillSearchBar'
 import { BillFilters as BillFiltersComponent } from '@/components/bills/BillFilters'
 import { BillGrid } from '@/components/bills/BillGrid'
@@ -132,6 +133,7 @@ function BillsContent() {
   }
 
   return (
+    <PageTransition>
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-bills" />
 
@@ -177,6 +179,7 @@ function BillsContent() {
         </main>
       </div>
     </div>
+    </PageTransition>
   )
 }
 

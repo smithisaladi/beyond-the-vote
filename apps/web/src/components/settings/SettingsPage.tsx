@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthContext'
 import { authClient } from '@/lib/auth/neon'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { PageTransition } from '@/components/ui/motion'
 
 // ── Delete confirmation modal ─────────────────────────────────────────────────
 
@@ -111,6 +112,8 @@ export default function SettingsPage() {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
+    <>
+    <PageTransition>
     <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-settings" />
 
@@ -232,6 +235,8 @@ export default function SettingsPage() {
           </div>
         </main>
       </div>
+    </div>
+    </PageTransition>
 
       {showDeleteModal && (
         <DeleteModal
@@ -240,6 +245,6 @@ export default function SettingsPage() {
           loading={deleteLoading}
         />
       )}
-    </div>
+    </>
   )
 }

@@ -9,7 +9,7 @@ import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
 import { useBillDetail } from '@/hooks/queries/useBills'
-import { TAP_SPRING } from '@/components/ui/motion'
+import { TAP_SPRING, PageTransition } from '@/components/ui/motion'
 interface BillDetailSponsor {
   name: string | null
   bioguideId: string | null
@@ -143,6 +143,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
   }
 
   return (
+    <PageTransition>
     <div className="relative flex flex-col min-h-screen overflow-hidden">
       <DotGridBackground id="dot-grid-bill-detail" />
 
@@ -387,5 +388,6 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
       </div>
 
     </div>
+    </PageTransition>
   )
 }
