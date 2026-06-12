@@ -40,11 +40,11 @@ export function InfoTooltip({ term, content, label, className }: Props) {
           className="z-50 max-w-xs bg-raised rounded-lg border border-edge p-3 text-xs text-fg/75 leading-relaxed data-[state=delayed-open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=delayed-open]:fade-in-0"
         >
           {entry && (
-            <p className="text-[11px] font-semibold text-fg mb-0.5">
+            <p className="text-[10px] font-semibold text-fg mb-0.5">
               {entry.term}
             </p>
           )}
-          <div>{body}</div>
+          <div className="text-xs">{body}</div>
           <Tooltip.Arrow className="fill-raised" width={10} height={5} />
         </Tooltip.Content>
       </Tooltip.Portal>

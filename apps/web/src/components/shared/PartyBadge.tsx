@@ -17,8 +17,8 @@ export function PartyBadge({ party, size = 'sm' }: PartyBadgeProps) {
   const style = PARTY_STYLES[partyKey] ?? PARTY_STYLES.Independent
 
   const sizeClasses = size === 'xs'
-    ? 'text-[10px] px-2 py-0.5'
-    : 'text-xs px-2.5 py-0.5'
+    ? 'text-[10px] px-1.5 py-px'
+    : 'text-[10px] px-1.5 py-px'
 
   return (
     <span className={`font-medium rounded-full ${sizeClasses} ${style.bg} ${style.text}`}>
