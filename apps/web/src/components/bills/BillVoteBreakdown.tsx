@@ -91,11 +91,11 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
         <div>
           <div className="text-xs text-fg/38">{vote.date} · {vote.chamber}</div>
           {vote.question && (
-            <div className="text-sm font-medium text-fg mt-0.5">{vote.question}</div>
+            <div className="text-[13px] font-medium text-fg mt-0.5">{vote.question}</div>
           )}
         </div>
         {badge && (
-          <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${badge}`}>
+          <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-px rounded-full ${badge}`}>
             {vote.result}
           </span>
         )}
@@ -103,10 +103,10 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
 
       <VoteBar yeas={vote.yeas} nays={vote.nays} partyBreakdown={vote.partyBreakdown} />
 
-      <div className="flex justify-between text-sm">
-        <span className={`font-medium font-mono ${STATUS_STYLES.Passed.text}`}>{vote.yeas} Yea</span>
-        {total > 0 && <span className="text-fg/38 text-xs font-mono">{total} total</span>}
-        <span className={`font-medium font-mono ${STATUS_STYLES.Failed.text}`}>{vote.nays} Nay</span>
+      <div className="flex justify-between text-[13px]">
+        <span className={`font-medium font-mono tabular-nums ${STATUS_STYLES.Passed.text}`}>{vote.yeas} Yea</span>
+        {total > 0 && <span className="text-fg/38 text-xs font-mono tabular-nums">{total} total</span>}
+        <span className={`font-medium font-mono tabular-nums ${STATUS_STYLES.Failed.text}`}>{vote.nays} Nay</span>
       </div>
 
       {vote.memberPositions.length > 0 && (
@@ -175,11 +175,11 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
 
 export default function BillVoteBreakdown({ votes }: BillVoteBreakdownProps) {
   if (!votes || votes.length === 0) {
-    return <div className="text-sm text-fg/45 italic">No recorded votes found for this bill.</div>
+    return <div className="text-[13px] text-fg/45 italic">No recorded votes found for this bill.</div>
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {votes.map((v, i) => (
         <VoteCard key={v.id ?? i} vote={v} />
       ))}

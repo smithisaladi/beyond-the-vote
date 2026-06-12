@@ -110,7 +110,7 @@ function DetailSkeleton() {
 function PartyTag({ party }: { party: string }) {
   const style = getPartyStyle(party)
   return (
-    <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${style.bg} ${style.text}`}>
+    <span className={`text-[10px] font-medium px-1.5 py-px rounded-full ${style.bg} ${style.text}`}>
       {style.label}
     </span>
   )
@@ -165,7 +165,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
               </div>
             </div>
           ) : !bill ? null : (
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="max-w-4xl mx-auto space-y-5">
 
               {/* Back link */}
               <Link
@@ -177,20 +177,20 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
               </Link>
 
               {/* Header card */}
-              <Card padding="none" className="p-6 sm:p-8">
+              <Card padding="none" className="p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
                     {/* Meta row */}
-                    <div className="flex items-center gap-2 flex-wrap mb-3">
+                    <div className="flex items-center gap-2 flex-wrap mb-2.5">
                       <span className="text-xs font-mono text-fg/40 tracking-wide">{bill.number}</span>
                       <span className="text-xs text-fg/20">·</span>
-                      <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${(STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active).bg} ${(STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active).text}`}>
+                      <span className={`text-[10px] font-medium px-1.5 py-px rounded-full ${(STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active).bg} ${(STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active).text}`}>
                         {bill.status}
                       </span>
                       {bill.topics.length > 0 && (
                         <>
                           <span className="text-xs text-fg/20">·</span>
-                          <span className="text-xs font-medium text-accent bg-accent/[0.12] px-2.5 py-0.5 rounded-full">
+                          <span className="text-[10px] font-medium text-accent bg-accent/[0.12] px-1.5 py-px rounded-full">
                             {slugToTopic(bill.topics[0]) ?? bill.topics[0]}
                           </span>
                         </>
@@ -198,13 +198,13 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                     </div>
 
                     {/* Title */}
-                    <h1 className="text-2xl sm:text-3xl text-fg leading-[1.2] mb-3 tracking-tight font-semibold">
+                    <h1 className="text-xl sm:text-2xl text-fg leading-[1.2] mb-2.5 tracking-tight font-semibold">
                       {bill.title}
                     </h1>
 
                     {/* Introduced date */}
                     {bill.introducedDate && (
-                      <p className="text-sm text-fg/45">
+                      <p className="text-[13px] text-fg/45">
                         Introduced {formatDate(bill.introducedDate)}
                       </p>
                     )}
@@ -246,25 +246,25 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
 
               {/* Summary */}
               {bill.summary && (
-                <Card padding="none" className="p-6 sm:p-8">
-                  <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-3">Summary</h2>
-                  <p className="text-sm text-fg/75 leading-relaxed">{bill.summary}</p>
+                <Card padding="none" className="p-5 sm:p-6">
+                  <h2 className="text-[10px] font-medium text-fg/40 uppercase tracking-[0.07em] mb-2.5">Summary</h2>
+                  <p className="text-[13px] text-fg/75 leading-relaxed">{bill.summary}</p>
                 </Card>
               )}
 
               {/* Main grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
 
                 {/* Left column */}
-                <div className="space-y-6">
+                <div className="space-y-5">
 
                   {/* Sponsor */}
                   {bill.sponsor && (
                     <Card>
-                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">Sponsor</h2>
+                      <h2 className="text-[10px] font-medium text-fg/40 uppercase tracking-[0.07em] mb-3">Sponsor</h2>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-fg">{bill.sponsor.name?.replace(/\s*\[.*?\]\s*$/, '')}</p>
+                          <p className="text-[13px] font-medium text-fg">{bill.sponsor.name?.replace(/\s*\[.*?\]\s*$/, '')}</p>
                           {bill.sponsor.party && (
                             <div className="flex items-center gap-2 mt-1">
                               <PartyTag party={bill.sponsor.party} />
@@ -285,7 +285,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {/* Votes */}
                   {bill.votes?.length > 0 && (
                     <Card>
-                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
+                      <h2 className="text-[10px] font-medium text-fg/40 uppercase tracking-[0.07em] mb-3">Vote Breakdown</h2>
                       <BillVoteTally votes={bill.votes} billId={id} fromParam={fromParam} />
                     </Card>
                   )}
@@ -293,7 +293,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {/* Co-sponsors */}
                   {bill.cosponsors?.length > 0 && (
                     <Card>
-                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">
+                      <h2 className="text-[10px] font-medium text-fg/40 uppercase tracking-[0.07em] mb-3">
                         Co-sponsors
                         <span className="ml-1.5 text-fg/30 normal-case tracking-normal font-normal">
                           ({bill.cosponsors.length})
@@ -301,9 +301,9 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                       </h2>
                       <div className="divide-y divide-edge-soft">
                         {(showAllCosponsors ? bill.cosponsors : bill.cosponsors.slice(0, 5)).map((c: any) => (
-                          <div key={c.bioguideId} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                          <div key={c.bioguideId} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
                             <div>
-                              <p className="text-sm text-fg">{c.name.replace(/\s*\[.*?\]\s*$/, '')}</p>
+                              <p className="text-[13px] text-fg">{c.name.replace(/\s*\[.*?\]\s*$/, '')}</p>
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <PartyBadge party={c.party} size="xs" />
                                 <span className="text-xs text-fg/30">·</span>
@@ -334,12 +334,12 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {/* Topics */}
                   {bill.topics?.length > 0 && (
                     <Card>
-                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-3">Topics</h2>
-                      <div className="flex flex-wrap gap-2">
+                      <h2 className="text-[10px] font-medium text-fg/40 uppercase tracking-[0.07em] mb-2.5">Topics</h2>
+                      <div className="flex flex-wrap gap-1.5">
                         {bill.topics.map((subject: any) => (
                           <span
                             key={subject}
-                            className="text-xs text-fg/55 bg-fg/[0.06] px-2.5 py-1 rounded-full"
+                            className="text-[10px] text-fg/55 bg-fg/[0.06] px-2 py-0.5 rounded-full"
                           >
                             {subject}
                           </span>
@@ -350,16 +350,16 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                 </div>
 
                 {/* Right column */}
-                <div className="space-y-6">
+                <div className="space-y-5">
 
                   {/* Status timeline */}
                   {bill.actions?.length > 0 && (
                     <Card>
-                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">Timeline</h2>
+                      <h2 className="text-[10px] font-medium text-fg/40 uppercase tracking-[0.07em] mb-3">Timeline</h2>
                       <div className="relative">
                         {/* Vertical line */}
                         <div className="absolute left-[5px] top-2 bottom-2 w-px bg-edge" />
-                        <div className="space-y-4">
+                        <div className="space-y-3">
                           {bill.actions.map((action: any, i: number) => (
                             <div key={i} className="flex gap-4 pl-5 relative">
                               {/* Dot */}

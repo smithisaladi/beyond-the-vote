@@ -48,7 +48,7 @@ function FilterCheckbox({
           </svg>
         )}
       </div>
-      <span className={`text-sm ${checked ? 'text-fg' : 'text-fg/60'}`}>
+      <span className={`text-[13px] ${checked ? 'text-fg' : 'text-fg/60'}`}>
         {label}
       </span>
     </label>
@@ -135,7 +135,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                 >
                   {dateFilter === opt.key && <div className="w-2 h-2 rounded-full bg-accent" />}
                 </div>
-                <span className={`text-sm ${dateFilter === opt.key ? 'text-fg' : 'text-fg/60'}`}>{opt.label}</span>
+                <span className={`text-[13px] ${dateFilter === opt.key ? 'text-fg' : 'text-fg/60'}`}>{opt.label}</span>
               </div>
             ))}
           </div>
@@ -200,7 +200,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                   >
                     {sort === opt.key && <div className="w-2 h-2 rounded-full bg-accent" />}
                   </div>
-                  <span className={`text-sm ${sort === opt.key ? 'text-fg' : 'text-fg/60'}`}>{opt.label}</span>
+                  <span className={`text-[13px] ${sort === opt.key ? 'text-fg' : 'text-fg/60'}`}>{opt.label}</span>
                 </div>
               ))}
             </div>

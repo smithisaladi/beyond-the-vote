@@ -65,7 +65,7 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
 
       {hasData && total > 0 ? (
         <div className="flex items-center gap-3">
-          <span className={`text-xs font-medium shrink-0 font-mono ${STATUS_STYLES.Passed.text}`}>{yeas} Yea</span>
+          <span className={`text-xs font-medium shrink-0 font-mono tabular-nums ${STATUS_STYLES.Passed.text}`}>{yeas} Yea</span>
           <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-fg/[0.08]">
             {segments
               ? segments.map(s => s.count > 0 && (
@@ -77,7 +77,7 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
                 </>
             }
           </div>
-          <span className={`text-xs font-medium shrink-0 font-mono ${STATUS_STYLES.Failed.text}`}>{nays} Nay</span>
+          <span className={`text-xs font-medium shrink-0 font-mono tabular-nums ${STATUS_STYLES.Failed.text}`}>{nays} Nay</span>
         </div>
       ) : (
         <p className="text-xs text-fg/30">Vote data unavailable</p>

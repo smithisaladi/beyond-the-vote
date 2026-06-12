@@ -69,11 +69,11 @@ function VoteBreakdownSkeleton() {
 function MemberRow({ m }: { m: MemberPosition }) {
   const ps = getPartyStyle(m.party)
   return (
-    <div className="flex items-center justify-between py-2 border-b border-edge-soft last:border-0">
+    <div className="flex items-center justify-between py-1.5 border-b border-edge-soft last:border-0">
       <Link
         to="/representatives/$id"
         params={{ id: m.bioguideId }}
-        className="text-sm text-fg/70 hover:text-accent transition-colors truncate mr-3"
+        className="text-[13px] text-fg/70 hover:text-accent transition-colors truncate mr-3"
       >
         {m.name}
       </Link>
@@ -125,7 +125,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
   }, [vote.memberPositions])
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-5">
       <Link
         to="/bills/$billId"
         params={{ billId }}
@@ -137,13 +137,13 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
       </Link>
 
       {/* Header card: meta + title + question + bar */}
-      <Card padding="none" className="p-6 sm:p-8">
-        <div className="flex items-start justify-between gap-4 mb-5">
+      <Card padding="none" className="p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-3">
+            <div className="flex items-center gap-2 flex-wrap mb-2.5">
               <span className="text-xs font-mono text-fg/40 tracking-wide">{billNumber}</span>
               <span className="text-xs text-fg/20">·</span>
-              <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full ${
+              <span className={`text-[10px] font-medium px-1.5 py-px rounded-full ${
                 vote.chamber === 'Senate' ? 'bg-accent/[0.12] text-accent' : 'bg-fg/[0.08] text-fg/55'
               }`}>
                 {vote.chamber}
@@ -151,17 +151,17 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
               {vote.result && badge && (
                 <>
                   <span className="text-xs text-fg/20">·</span>
-                  <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full ${badge}`}>{vote.result}</span>
+                  <span className={`text-[10px] font-medium px-1.5 py-px rounded-full ${badge}`}>{vote.result}</span>
                 </>
               )}
             </div>
 
-            <h1 className="text-xl sm:text-2xl text-fg leading-snug tracking-tight font-semibold">
+            <h1 className="text-xl text-fg leading-snug tracking-tight font-semibold">
               {billTitle}
             </h1>
 
             {vote.question && (
-              <p className="mt-2 text-sm text-fg/55 leading-relaxed">
+              <p className="mt-1.5 text-[13px] text-fg/55 leading-relaxed">
                 {vote.question}
               </p>
             )}
@@ -179,22 +179,22 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
           )}
         </div>
 
-        <div className="flex items-end gap-8">
+        <div className="flex items-end gap-6">
           <div>
-            <div className={`text-2xl font-semibold font-mono ${STATUS_STYLES.Passed.text}`}>{yeas}</div>
-            <div className="text-[10px] font-medium text-fg/38 uppercase tracking-widest mt-0.5">Yea</div>
+            <div className={`text-xl font-semibold font-mono tabular-nums ${STATUS_STYLES.Passed.text}`}>{yeas}</div>
+            <div className="text-[10px] font-medium text-fg/38 uppercase tracking-[0.07em] mt-0.5">Yea</div>
           </div>
-          <div className="w-px h-7 bg-edge" />
+          <div className="w-px h-6 bg-edge" />
           <div>
-            <div className={`text-2xl font-semibold font-mono ${STATUS_STYLES.Failed.text}`}>{nays}</div>
-            <div className="text-[10px] font-medium text-fg/38 uppercase tracking-widest mt-0.5">Nay</div>
+            <div className={`text-xl font-semibold font-mono tabular-nums ${STATUS_STYLES.Failed.text}`}>{nays}</div>
+            <div className="text-[10px] font-medium text-fg/38 uppercase tracking-[0.07em] mt-0.5">Nay</div>
           </div>
           {(vote.notVoting ?? 0) > 0 && (
             <>
-              <div className="w-px h-7 bg-edge" />
+              <div className="w-px h-6 bg-edge" />
               <div>
-                <div className="text-2xl font-semibold text-fg/20 font-mono">{vote.notVoting}</div>
-                <div className="text-[10px] font-medium text-fg/20 uppercase tracking-widest mt-0.5">Not Voting</div>
+                <div className="text-xl font-semibold text-fg/20 font-mono tabular-nums">{vote.notVoting}</div>
+                <div className="text-[10px] font-medium text-fg/20 uppercase tracking-[0.07em] mt-0.5">Not Voting</div>
               </div>
             </>
           )}
@@ -204,19 +204,19 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
       </Card>
 
       {/* Two-column grid: member positions + party breakdown sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
 
         {/* Member positions */}
         {(vote.memberPositions?.length ?? 0) > 0 && (
           <Card>
-            <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">
+            <h2 className="text-[10px] font-medium text-fg/40 uppercase tracking-[0.07em] mb-3">
               Member Positions
               <span className="ml-1.5 normal-case tracking-normal font-normal text-fg/25">
                 ({filtered.length})
               </span>
             </h2>
 
-            <div className="flex gap-2 mb-4" ref={dropdownRef}>
+            <div className="flex gap-2 mb-3" ref={dropdownRef}>
               <div className="relative">
                 <button
                   onClick={() => setOpenDropdown(openDropdown === 'position' ? null : 'position')}
@@ -286,7 +286,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
               {filtered.length > 0 ? (
                 filtered.map((m: any) => <MemberRow key={m.bioguideId} m={m} />)
               ) : (
-                <p className="text-sm text-fg/30 italic py-6 text-center">No members match these filters.</p>
+                <p className="text-[13px] text-fg/30 italic py-5 text-center">No members match these filters.</p>
               )}
             </div>
           </Card>
@@ -296,8 +296,8 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
         {pb && (
           <div className="space-y-6">
             <Card>
-              <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">Party Breakdown</h2>
-              <div className="space-y-3">
+              <h2 className="text-[10px] font-medium text-fg/40 uppercase tracking-[0.07em] mb-3">Party Breakdown</h2>
+              <div className="space-y-2.5">
                 {(['Democrat', 'Republican', 'Independent'] as const).map(key => {
                   const d = pb[key.toLowerCase() as 'democrat' | 'republican' | 'independent']
                   if (d.yea === 0 && d.nay === 0) return null
@@ -305,20 +305,20 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
                   const partyTotal = d.yea + d.nay
                   const yeaPct = partyTotal > 0 ? Math.round((d.yea / partyTotal) * 100) : 0
                   return (
-                    <div key={key} className="bg-fg/[0.04] rounded-lg p-3.5">
-                      <div className="flex items-center justify-between mb-2">
+                    <div key={key} className="bg-fg/[0.04] rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
                           <span className="w-2 h-2 rounded-full" style={{ background: s.hex }} />
                           <span className="text-xs font-medium text-fg/55">{s.label}</span>
                         </div>
-                        <span className="text-[11px] text-fg/25 font-mono">{partyTotal} votes</span>
+                        <span className="text-[10px] text-fg/25 font-mono tabular-nums">{partyTotal} votes</span>
                       </div>
-                      <div className="flex h-1.5 rounded-full overflow-hidden bg-fg/[0.08] mb-2">
+                      <div className="flex h-1.5 rounded-full overflow-hidden bg-fg/[0.08] mb-1.5">
                         <div className="h-full rounded-full" style={{ width: `${yeaPct}%`, background: s.hex }} />
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="font-medium font-mono" style={{ color: s.hex }}>{d.yea} <span className="text-[10px] text-fg/25 uppercase">Yea</span></span>
-                        <span className="font-medium opacity-50 font-mono" style={{ color: s.hex }}>{d.nay} <span className="text-[10px] text-fg/25 uppercase">Nay</span></span>
+                      <div className="flex justify-between text-[13px]">
+                        <span className="font-medium font-mono tabular-nums" style={{ color: s.hex }}>{d.yea} <span className="text-[10px] text-fg/25 uppercase">Yea</span></span>
+                        <span className="font-medium opacity-50 font-mono tabular-nums" style={{ color: s.hex }}>{d.nay} <span className="text-[10px] text-fg/25 uppercase">Nay</span></span>
                       </div>
                     </div>
                   )

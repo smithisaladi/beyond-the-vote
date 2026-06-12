@@ -58,16 +58,16 @@ function BillCard({
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             {/* Top meta row */}
-            <div className="flex items-center gap-2 flex-wrap mb-3">
+            <div className="flex items-center gap-2 flex-wrap mb-2.5">
               <span className="text-xs font-mono text-fg/40 tracking-wide">{bill.number}</span>
               <span className="text-xs text-fg/20">·</span>
-              <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${status.bg} ${status.text}`}>
+              <span className={`text-[10px] font-medium px-1.5 py-px rounded-full ${status.bg} ${status.text}`}>
                 {bill.status}
               </span>
               {bill.topics.length > 0 && (
                 <>
                   <span className="text-xs text-fg/20">·</span>
-                  <span className="text-xs font-medium text-accent bg-accent/[0.12] px-2.5 py-0.5 rounded-full">
+                  <span className="text-[10px] font-medium text-accent bg-accent/[0.12] px-1.5 py-px rounded-full">
                     {slugToTopic(bill.topics[0]) ?? bill.topics[0]}
                   </span>
                 </>
@@ -75,19 +75,19 @@ function BillCard({
             </div>
 
             {/* Title */}
-            <h2 className="text-base text-fg leading-snug mb-2 group-hover:text-accent transition-colors tracking-tight">
+            <h2 className="text-sm font-semibold text-fg leading-snug mb-2 group-hover:text-accent transition-colors tracking-tight">
               {bill.title}
             </h2>
 
             {/* Summary */}
-            <p className="text-sm text-fg/55 leading-relaxed mb-4 line-clamp-2">
+            <p className="text-[13px] text-fg/55 leading-relaxed mb-3 line-clamp-2">
               {bill.summary}
             </p>
 
             {/* Bottom row */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-fg/60">{bill.sponsor}</span>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${party.bg} ${party.text}`}>
+              <span className={`text-[10px] font-medium px-1.5 py-px rounded-full ${party.bg} ${party.text}`}>
                 {bill.party}
               </span>
               {bill.lastAction && (
@@ -169,26 +169,26 @@ export function BillGrid({
           </div>
         ) : error ? (
           <Card padding="xl" className="text-center">
-            <p className="text-fg/40 text-sm mb-3">
+            <p className="text-fg/40 text-[13px] mb-3">
               {error.includes('CONGRESS_API_KEY')
                 ? 'Congress.gov API key is not configured.'
                 : 'Failed to load bills.'}
             </p>
             <button
               onClick={() => onRefetch()}
-              className="text-sm text-accent hover:text-accent-deep-hover"
+              className="text-[13px] text-accent hover:text-accent-deep-hover"
             >
               Try again
             </button>
           </Card>
         ) : bills.length === 0 ? (
           <Card padding="xl" className="text-center">
-            <p className="text-fg/40 text-sm">
+            <p className="text-fg/40 text-[13px]">
               {showTrackedOnly ? 'You haven\'t tracked any bills yet.' : 'No bills match your filters.'}
             </p>
             <button
               onClick={onClearFilters}
-              className="mt-3 text-sm text-accent hover:text-accent-deep-hover"
+              className="mt-3 text-[13px] text-accent hover:text-accent-deep-hover"
             >
               Clear all filters
             </button>
@@ -196,7 +196,7 @@ export function BillGrid({
         ) : (
           <>
             {/* First page wrapped in StaggerGrid; subsequent pages rendered plainly */}
-            <StaggerGrid className="space-y-4">
+            <StaggerGrid className="space-y-3">
               {bills.slice(0, FIRST_PAGE_SIZE).map(bill => (
                 <StaggerItem key={bill.id}>
                   <BillCard
@@ -209,7 +209,7 @@ export function BillGrid({
             </StaggerGrid>
 
             {bills.length > FIRST_PAGE_SIZE && (
-              <div className="space-y-4 mt-4">
+              <div className="space-y-3 mt-3">
                 {bills.slice(FIRST_PAGE_SIZE).map(bill => (
                   <BillCard
                     key={bill.id}

@@ -141,10 +141,10 @@ function BillsContent() {
 
             {/* Page heading */}
             <div className="mb-5 text-center">
-              <h1 className="text-2xl sm:text-3xl text-fg mb-1.5 tracking-tight font-semibold">
+              <h1 className="text-xl sm:text-2xl text-fg mb-1.5 tracking-tight font-semibold">
                 Search Bills
               </h1>
-              <p className="text-sm text-fg/50">
+              <p className="text-[13px] text-fg/50">
                 Follow legislation that matters to you.
               </p>
             </div>
