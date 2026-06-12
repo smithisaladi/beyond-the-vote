@@ -195,7 +195,7 @@ function RepresentativesContent() {
               {displayLoading && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {[1, 2, 3].map(i => (
-                    <Card key={i} padding="md" shadow={false} className="animate-pulse">
+                    <Card key={i} padding="md" className="animate-pulse">
                       <div className="flex flex-col items-center gap-3">
                         <Skeleton className="w-20 h-24 rounded-full" />
                         <div className="space-y-1.5 w-full text-center">
@@ -211,7 +211,7 @@ function RepresentativesContent() {
               )}
 
               {displayError && !displayLoading && (
-                <Card shadow={false} padding="none" className="max-w-md mx-auto text-center px-8 py-10">
+                <Card padding="none" className="max-w-md mx-auto text-center px-8 py-10">
                   <p className="text-sm text-[#1C1C1A]/60">{displayError}</p>
                 </Card>
               )}

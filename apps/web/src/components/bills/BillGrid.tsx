@@ -165,7 +165,7 @@ export function BillGrid({
             ))}
           </div>
         ) : error ? (
-          <Card shadow={false} padding="xl" className="text-center">
+          <Card padding="xl" className="text-center">
             <p className="text-[#1C1C1A]/40 text-sm mb-3">
               {error.includes('CONGRESS_API_KEY')
                 ? 'Congress.gov API key is not configured.'
@@ -179,7 +179,7 @@ export function BillGrid({
             </button>
           </Card>
         ) : bills.length === 0 ? (
-          <Card shadow={false} padding="xl" className="text-center">
+          <Card padding="xl" className="text-center">
             <p className="text-[#1C1C1A]/40 text-sm">
               {showTrackedOnly ? 'You haven\'t tracked any bills yet.' : 'No bills match your filters.'}
             </p>

@@ -17,10 +17,8 @@ interface CardProps extends HTMLAttributes<HTMLElement> {
   as?: ElementType
   /** Padding token. Use `none` when you need custom padding via `className`. */
   padding?: CardPadding
-  /** Border style. `standard` includes the soft shadow; `light` and `none` omit it. */
+  /** Border style. `standard` uses the surface background; `light` uses a lighter border; `none` uses `bg-surface`. */
   border?: CardBorder
-  /** Override the default shadow of the `standard` border. */
-  shadow?: boolean
   /** Add hover elevation. Must be placed inside a `group` wrapper. */
   hoverable?: boolean
   children?: ReactNode
@@ -31,14 +29,13 @@ function joinClasses(...parts: Array<string | false | null | undefined>) {
 }
 
 /**
- * Standard card primitive. Defaults: `padding="lg"` (p-6), `border="standard"`, shadow on.
+ * Standard card primitive. Defaults: `padding="lg"` (p-6), `border="standard"`. No shadows — elevation is expressed via background steps.
  * Pass `className` to extend (e.g., extra margin, custom padding, overflow controls).
  */
 export function Card({
   as: Tag = 'div',
   padding = 'lg',
   border = 'standard',
-  shadow = true,
   hoverable = false,
   className,
   children,
@@ -46,14 +43,12 @@ export function Card({
 }: CardProps) {
   const borderClass =
     border === 'light' ? CARD_LIGHT_BORDER_CLASS :
-    border === 'none'  ? 'bg-white rounded-xl' :
+    border === 'none'  ? 'bg-surface rounded-xl' :
                          CARD_CLASS
-  const shadowOff = border === 'standard' && !shadow ? '!shadow-none' : null
   return (
     <Tag
       className={joinClasses(
         borderClass,
-        shadowOff,
         hoverable ? CARD_HOVER_CLASS : null,
         PADDING_MAP[padding],
         className
