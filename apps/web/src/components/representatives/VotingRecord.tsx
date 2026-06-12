@@ -24,7 +24,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
   const [filter, setFilter] = useState<'all' | 'Yea' | 'Nay' | 'with' | 'against'>('all')
 
   if (!votes || votes.length === 0) {
-    return <div className="text-sm text-[#1C1C1A]/45 italic">No bill votes on record.</div>
+    return <div className="text-sm text-fg/45 italic">No bill votes on record.</div>
   }
 
   const filtered = votes.filter(v => {
@@ -45,9 +45,9 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
     <div className="space-y-4">
       {/* Summary bar */}
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-[#1C1C1A]/55">
-          Voted with party <span className="text-[#1C1C1A] font-semibold">{withPartyPercent}%</span>
-          {' '}of the time ({withPartyCount}/{votes.length} votes)
+        <span className="text-fg/55">
+          Voted with party <span className="text-fg font-semibold font-mono">{withPartyPercent}%</span>
+          {' '}of the time (<span className="font-mono">{withPartyCount}/{votes.length}</span> votes)
         </span>
       </div>
 
@@ -59,8 +59,8 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
             onClick={() => setFilter(f)}
             className={`text-xs px-3 py-1 rounded-full border transition-colors ${
               filter === f
-                ? 'bg-[#7B5E8A]/10 text-[#7B5E8A] border-[#7B5E8A]/20'
-                : 'border-[rgba(28,28,26,0.08)] text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70'
+                ? 'bg-accent-deep/10 text-accent border-accent/20'
+                : 'border-edge text-fg/45 hover:text-fg/70'
             }`}
           >
             {f === 'all'     ? `All (${votes.length})`                    :
@@ -73,8 +73,8 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
       </div>
 
       {/* Vote rows */}
-      <div className="divide-y divide-[rgba(28,28,26,0.05)]">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 text-xs text-[#1C1C1A]/38 pb-2 font-medium uppercase tracking-wide">
+      <div className="divide-y divide-edge-soft">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 text-xs text-fg/38 pb-2 font-medium uppercase tracking-wide">
           <span>Bill</span>
           <span>Date</span>
           <span>Vote</span>
@@ -89,27 +89,27 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
               <Link
                 to="/bills/$billId"
                 params={{ billId: v.billId }}
-                className="text-[#1C1C1A] hover:text-[#7B5E8A] transition-colors truncate block"
+                className="text-fg hover:text-accent transition-colors truncate block"
               >
                 {v.billId.toUpperCase().replace(/-/g, ' ').replace(/(\d+) (\w+) (\d+)/, '$1 $2. $3')}
               </Link>
               {v.question && (
-                <div className="text-xs text-[#1C1C1A]/38 truncate">{v.question}</div>
+                <div className="text-xs text-fg/38 truncate">{v.question}</div>
               )}
-              <div className="text-xs text-[#1C1C1A]/38">
+              <div className="text-xs text-fg/38">
                 {v.result}
                 {v.chamber && ` · ${v.chamber}`}
               </div>
             </div>
 
-            <span className="text-[#1C1C1A]/32 whitespace-nowrap text-xs">
+            <span className="text-fg/32 whitespace-nowrap text-xs">
               {parseLocalDate(v.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
 
             <span className={`flex items-center gap-1 font-medium whitespace-nowrap ${
-              v.position === 'Yea'       ? 'text-[#68B085]' :
-              v.position === 'Nay'       ? 'text-[#B85C38]' :
-              'text-[#1C1C1A]/45'
+              v.position === 'Yea'       ? 'text-[#7FC29B]' :
+              v.position === 'Nay'       ? 'text-[#C97A5A]' :
+              'text-fg/45'
             }`}>
               {v.position === 'Yea'  ? <CheckCircle size={13} strokeWidth={1.8} /> :
                v.position === 'Nay'  ? <XCircle size={13} strokeWidth={1.8} />     :
@@ -119,15 +119,15 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
 
             <span title={v.withParty ? 'Voted with party' : 'Voted against party'}>
               {v.withParty
-                ? <CheckCircle size={14} strokeWidth={1.8} className="text-[#68B085]" />
-                : <XCircle    size={14} strokeWidth={1.8} className="text-[#1C1C1A]/38" />}
+                ? <CheckCircle size={14} strokeWidth={1.8} className="text-[#7FC29B]" />
+                : <XCircle    size={14} strokeWidth={1.8} className="text-fg/38" />}
             </span>
           </div>
         ))}
       </div>
 
       {filtered.length === 0 && (
-        <div className="text-sm text-[#1C1C1A]/45 italic py-4">No votes match this filter.</div>
+        <div className="text-sm text-fg/45 italic py-4">No votes match this filter.</div>
       )}
     </div>
   )

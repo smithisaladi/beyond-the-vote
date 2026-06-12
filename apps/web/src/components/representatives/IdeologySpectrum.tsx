@@ -1,5 +1,6 @@
 
 
+import { getPartyStyle } from '@/lib/ui'
 import { getIdeologyLabel } from '@/lib/ideology'
 
 interface IdeologySpectrumProps {
@@ -22,33 +23,30 @@ export default function IdeologySpectrum({
 }: IdeologySpectrumProps) {
   if (score === null || score === undefined) {
     return (
-      <div className="text-sm text-[#1C1C1A]/45 italic">Ideology score unavailable</div>
+      <div className="text-sm text-fg/45 italic">Ideology score unavailable</div>
     )
   }
 
   const label = getIdeologyLabel(score)
   const pct   = toPercent(score)
 
-  const partyColor =
-    party?.toLowerCase().includes('democrat')   ? '#5E85A8' :
-    party?.toLowerCase().includes('republican') ? '#A87B7B' :
-    '#8A8A7A'
+  const partyColor = getPartyStyle(party ?? '').hex
 
   return (
     <div className="w-full space-y-2">
-      <div className="flex justify-between text-xs text-[#1C1C1A]/45 select-none">
+      <div className="flex justify-between text-xs text-fg/45 select-none">
         <span>Very Liberal</span>
-        <span className="font-medium text-[#1C1C1A]">{label}</span>
+        <span className="font-medium text-fg">{label}</span>
         <span>Very Conservative</span>
       </div>
 
       <div className="relative h-3 rounded-full overflow-hidden"
-           style={{ background: 'linear-gradient(to right, #5E85A8, #8A8A7A, #A87B7B)' }}>
+           style={{ background: 'linear-gradient(to right, #7EA5C8, #A8A896, #C89B9B)' }}>
 
         {/* Chamber median marker */}
         {chamberMedian !== null && chamberMedian !== undefined && (
           <span
-            className="absolute top-0 bottom-0 w-0.5 bg-[#1C1C1A]/20"
+            className="absolute top-0 bottom-0 w-0.5 bg-fg/20"
             style={{ left: `${toPercent(chamberMedian)}%` }}
             title={`Chamber median: ${chamberMedian.toFixed(3)}`}
           />
@@ -57,7 +55,7 @@ export default function IdeologySpectrum({
         {/* Party median marker */}
         {partyMedian !== null && partyMedian !== undefined && (
           <span
-            className="absolute top-0 bottom-0 w-0.5 bg-[#1C1C1A]/40"
+            className="absolute top-0 bottom-0 w-0.5 bg-fg/40"
             style={{ left: `${toPercent(partyMedian)}%` }}
             title={`Party median: ${partyMedian.toFixed(3)}`}
           />
@@ -65,29 +63,29 @@ export default function IdeologySpectrum({
 
         {/* Member dot */}
         <span
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-[#F5F0E8] shadow-sm"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full border-2 border-bg"
           style={{ left: `${pct}%`, background: partyColor }}
           title={`Score: ${score.toFixed(3)}`}
         />
       </div>
 
-      <div className="flex justify-between text-xs text-[#1C1C1A]/38 select-none">
+      <div className="flex justify-between text-xs text-fg/38 select-none">
         <span>−1.0</span>
-        <span className="font-mono text-[#1C1C1A]/45">{score.toFixed(3)}</span>
+        <span className="font-mono text-fg/45">{score.toFixed(3)}</span>
         <span>+1.0</span>
       </div>
 
       {(chamberMedian !== null && chamberMedian !== undefined) || (partyMedian !== null && partyMedian !== undefined) ? (
-        <div className="flex gap-4 text-xs text-[#1C1C1A]/45">
+        <div className="flex gap-4 text-xs text-fg/45">
           {chamberMedian !== null && chamberMedian !== undefined && (
             <span className="flex items-center gap-1">
-              <span className="inline-block w-2 h-2 rounded-full bg-[#1C1C1A]/20" />
+              <span className="inline-block w-2 h-2 rounded-full bg-fg/20" />
               Chamber median
             </span>
           )}
           {partyMedian !== null && partyMedian !== undefined && (
             <span className="flex items-center gap-1">
-              <span className="inline-block w-2 h-2 rounded-full bg-[#1C1C1A]/40" />
+              <span className="inline-block w-2 h-2 rounded-full bg-fg/40" />
               Party median
             </span>
           )}

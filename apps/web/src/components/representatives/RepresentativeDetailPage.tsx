@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
+import { motion } from 'motion/react'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useTabState } from '@/hooks/useTabState'
@@ -71,7 +72,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
             <div className="max-w-5xl mx-auto space-y-6">
               <Link
                 to="/representatives"
-                className="flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
+                className="flex items-center gap-2 text-sm text-fg/50 hover:text-fg transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 12H5M12 5l-7 7 7 7" />
@@ -90,25 +91,31 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
 
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
                 <Card padding="none" className="overflow-hidden">
-                  <div className="flex border-b border-[rgba(28,28,26,0.08)]" role="tablist">
+                  <div className="flex border-b border-edge" role="tablist">
                     {tabs.map(tab => (
                       <button
                         key={tab.key}
                         role="tab"
                         aria-selected={activeTab === tab.key}
                         onClick={() => setActiveTab(tab.key)}
-                        className={`px-5 py-4 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                        className={`relative px-5 py-4 text-sm font-medium transition-colors ${
                           activeTab === tab.key
-                            ? 'border-[#7B5E8A] text-[#1C1C1A]'
-                            : 'border-transparent text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70'
+                            ? 'text-fg'
+                            : 'text-fg/50 hover:text-fg/70'
                         }`}
                       >
                         {tab.label}
+                        {activeTab === tab.key && (
+                          <motion.div
+                            layoutId="rep-tab-indicator"
+                            className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent"
+                          />
+                        )}
                       </button>
                     ))}
                   </div>
 
-                  <div className="divide-y divide-[rgba(28,28,26,0.06)]">
+                  <div className="divide-y divide-edge-soft">
                     {activeTab === 'votes' && (
                       <VotesTab votes={politician.votes ?? []} politicianId={id} />
                     )}

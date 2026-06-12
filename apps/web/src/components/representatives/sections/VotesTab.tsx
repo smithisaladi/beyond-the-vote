@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { isFinalPassageVote } from '@/lib/votes'
 import { formatBillId } from '@/lib/bills'
+import { STATUS_STYLES } from '@/lib/ui'
 import { DonorAlignmentPanel } from './DonorAlignmentPanel'
 import type { PoliticianVote } from '@/lib/types/politicians'
 
@@ -29,7 +30,7 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
     <>
       {votes.length > 0 && (
         <div className="px-6 pt-4 pb-3 flex items-center justify-center gap-3">
-          <span className="text-[10px] uppercase tracking-[0.14em] text-[#1C1C1A]/38 font-medium select-none">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-fg/38 font-medium select-none">
             Filter
           </span>
           <div role="tablist" aria-label="Filter votes" className="flex items-center gap-1">
@@ -43,8 +44,8 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
                   onClick={() => setVoteFilter(f)}
                   className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors ${
                     active
-                      ? 'bg-[#7B5E8A]/10 text-[#7B5E8A] border-[#7B5E8A]/20'
-                      : 'text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70 border-transparent'
+                      ? 'bg-accent-deep/10 text-accent border-accent/20'
+                      : 'text-fg/45 hover:text-fg/70 border-transparent'
                   }`}
                 >
                   {f === 'final' ? 'Final' : 'All'}
@@ -56,7 +57,7 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
       )}
 
       {filteredVotes.length === 0 ? (
-        <p className="px-6 py-8 text-sm text-[#1C1C1A]/40 text-center">
+        <p className="px-6 py-8 text-sm text-fg/40 text-center">
           {voteFilter === 'final' ? 'No final passage votes found.' : 'No recent votes found.'}
         </p>
       ) : (
@@ -75,17 +76,17 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
                       <Link
                         to="/bills/$billId"
                         params={{ billId: v.billId }}
-                        className="text-sm text-[#1C1C1A] hover:text-[#7B5E8A] hover:underline transition-colors"
+                        className="text-sm text-fg hover:text-accent hover:underline transition-colors"
                       >
                         {displayTitle}
                       </Link>
                     ) : (
-                      <p className="text-sm text-[#1C1C1A]">{displayTitle}</p>
+                      <p className="text-sm text-fg">{displayTitle}</p>
                     )}
-                    <p className="text-xs text-[#1C1C1A]/40 mt-0.5">{v.date}</p>
+                    <p className="text-xs text-fg/40 mt-0.5">{v.date}</p>
                   </div>
                   <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
-                    vote === 'Yea' ? 'bg-[#68B085]/[0.12] text-[#68B085]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
+                    vote === 'Yea' ? `${STATUS_STYLES.Passed.bg} ${STATUS_STYLES.Passed.text}` : `${STATUS_STYLES.Failed.bg} ${STATUS_STYLES.Failed.text}`
                   }`}>
                     {vote}
                   </span>
@@ -102,7 +103,7 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
                 onClick={() =>
                   setVoteLimits(prev => ({ ...prev, [voteFilter]: prev[voteFilter] + 10 }))
                 }
-                className="text-xs font-medium text-[#7B5E8A] hover:text-[#6A4F78] border border-[#7B5E8A]/30 rounded-lg px-4 py-2 hover:bg-[#7B5E8A]/5 transition-colors"
+                className="text-xs font-medium text-accent hover:text-accent/80 border border-accent/30 rounded-lg px-4 py-2 hover:bg-accent-deep/5 transition-colors"
               >
                 Load {Math.min(10, remaining)} more
               </button>

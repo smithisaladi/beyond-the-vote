@@ -99,12 +99,12 @@ function SectionLabel({
 }) {
   return (
     <div className="flex items-baseline justify-between gap-4 mb-3">
-      <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide inline-flex items-center gap-1">
+      <p className="text-xs text-fg/50 uppercase tracking-wide inline-flex items-center gap-1">
         {children}
         {tooltipTerm && <InfoTooltip term={tooltipTerm} />}
       </p>
       {meta && (
-        <span className="text-[#1C1C1A]/30 uppercase tracking-[0.08em] flex-shrink-0" style={{ fontSize: '0.5625rem' }}>
+        <span className="text-fg/30 uppercase tracking-[0.08em] flex-shrink-0" style={{ fontSize: '0.5625rem' }}>
           {meta}
         </span>
       )}
@@ -131,25 +131,22 @@ function FundingRow({
   const barWidth = maxPct > 0 ? (pct / maxPct) * 100 : 0
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs text-[#1C1C1A]/60 w-[130px] flex-shrink-0 truncate inline-flex items-center gap-1">
+      <span className="text-xs text-fg/60 w-[130px] flex-shrink-0 truncate inline-flex items-center gap-1">
         {label}
         {tooltipTerm && <InfoTooltip term={tooltipTerm} />}
       </span>
       <div className="flex-1 flex items-center gap-2.5 min-w-0">
-        <div className="flex-1 h-1.5 bg-[#E8E3DA] rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-fg/[0.08] rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all ${color}`}
             style={{ width: `${barWidth}%`, minWidth: pct > 0 ? 3 : 0 }}
           />
         </div>
-        <span
-          className="text-xs text-[#1C1C1A] tabular-nums w-8 text-right flex-shrink-0"
-          style={{ fontFamily: 'var(--font-serif)' }}
-        >
+        <span className="text-xs text-fg tabular-nums w-8 text-right flex-shrink-0 font-mono">
           {Math.round(pct)}%
         </span>
       </div>
-      <span className="text-xs text-[#1C1C1A]/38 tabular-nums flex-shrink-0 w-14 text-right">
+      <span className="text-xs text-fg/38 tabular-nums flex-shrink-0 w-14 text-right font-mono">
         {formatTotal(amount)}
       </span>
     </div>
@@ -166,9 +163,9 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
   if (!hasDonorData && !bd) {
     return (
       <div className="px-6 py-12 text-center">
-        <p className="text-sm text-[#1C1C1A]/45">Donor data unavailable.</p>
+        <p className="text-sm text-fg/45">Donor data unavailable.</p>
         {fecUrl && (
-          <a href={fecUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-[#7B5E8A] hover:text-[#6A4F78] mt-2 inline-block">
+          <a href={fecUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:text-accent/80 mt-2 inline-block">
             View on FEC →
           </a>
         )}
@@ -181,10 +178,10 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
 
   const fundingRows = bd
     ? ([
-        { label: 'PAC & Corporate', amount: bd.pac, pct: bd.pacPct, color: 'bg-[#7B5E8A]', tooltipTerm: 'pacAndCorporate' as FecTermKey },
-        { label: 'Large Individual', amount: bd.individualLarge, pct: bd.individualLargePct, color: 'bg-[#7B5E8A]/50', tooltipTerm: 'largeIndividual' as FecTermKey },
-        { label: 'Small Donors', amount: bd.individualSmall, pct: bd.individualSmallPct, color: 'bg-[#7B5E8A]/25', tooltipTerm: 'smallDonors' as FecTermKey },
-        { label: 'Other', amount: bd.other, pct: bd.otherPct, color: 'bg-[#8A8A7A]/20', tooltipTerm: 'otherFunding' as FecTermKey },
+        { label: 'PAC & Corporate', amount: bd.pac, pct: bd.pacPct, color: 'bg-accent-deep', tooltipTerm: 'pacAndCorporate' as FecTermKey },
+        { label: 'Large Individual', amount: bd.individualLarge, pct: bd.individualLargePct, color: 'bg-accent-deep/50', tooltipTerm: 'largeIndividual' as FecTermKey },
+        { label: 'Small Donors', amount: bd.individualSmall, pct: bd.individualSmallPct, color: 'bg-accent-deep/25', tooltipTerm: 'smallDonors' as FecTermKey },
+        { label: 'Other', amount: bd.other, pct: bd.otherPct, color: 'bg-fg/20', tooltipTerm: 'otherFunding' as FecTermKey },
       ]).filter(r => r.pct > 0)
     : []
 
@@ -202,29 +199,26 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
           </SectionLabel>
 
           {/* Hero total */}
-          <p
-            className="text-3xl text-[#1C1C1A] tabular-nums leading-none mb-1"
-            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-          >
+          <p className="text-3xl text-fg tabular-nums leading-none mb-1 font-mono font-semibold">
             {formatTotal(bd.total)}
           </p>
-          <p className="text-[#1C1C1A]/35 uppercase tracking-[0.10em] mb-5" style={{ fontSize: '0.5625rem' }}>
+          <p className="text-fg/35 uppercase tracking-[0.10em] mb-5" style={{ fontSize: '0.5625rem' }}>
             Total receipts
           </p>
 
           {/* Stacked bar overview */}
-          <div className="flex h-2.5 rounded-full overflow-hidden bg-[#E8E3DA] mb-5">
+          <div className="flex h-2.5 rounded-full overflow-hidden bg-fg/[0.08] mb-5">
             {bd.pacPct > 0 && (
-              <div className="bg-[#7B5E8A]" style={{ width: `${bd.pacPct}%`, minWidth: 2 }} />
+              <div className="bg-accent-deep" style={{ width: `${bd.pacPct}%`, minWidth: 2 }} />
             )}
             {bd.individualLargePct > 0 && (
-              <div className="bg-[#7B5E8A]/50" style={{ width: `${bd.individualLargePct}%`, minWidth: 2 }} />
+              <div className="bg-accent-deep/50" style={{ width: `${bd.individualLargePct}%`, minWidth: 2 }} />
             )}
             {bd.individualSmallPct > 0 && (
-              <div className="bg-[#7B5E8A]/25" style={{ width: `${bd.individualSmallPct}%`, minWidth: 2 }} />
+              <div className="bg-accent-deep/25" style={{ width: `${bd.individualSmallPct}%`, minWidth: 2 }} />
             )}
             {bd.otherPct > 0 && (
-              <div className="bg-[#8A8A7A]/20" style={{ width: `${bd.otherPct}%`, minWidth: 2 }} />
+              <div className="bg-fg/20" style={{ width: `${bd.otherPct}%`, minWidth: 2 }} />
             )}
           </div>
 
@@ -239,7 +233,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
 
       {/* ── Geographic Breakdown ── */}
       {hasGeo && bd && bd.total > 0 && (
-        <div className="border-t border-[rgba(28,28,26,0.08)] pt-6">
+        <div className="border-t border-edge pt-6">
           <SectionLabel
             tooltipTerm="inOutState"
             meta={
@@ -258,41 +252,35 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             {/* In-state */}
             <div>
               <div className="flex items-baseline justify-between mb-2">
-                <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide">In-state</p>
-                <p
-                  className="text-sm text-[#7B5E8A] tabular-nums font-medium"
-                  style={{ fontFamily: 'var(--font-serif)' }}
-                >
+                <p className="text-xs text-fg/50 uppercase tracking-wide">In-state</p>
+                <p className="text-sm text-accent tabular-nums font-medium font-mono">
                   {Math.round(bd.inStatePct)}%
                 </p>
               </div>
-              <div className="h-1.5 bg-[#E8E3DA] rounded-full overflow-hidden">
+              <div className="h-1.5 bg-fg/[0.08] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#7B5E8A] rounded-full"
+                  className="h-full bg-accent-deep rounded-full"
                   style={{ width: `${bd.inStatePct}%` }}
                 />
               </div>
-              <p className="text-xs text-[#1C1C1A]/35 tabular-nums mt-1.5">{formatTotal(bd.inStateTotal)}</p>
+              <p className="text-xs text-fg/35 tabular-nums mt-1.5 font-mono">{formatTotal(bd.inStateTotal)}</p>
             </div>
 
             {/* Out-of-state */}
             <div>
               <div className="flex items-baseline justify-between mb-2">
-                <p className="text-xs text-[#1C1C1A]/50 uppercase tracking-wide">Out-of-state</p>
-                <p
-                  className="text-sm text-[#1C1C1A]/70 tabular-nums font-medium"
-                  style={{ fontFamily: 'var(--font-serif)' }}
-                >
+                <p className="text-xs text-fg/50 uppercase tracking-wide">Out-of-state</p>
+                <p className="text-sm text-fg/70 tabular-nums font-medium font-mono">
                   {Math.round(bd.outOfStatePct)}%
                 </p>
               </div>
-              <div className="h-1.5 bg-[#E8E3DA] rounded-full overflow-hidden">
+              <div className="h-1.5 bg-fg/[0.08] rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#1C1C1A]/25 rounded-full"
+                  className="h-full bg-fg/25 rounded-full"
                   style={{ width: `${bd.outOfStatePct}%` }}
                 />
               </div>
-              <p className="text-xs text-[#1C1C1A]/35 tabular-nums mt-1.5">{formatTotal(bd.outOfStateTotal)}</p>
+              <p className="text-xs text-fg/35 tabular-nums mt-1.5 font-mono">{formatTotal(bd.outOfStateTotal)}</p>
             </div>
           </div>
         </div>
@@ -300,41 +288,38 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
 
       {/* ── Top Contributors ── */}
       {hasContributors && (
-        <div className="border-t border-[rgba(28,28,26,0.08)] pt-6">
+        <div className="border-t border-edge pt-6">
           <SectionLabel tooltipTerm="topContributors" meta="By organization">
             Top Contributors
           </SectionLabel>
-          <p className="text-[#1C1C1A]/35 -mt-1 mb-3" style={{ fontSize: '0.6875rem' }}>
+          <p className="text-fg/35 -mt-1 mb-3" style={{ fontSize: '0.6875rem' }}>
             PAC contributions by parent organization
           </p>
 
-          <div className="divide-y divide-[rgba(28,28,26,0.06)]">
+          <div className="divide-y divide-edge-soft">
             {visibleContributors.map(c => {
               const content = (
                 <div className="flex items-center gap-3 py-3">
                   <span
-                    className="w-5 h-5 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0 text-[10px] text-[#1C1C1A]/45 tabular-nums font-medium"
+                    className="w-5 h-5 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0 text-[10px] text-fg/45 tabular-nums font-medium"
                   >
                     {c.rank}
                   </span>
                   <span
-                    className={`text-sm text-[#1C1C1A] leading-snug truncate flex-1 ${
-                      c.cmteId ? 'group-hover:text-[#7B5E8A] transition-colors' : ''
+                    className={`text-sm text-fg leading-snug truncate flex-1 ${
+                      c.cmteId ? 'group-hover:text-accent transition-colors' : ''
                     }`}
                   >
                     {toTitleCase(c.orgName)}
                   </span>
-                  <span
-                    className="flex-shrink-0 text-sm font-medium text-[#1C1C1A] tabular-nums"
-                    style={{ fontFamily: 'var(--font-serif)' }}
-                  >
+                  <span className="flex-shrink-0 text-sm font-medium text-fg tabular-nums font-mono">
                     {c.total}
                   </span>
                 </div>
               )
 
               return c.cmteId ? (
-                <Link key={`${c.rank}-${c.orgName}`} to="/donors/$cmteId" params={{ cmteId: c.cmteId }} className="block group hover:bg-[#F5F0E8]/60 -mx-2 px-2 rounded-lg transition-colors">
+                <Link key={`${c.rank}-${c.orgName}`} to="/donors/$cmteId" params={{ cmteId: c.cmteId }} className="block group hover:bg-raised -mx-2 px-2 rounded-lg transition-colors">
                   {content}
                 </Link>
               ) : (
@@ -349,29 +334,29 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
 
       {/* ── Top PAC Donors (from API) ── */}
       {cleanPacDonors.length > 0 && !hasContributors && (
-        <div className="border-t border-[rgba(28,28,26,0.08)] pt-6">
+        <div className="border-t border-edge pt-6">
           <SectionLabel tooltipTerm="pacAndCorporate">
             Top PAC Donors
           </SectionLabel>
-          <div className="divide-y divide-[rgba(28,28,26,0.06)]">
+          <div className="divide-y divide-edge-soft">
             {cleanPacDonors.map((d, i) => {
               const label = donorDisplayName(d)
               const amt = donorDisplayAmount(d)
               const content = (
                 <div className="flex items-center gap-3 py-3">
-                  <span className="w-5 h-5 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0 text-[10px] text-[#1C1C1A]/45 tabular-nums font-medium">
+                  <span className="w-5 h-5 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0 text-[10px] text-fg/45 tabular-nums font-medium">
                     {i + 1}
                   </span>
-                  <span className="text-sm text-[#1C1C1A] leading-snug truncate flex-1 group-hover:text-[#7B5E8A] transition-colors">
+                  <span className="text-sm text-fg leading-snug truncate flex-1 group-hover:text-accent transition-colors">
                     {label}
                   </span>
-                  <span className="flex-shrink-0 text-sm font-medium text-[#1C1C1A] tabular-nums" style={{ fontFamily: 'var(--font-serif)' }}>
+                  <span className="flex-shrink-0 text-sm font-medium text-fg tabular-nums font-mono">
                     {amt}
                   </span>
                 </div>
               )
               return d.cmteId ? (
-                <Link key={d.cmteId} to="/donors/$cmteId" params={{ cmteId: d.cmteId }} className="block group hover:bg-[#F5F0E8]/60 -mx-2 px-2 rounded-lg transition-colors">
+                <Link key={d.cmteId} to="/donors/$cmteId" params={{ cmteId: d.cmteId }} className="block group hover:bg-raised -mx-2 px-2 rounded-lg transition-colors">
                   {content}
                 </Link>
               ) : (
@@ -384,25 +369,25 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
 
       {/* ── Simple Funding Summary (when no rich breakdown) ── */}
       {!bd?.total && bd?.pacDirectTotal != null && (
-        <div className="border-t border-[rgba(28,28,26,0.08)] pt-6">
+        <div className="border-t border-edge pt-6">
           <SectionLabel>Funding Summary</SectionLabel>
           <div className="space-y-2">
             {bd.pacDirectTotal > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-[#1C1C1A]/60">PAC Direct</span>
-                <span className="text-[#1C1C1A] tabular-nums" style={{ fontFamily: 'var(--font-serif)' }}>{formatTotal(bd.pacDirectTotal)}</span>
+                <span className="text-fg/60">PAC Direct</span>
+                <span className="text-fg tabular-nums font-mono">{formatTotal(bd.pacDirectTotal)}</span>
               </div>
             )}
             {(bd.superpacIeFor ?? 0) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-[#1C1C1A]/60">Super PAC Support</span>
-                <span className="text-[#68B085] tabular-nums" style={{ fontFamily: 'var(--font-serif)' }}>{formatTotal(bd.superpacIeFor!)}</span>
+                <span className="text-fg/60">Super PAC Support</span>
+                <span className="text-[#7FC29B] tabular-nums font-mono">{formatTotal(bd.superpacIeFor!)}</span>
               </div>
             )}
             {(bd.superpacIeAgainst ?? 0) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-[#1C1C1A]/60">Super PAC Opposition</span>
-                <span className="text-[#B85C38] tabular-nums" style={{ fontFamily: 'var(--font-serif)' }}>{formatTotal(bd.superpacIeAgainst!)}</span>
+                <span className="text-fg/60">Super PAC Opposition</span>
+                <span className="text-[#C97A5A] tabular-nums font-mono">{formatTotal(bd.superpacIeAgainst!)}</span>
               </div>
             )}
           </div>
@@ -411,22 +396,22 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
 
       {/* ── Source Footer ── */}
       {fecUrl && (
-        <div className="border-t border-[rgba(28,28,26,0.08)] pt-4">
+        <div className="border-t border-edge pt-4">
           <div className="flex items-baseline justify-between gap-4">
-            <p className="text-[#1C1C1A]/25 uppercase tracking-[0.10em]" style={{ fontSize: '0.5625rem', fontFamily: 'var(--font-serif)' }}>
+            <p className="text-fg/25 uppercase tracking-[0.10em]" style={{ fontSize: '0.5625rem' }}>
               Source · FEC
             </p>
             <a
               href={fecUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#1C1C1A]/40 hover:text-[#7B5E8A] transition-colors uppercase tracking-[0.08em]"
+              className="text-fg/40 hover:text-accent transition-colors uppercase tracking-[0.08em]"
               style={{ fontSize: '0.5625rem' }}
             >
               View filing →
             </a>
           </div>
-          <p className="text-[#1C1C1A]/25 mt-1.5" style={{ fontSize: '0.625rem' }}>
+          <p className="text-fg/25 mt-1.5" style={{ fontSize: '0.625rem' }}>
             FEC bulk filings. Combines employee donations &amp; PAC contributions by organization.
           </p>
         </div>
