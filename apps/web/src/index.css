@@ -16,13 +16,14 @@
   --color-edge-soft: rgba(245, 240, 232, 0.05);
 
   /* Accent (lightened purple for text/icons on dark; deep for fills) */
-  --color-accent: #9B7EAA;
+  --color-accent: #B794D4;
   --color-accent-deep: #7B5E8A;
   --color-accent-deep-hover: #6A4F78;
 
   /* Fonts */
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
+  --font-serif: 'Fraunces Variable', Georgia, serif;
 }
 
 body {
