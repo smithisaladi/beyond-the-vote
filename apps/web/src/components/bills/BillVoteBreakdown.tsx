@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
-import { PARTY_STYLES, getPartyStyle } from '@/lib/ui'
+import { PARTY_STYLES, STATUS_STYLES, getPartyStyle, resultBadge } from '@/lib/ui'
 import { Card } from '@/components/ui/Card'
 
 interface PartyBreakdown {
@@ -44,20 +44,20 @@ function VoteBar({ yeas, nays, partyBreakdown }: { yeas: number; nays: number; p
   if (!partyBreakdown) {
     return (
       <div className="w-full h-4 rounded-full overflow-hidden flex">
-        <div className="bg-[#68B085] h-full transition-all" style={{ width: `${yeaPct}%` }} />
-        <div className="bg-[#B85C38] h-full transition-all flex-1" />
+        <div className="h-full transition-all" style={{ width: `${yeaPct}%`, background: STATUS_STYLES.Passed.hex }} />
+        <div className="h-full transition-all flex-1" style={{ background: STATUS_STYLES.Failed.hex }} />
       </div>
     )
   }
 
   const { democrat: d, republican: r, independent: i } = partyBreakdown
   const segments = [
-    { label: 'Dem Yea',  count: d.yea, color: '#5E85A8' },
-    { label: 'Rep Yea',  count: r.yea, color: '#A87B7B' },
-    { label: 'Ind Yea',  count: i.yea, color: '#8A8A7A' },
-    { label: 'Ind Nay',  count: i.nay, color: '#8A8A7A' },
-    { label: 'Rep Nay',  count: r.nay, color: '#A87B7B' },
-    { label: 'Dem Nay',  count: d.nay, color: '#5E85A8' },
+    { label: 'Dem Yea',  count: d.yea, color: PARTY_STYLES.Democrat.hex },
+    { label: 'Rep Yea',  count: r.yea, color: PARTY_STYLES.Republican.hex },
+    { label: 'Ind Yea',  count: i.yea, color: PARTY_STYLES.Independent.hex },
+    { label: 'Ind Nay',  count: i.nay, color: PARTY_STYLES.Independent.hex },
+    { label: 'Rep Nay',  count: r.nay, color: PARTY_STYLES.Republican.hex },
+    { label: 'Dem Nay',  count: d.nay, color: PARTY_STYLES.Democrat.hex },
   ]
 
   return (
@@ -78,7 +78,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
   const [expanded, setExpanded] = useState(false)
   const [filter, setFilter] = useState<'all' | 'Yea' | 'Nay' | 'Not Voting'>('all')
 
-  const passed = vote.result?.toLowerCase().includes('pass') || vote.result?.toLowerCase().includes('agreed')
+  const badge = resultBadge(vote.result ?? null)
   const total  = vote.yeas + vote.nays
 
   const filteredPositions = vote.memberPositions.filter(
@@ -89,31 +89,31 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
     <Card padding="md" className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-xs text-[#1C1C1A]/38">{vote.date} · {vote.chamber}</div>
+          <div className="text-xs text-fg/38">{vote.date} · {vote.chamber}</div>
           {vote.question && (
-            <div className="text-sm font-medium text-[#1C1C1A] mt-0.5">{vote.question}</div>
+            <div className="text-sm font-medium text-fg mt-0.5">{vote.question}</div>
           )}
         </div>
-        <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${
-          passed ? 'bg-[#68B085]/[0.12] text-[#68B085]' : 'bg-[#B85C38]/[0.12] text-[#B85C38]'
-        }`}>
-          {vote.result ?? (passed ? 'Passed' : 'Failed')}
-        </span>
+        {badge && (
+          <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${badge}`}>
+            {vote.result}
+          </span>
+        )}
       </div>
 
       <VoteBar yeas={vote.yeas} nays={vote.nays} partyBreakdown={vote.partyBreakdown} />
 
       <div className="flex justify-between text-sm">
-        <span className="text-[#68B085] font-medium">{vote.yeas} Yea</span>
-        {total > 0 && <span className="text-[#1C1C1A]/38 text-xs">{total} total</span>}
-        <span className="text-[#B85C38] font-medium">{vote.nays} Nay</span>
+        <span className={`font-medium font-mono ${STATUS_STYLES.Passed.text}`}>{vote.yeas} Yea</span>
+        {total > 0 && <span className="text-fg/38 text-xs font-mono">{total} total</span>}
+        <span className={`font-medium font-mono ${STATUS_STYLES.Failed.text}`}>{vote.nays} Nay</span>
       </div>
 
       {vote.memberPositions.length > 0 && (
         <>
           <button
             onClick={() => setExpanded(e => !e)}
-            className="flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#1C1C1A] transition-colors"
+            className="flex items-center gap-1 text-xs text-fg/45 hover:text-fg transition-colors"
           >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             {expanded ? 'Hide' : 'Show'} member positions ({vote.memberPositions.length})
@@ -128,13 +128,13 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
                     onClick={() => setFilter(f)}
                     className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                       filter === f
-                        ? 'bg-[#7B5E8A]/10 text-[#7B5E8A] border-[#7B5E8A]/20'
-                        : 'border-[rgba(28,28,26,0.08)] text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70'
+                        ? 'bg-accent/[0.12] text-accent border-accent/20'
+                        : 'border-edge text-fg/45 hover:text-fg/70'
                     }`}
                   >
                     {f === 'all' ? 'All' : f}
                     {f !== 'all' && (
-                      <span className="ml-1 text-[#1C1C1A]/38">
+                      <span className="ml-1 text-fg/38">
                         ({vote.memberPositions.filter(m => m.position === f).length})
                       </span>
                     )}
@@ -148,17 +148,17 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
                   return (
                     <div
                       key={m.bioguideId}
-                      className="flex items-center justify-between text-xs py-1 border-b border-[rgba(28,28,26,0.05)] last:border-0"
+                      className="flex items-center justify-between text-xs py-1 border-b border-edge-soft last:border-0"
                     >
-                      <span className="text-[#1C1C1A]/70">{m.name}</span>
+                      <span className="text-fg/70">{m.name}</span>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ps.bg} ${ps.text}`}>
                           {m.state}
                         </span>
                         <span className={
-                          m.position === 'Yea'        ? 'text-[#68B085] font-medium' :
-                          m.position === 'Nay'        ? 'text-[#B85C38] font-medium' :
-                          'text-[#1C1C1A]/38'
+                          m.position === 'Yea' ? `${STATUS_STYLES.Passed.text} font-medium` :
+                          m.position === 'Nay' ? `${STATUS_STYLES.Failed.text} font-medium` :
+                          'text-fg/38'
                         }>{m.position}</span>
                       </div>
                     </div>
@@ -175,7 +175,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
 
 export default function BillVoteBreakdown({ votes }: BillVoteBreakdownProps) {
   if (!votes || votes.length === 0) {
-    return <div className="text-sm text-[#1C1C1A]/45 italic">No recorded votes found for this bill.</div>
+    return <div className="text-sm text-fg/45 italic">No recorded votes found for this bill.</div>
   }
 
   return (

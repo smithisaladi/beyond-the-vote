@@ -3,10 +3,13 @@
 import { useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
+import { Bookmark, ExternalLink } from 'lucide-react'
+import { motion } from 'motion/react'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
 import { useBillDetail } from '@/hooks/queries/useBills'
+import { TAP_SPRING } from '@/components/ui/motion'
 interface BillDetailSponsor {
   name: string | null
   bioguideId: string | null
@@ -81,24 +84,6 @@ import { Skeleton } from '@/components/ui/Skeleton'
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function BookmarkIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-  )
-}
-
-function ExternalLinkIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-      <polyline points="15 3 21 3 21 9" />
-      <line x1="10" y1="14" x2="21" y2="3" />
-    </svg>
-  )
-}
-
 function DetailSkeleton() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
@@ -169,12 +154,12 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
             <div className="max-w-4xl mx-auto">
               <div className="flex-1 flex items-center justify-center py-24">
                 <div className="text-center">
-                  <p className="text-[#1C1C1A]/40 mb-4">
+                  <p className="text-fg/40 mb-4">
                     {error === 'Bill not found' ? 'This bill could not be found.' : 'Failed to load bill details.'}
                   </p>
                   <Link
                     to={backHref as any}
-                    className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
+                    className="text-sm text-accent hover:text-accent-deep-hover"
                   >
                     ← {backLabel}
                   </Link>
@@ -187,7 +172,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
               {/* Back link */}
               <Link
                 to={backHref as any}
-                className="inline-flex items-center gap-2 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A] transition-colors"
+                className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg transition-colors"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 12H5M12 5l-7 7 7 7" />
@@ -201,15 +186,15 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   <div className="flex-1 min-w-0">
                     {/* Meta row */}
                     <div className="flex items-center gap-2 flex-wrap mb-3">
-                      <span className="text-xs font-mono text-[#1C1C1A]/40 tracking-wide">{bill.number}</span>
-                      <span className="text-xs text-[#1C1C1A]/20">·</span>
+                      <span className="text-xs font-mono text-fg/40 tracking-wide">{bill.number}</span>
+                      <span className="text-xs text-fg/20">·</span>
                       <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${(STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active).bg} ${(STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] ?? STATUS_STYLES.Active).text}`}>
                         {bill.status}
                       </span>
                       {bill.topics.length > 0 && (
                         <>
-                          <span className="text-xs text-[#1C1C1A]/20">·</span>
-                          <span className="text-xs font-medium text-[#7B5E8A] bg-[#7B5E8A]/[0.12] px-2.5 py-0.5 rounded-full">
+                          <span className="text-xs text-fg/20">·</span>
+                          <span className="text-xs font-medium text-accent bg-accent/[0.12] px-2.5 py-0.5 rounded-full">
                             {slugToTopic(bill.topics[0]) ?? bill.topics[0]}
                           </span>
                         </>
@@ -217,16 +202,13 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                     </div>
 
                     {/* Title */}
-                    <h1
-                      className="text-2xl sm:text-3xl text-[#1C1C1A] leading-[1.2] mb-3 tracking-tight"
-                      style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-                    >
+                    <h1 className="text-2xl sm:text-3xl text-fg leading-[1.2] mb-3 tracking-tight font-semibold">
                       {bill.title}
                     </h1>
 
                     {/* Introduced date */}
                     {bill.introducedDate && (
-                      <p className="text-sm text-[#1C1C1A]/45">
+                      <p className="text-sm text-fg/45">
                         Introduced {formatDate(bill.introducedDate)}
                       </p>
                     )}
@@ -238,24 +220,30 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                       href={bill.congressGovUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-xs text-[#1C1C1A]/50 hover:text-[#1C1C1A] border border-[rgba(28,28,26,0.15)] rounded-lg px-3 py-2 hover:border-[rgba(28,28,26,0.3)] transition-colors"
+                      className="inline-flex items-center gap-1.5 text-xs text-fg/50 hover:text-fg border border-edge/60 rounded-lg px-3 py-2 hover:border-edge transition-colors"
                     >
                       Congress.gov
-                      <ExternalLinkIcon />
+                      <ExternalLink size={14} strokeWidth={1.8} />
                     </a>
-                    <button
+                    <motion.button
                       onClick={handleTrack}
                       disabled={trackMutation.isPending}
                       aria-label={tracked ? 'Stop tracking this bill' : 'Track this bill'}
+                      {...TAP_SPRING}
                       className={`inline-flex items-center gap-2 text-xs font-medium rounded-lg px-3 py-2 transition-colors ${
                         tracked
-                          ? 'bg-[#7B5E8A]/10 text-[#7B5E8A] hover:bg-[#7B5E8A]/15'
-                          : 'border border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/60 hover:border-[#7B5E8A]/40 hover:text-[#7B5E8A]'
+                          ? 'bg-accent/[0.12] text-accent hover:bg-accent/[0.18]'
+                          : 'border border-edge/60 text-fg/60 hover:border-accent/40 hover:text-accent'
                       }`}
                     >
-                      <BookmarkIcon filled={tracked} />
+                      <Bookmark
+                        size={16}
+                        strokeWidth={1.8}
+                        className={tracked ? 'text-accent' : 'text-fg/45'}
+                        fill={tracked ? 'currentColor' : 'none'}
+                      />
                       {tracked ? 'Tracking' : 'Track'}
-                    </button>
+                    </motion.button>
                   </div>
                 </div>
               </Card>
@@ -263,8 +251,8 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
               {/* Summary */}
               {bill.summary && (
                 <Card padding="none" className="p-6 sm:p-8">
-                  <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Summary</h2>
-                  <p className="text-sm text-[#1C1C1A]/75 leading-relaxed">{bill.summary}</p>
+                  <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-3">Summary</h2>
+                  <p className="text-sm text-fg/75 leading-relaxed">{bill.summary}</p>
                 </Card>
               )}
 
@@ -277,10 +265,10 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {/* Sponsor */}
                   {bill.sponsor && (
                     <Card>
-                      <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Sponsor</h2>
+                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">Sponsor</h2>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm font-medium text-[#1C1C1A]">{bill.sponsor.name?.replace(/\s*\[.*?\]\s*$/, '')}</p>
+                          <p className="text-sm font-medium text-fg">{bill.sponsor.name?.replace(/\s*\[.*?\]\s*$/, '')}</p>
                           {bill.sponsor.party && (
                             <div className="flex items-center gap-2 mt-1">
                               <PartyTag party={bill.sponsor.party} />
@@ -290,7 +278,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                         <Link
                           to="/representatives/$id"
                           params={{ id: bill.sponsor.bioguideId }}
-                          className="text-xs text-[#7B5E8A] hover:text-[#6A4F78] transition-colors"
+                          className="text-xs text-accent hover:text-accent-deep-hover transition-colors"
                         >
                           View profile →
                         </Link>
@@ -301,7 +289,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {/* Votes */}
                   {bill.votes?.length > 0 && (
                     <Card>
-                      <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
+                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">Vote Breakdown</h2>
                       <BillVoteTally votes={bill.votes} billId={id} fromParam={fromParam} />
                     </Card>
                   )}
@@ -309,27 +297,27 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {/* Co-sponsors */}
                   {bill.cosponsors?.length > 0 && (
                     <Card>
-                      <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">
+                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">
                         Co-sponsors
-                        <span className="ml-1.5 text-[#1C1C1A]/30 normal-case tracking-normal font-normal">
+                        <span className="ml-1.5 text-fg/30 normal-case tracking-normal font-normal">
                           ({bill.cosponsors.length})
                         </span>
                       </h2>
-                      <div className="divide-y divide-[rgba(28,28,26,0.06)]">
+                      <div className="divide-y divide-edge-soft">
                         {(showAllCosponsors ? bill.cosponsors : bill.cosponsors.slice(0, 5)).map((c: any) => (
                           <div key={c.bioguideId} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
                             <div>
-                              <p className="text-sm text-[#1C1C1A]">{c.name.replace(/\s*\[.*?\]\s*$/, '')}</p>
+                              <p className="text-sm text-fg">{c.name.replace(/\s*\[.*?\]\s*$/, '')}</p>
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <PartyBadge party={c.party} size="xs" />
-                                <span className="text-xs text-[#1C1C1A]/30">·</span>
-                                <span className="text-xs text-[#1C1C1A]/45">{c.state}</span>
+                                <span className="text-xs text-fg/30">·</span>
+                                <span className="text-xs text-fg/45">{c.state}</span>
                               </div>
                             </div>
                             <Link
                               to="/representatives/$id"
                               params={{ id: c.bioguideId }}
-                              className="text-xs text-[#7B5E8A]/60 hover:text-[#7B5E8A] transition-colors"
+                              className="text-xs text-accent/60 hover:text-accent transition-colors"
                             >
                               →
                             </Link>
@@ -339,7 +327,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                       {bill.cosponsors.length > 5 && (
                         <button
                           onClick={() => setShowAllCosponsors(v => !v)}
-                          className="mt-3 text-xs text-[#7B5E8A] hover:text-[#6A4F78]"
+                          className="mt-3 text-xs text-accent hover:text-accent-deep-hover"
                         >
                           {showAllCosponsors ? 'Show fewer' : `Show all ${bill.cosponsors.length}`}
                         </button>
@@ -350,12 +338,12 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {/* Topics */}
                   {bill.topics?.length > 0 && (
                     <Card>
-                      <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-3">Topics</h2>
+                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-3">Topics</h2>
                       <div className="flex flex-wrap gap-2">
                         {bill.topics.map((subject: any) => (
                           <span
                             key={subject}
-                            className="text-xs text-[#1C1C1A]/55 bg-[#F0EBE2] px-2.5 py-1 rounded-full"
+                            className="text-xs text-fg/55 bg-fg/[0.06] px-2.5 py-1 rounded-full"
                           >
                             {subject}
                           </span>
@@ -371,18 +359,18 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                   {/* Status timeline */}
                   {bill.actions?.length > 0 && (
                     <Card>
-                      <h2 className="text-xs font-medium text-[#1C1C1A]/40 uppercase tracking-wider mb-4">Timeline</h2>
+                      <h2 className="text-xs font-medium text-fg/40 uppercase tracking-wider mb-4">Timeline</h2>
                       <div className="relative">
                         {/* Vertical line */}
-                        <div className="absolute left-[5px] top-2 bottom-2 w-px bg-[rgba(28,28,26,0.08)]" />
+                        <div className="absolute left-[5px] top-2 bottom-2 w-px bg-edge" />
                         <div className="space-y-4">
                           {bill.actions.map((action: any, i: number) => (
                             <div key={i} className="flex gap-4 pl-5 relative">
                               {/* Dot */}
-                              <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full border-2 border-[#7B5E8A]/40 bg-[#F5F0E8]" />
+                              <div className="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full border-2 border-accent/40 bg-bg" />
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs text-[#1C1C1A]/35 mb-0.5">{formatShortDate(action.date)}</p>
-                                <p className="text-xs text-[#1C1C1A]/65 leading-snug">{action.text}</p>
+                                <p className="text-xs text-fg/35 mb-0.5">{formatShortDate(action.date)}</p>
+                                <p className="text-xs text-fg/65 leading-snug">{action.text}</p>
                               </div>
                             </div>
                           ))}

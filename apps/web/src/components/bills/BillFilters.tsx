@@ -1,5 +1,6 @@
 
 
+import { Bookmark } from 'lucide-react'
 import type { Topic } from '@/lib/topics'
 import type { BillStatus as Status } from '@/lib/types'
 import { ALL_TOPICS } from '@/lib/topics'
@@ -21,13 +22,6 @@ type SortOption = 'newest' | 'oldest'
 
 const ALL_STATUSES: Status[] = ['Active', 'Committee', 'Stalled', 'Passed', 'Failed']
 
-function BookmarkIcon({ filled }: { filled: boolean }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
-      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-  )
-}
 
 function FilterCheckbox({
   label,
@@ -232,7 +226,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
               : 'border-edge/50 text-fg/55 hover:border-accent/50'
           }`}
         >
-          <BookmarkIcon filled={showTrackedOnly} />
+          <Bookmark size={13} strokeWidth={1.8} className={showTrackedOnly ? 'text-accent' : 'text-fg/45'} fill={showTrackedOnly ? 'currentColor' : 'none'} />
           Tracked
         </button>
       )}

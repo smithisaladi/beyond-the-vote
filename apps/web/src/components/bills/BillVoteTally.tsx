@@ -1,7 +1,7 @@
 
 
 import { Link } from '@tanstack/react-router'
-import { PARTY_STYLES, resultBadge } from '@/lib/ui'
+import { PARTY_STYLES, STATUS_STYLES, resultBadge } from '@/lib/ui'
 import { formatShortDate } from '@/lib/format'
 interface MemberPosition {
   bioguideId: string
@@ -48,11 +48,11 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
     <>
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-medium text-[#1C1C1A]/60 shrink-0">{vote.chamber}</span>
+          <span className="text-xs font-medium text-fg/60 shrink-0">{vote.chamber}</span>
           {vote.question && (
             <>
-              <span className="text-xs text-[#1C1C1A]/20 shrink-0">·</span>
-              <span className="text-xs text-[#1C1C1A]/55 truncate">{vote.question}</span>
+              <span className="text-xs text-fg/20 shrink-0">·</span>
+              <span className="text-xs text-fg/55 truncate">{vote.question}</span>
             </>
           )}
         </div>
@@ -65,8 +65,8 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
 
       {hasData && total > 0 ? (
         <div className="flex items-center gap-3">
-          <span className="text-xs text-[#1C1C1A]/70 font-medium shrink-0 tabular-nums">{yeas} Yea</span>
-          <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-[#E8E3DA]">
+          <span className={`text-xs font-medium shrink-0 font-mono ${STATUS_STYLES.Passed.text}`}>{yeas} Yea</span>
+          <div className="flex-1 flex h-2.5 rounded-full overflow-hidden bg-fg/[0.08]">
             {segments
               ? segments.map(s => s.count > 0 && (
                   <div key={s.key} className="h-full" style={{ width: `${(s.count / total) * 100}%`, background: s.color }} />
@@ -77,13 +77,13 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
                 </>
             }
           </div>
-          <span className="text-xs text-[#1C1C1A]/70 font-medium shrink-0 tabular-nums">{nays} Nay</span>
+          <span className={`text-xs font-medium shrink-0 font-mono ${STATUS_STYLES.Failed.text}`}>{nays} Nay</span>
         </div>
       ) : (
-        <p className="text-xs text-[#1C1C1A]/30">Vote data unavailable</p>
+        <p className="text-xs text-fg/30">Vote data unavailable</p>
       )}
 
-      <p className="text-[10.5px] text-[#1C1C1A]/32 text-right mt-2 tabular-nums">
+      <p className="text-[10.5px] text-fg/32 text-right mt-2 font-mono">
         {formatShortDate(vote.date)}
       </p>
     </>
@@ -91,14 +91,14 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
 }
 
 function VoteEntry({ vote, showBorder, billId, fromParam }: { vote: Vote; showBorder: boolean; billId: string; fromParam?: string | null }) {
-  const base = showBorder ? 'pt-5 border-t border-[rgba(28,28,26,0.06)]' : ''
+  const base = showBorder ? 'pt-5 border-t border-edge-soft' : ''
   const fromQs = fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''
 
   if (vote.id) {
     return (
       <Link
         to={`/bills/${billId}/votes/${encodeURIComponent(vote.id)}${fromQs}` as any}
-        className={`block -mx-2 px-2 py-1 -my-1 rounded-lg hover:bg-[#7B5E8A]/[0.04] transition-colors cursor-pointer ${base}`}
+        className={`block -mx-2 px-2 py-1 -my-1 rounded-lg hover:bg-accent/[0.04] transition-colors cursor-pointer ${base}`}
       >
         <VoteEntryContent vote={vote} />
       </Link>
