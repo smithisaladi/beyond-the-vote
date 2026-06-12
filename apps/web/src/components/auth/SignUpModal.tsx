@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { X } from 'lucide-react'
 import { Modal } from './Modal'
 import { authClient } from '@/lib/auth/neon'
 import { useAuth } from '@/components/auth/AuthContext'
@@ -55,10 +56,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
           onClick={handleClose}
           className="absolute top-4 right-4 text-fg/40 hover:text-fg transition-colors"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <X size={20} strokeWidth={1.8} />
         </button>
 
         <h2 className="text-3xl text-fg mb-2 tracking-tight">Join Beyond the Vote</h2>

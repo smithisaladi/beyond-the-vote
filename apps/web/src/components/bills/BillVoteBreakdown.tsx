@@ -115,7 +115,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
             onClick={() => setExpanded(e => !e)}
             className="flex items-center gap-1 text-xs text-fg/45 hover:text-fg transition-colors"
           >
-            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {expanded ? <ChevronUp size={14} strokeWidth={1.8} /> : <ChevronDown size={14} strokeWidth={1.8} />}
             {expanded ? 'Hide' : 'Show'} member positions ({vote.memberPositions.length})
           </button>
 

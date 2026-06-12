@@ -8,14 +8,8 @@ export const Route = createFileRoute("/auth/$pathname")({
 function AuthPage() {
   const { pathname } = Route.useParams();
   return (
-    <div style={{
-      background: "#F5F0E8",
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}>
-      <div style={{ width: "100%", maxWidth: 400 }}>
+    <div className="min-h-screen bg-bg flex items-center justify-center">
+      <div className="w-full max-w-[400px]">
         <AuthView pathname={pathname} />
       </div>
     </div>

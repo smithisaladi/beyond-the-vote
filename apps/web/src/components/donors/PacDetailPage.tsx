@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react'
+import { ArrowLeft, ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { usePacDetail, useGeneratePacSummary } from '@/hooks/queries/useDonors'
 import { MoneyFlowSection } from '@/components/donors/MoneyFlowSection'
 interface PacDetailRecipient {
@@ -30,12 +30,7 @@ import { Skeleton } from '@/components/ui/Skeleton'
 const RECIPIENTS_PREVIEW = 30
 
 function BackArrow() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 12H5" />
-      <polyline points="12 19 5 12 12 5" />
-    </svg>
-  )
+  return <ArrowLeft size={16} strokeWidth={1.8} />
 }
 
 function DetailSkeleton() {

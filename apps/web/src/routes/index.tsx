@@ -19,7 +19,7 @@ function HomePage() {
 
   if (loading || user) {
     return (
-      <div style={{ background: "#F5F0E8", minHeight: "100vh" }} />
+      <div className="min-h-screen bg-bg" />
     );
   }
 

@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { Link } from '@tanstack/react-router'
 import { useSearch } from '@tanstack/react-router'
+import { Search, X } from 'lucide-react'
 import { useDonors } from '@/hooks/queries/useDonors'
 interface ContributorRecipient {
   name: string
@@ -68,14 +69,6 @@ function LeanPill({ lean }: { lean: Lean }) {
   )
 }
 
-function SearchIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.35-4.35" />
-    </svg>
-  )
-}
 
 function CardSkeleton() {
   return (
@@ -195,7 +188,7 @@ function DonorsContent() {
             <Card padding="none">
               <div className="flex items-center px-5 py-4 gap-3">
                 <span className="text-fg/25 flex-shrink-0">
-                  <SearchIcon />
+                  <Search size={16} strokeWidth={1.8} />
                 </span>
                 <input
                   type="text"
@@ -207,9 +200,7 @@ function DonorsContent() {
                 />
                 {query && (
                   <button onClick={() => setQuery('')} aria-label="Clear search" className="text-fg/35 hover:text-fg/60 flex-shrink-0">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                    </svg>
+                    <X size={14} strokeWidth={1.8} />
                   </button>
                 )}
                 <select

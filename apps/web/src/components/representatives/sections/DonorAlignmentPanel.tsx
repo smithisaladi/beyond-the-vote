@@ -1,6 +1,7 @@
 
 
 import { useState } from 'react'
+import { ChevronDown, DollarSign } from 'lucide-react'
 import type { DonorAlignment } from '@/lib/types/politicians'
 import { STATUS_STYLES } from '@/lib/ui'
 
@@ -16,19 +17,14 @@ export function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment
         className="w-full flex items-center justify-between px-3 py-2 text-left bg-surface hover:bg-raised transition-colors"
       >
         <span className="text-xs text-fg/50 font-medium flex items-center gap-1.5">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
-            <line x1="12" y1="1" x2="12" y2="23" />
-            <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
-          </svg>
+          <DollarSign size={11} strokeWidth={1.8} className="opacity-60" />
           Donor alignment · {alignments.length} connection{alignments.length !== 1 ? 's' : ''}
         </span>
-        <svg
-          width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
-          strokeLinecap="round" strokeLinejoin="round"
+        <ChevronDown
+          size={12}
+          strokeWidth={1.8}
           className={`text-fg/30 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
-        >
-          <polyline points="6 9 12 15 18 9" />
-        </svg>
+        />
       </button>
 
       {open && (

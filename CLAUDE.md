@@ -85,65 +85,89 @@ Political transparency app — track legislators, bills, votes, and campaign fin
 
 ## Design System
 
-### Color Palette
+Theme: **Restrained Dark**. Tokens are defined in `apps/web/src/index.css` (`@theme`). `apps/web/src/lib/ui.ts` is the single palette home for all component-level color constants.
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| Page background | `#F5F0E8` | All pages, headers |
-| Text base | `#1C1C1A` | All text — use opacity modifiers (`/70`, `/45`, `/32`, etc.) |
-| Accent | `#7B5E8A` | CTAs, active states, links, progress |
-| Accent hover | `#6A4F78` | Button hover |
-| Card surface | `white` | Cards, list containers |
-| Skeleton fill | `#E8E3DA` | Loading placeholders |
-| Card border | `rgba(28,28,26,0.08)` | Card/divider borders |
-| Card shadow | `0_1px_4px_rgba(0,0,0,0.06)` | Subtle card elevation |
-| Error/Nay | `#B85C38` | Warnings, nay votes, stalled/failed |
-| Success/Passed | `#68B085` | Passed bills |
+### Color Tokens
+
+All Tailwind classes reference CSS custom properties — never use raw hex values in component files.
+
+| Token | CSS var / Tailwind class | Hex | Usage |
+|-------|--------------------------|-----|-------|
+| Page background | `bg-bg` | `#161614` | All page backgrounds |
+| Card surface | `bg-surface` | `#1F1F1D` | Cards, list containers |
+| Raised surface | `bg-raised` | `#262624` | Hover states, modals, floating menus |
+| Foreground | `text-fg` | `#F5F0E8` | All text — use opacity modifiers |
+| Border | `border-edge` | `rgba(245,240,232,0.07)` | Card/divider borders |
+| Soft border | `border-edge-soft` | `rgba(245,240,232,0.05)` | Subtle list dividers |
+| Accent | `text-accent` | `#9B7EAA` | Text links, icons, active indicators |
+| Accent fill | `bg-accent-deep` | `#7B5E8A` | Button fills, CTAs |
+| Accent hover | `bg-accent-deep-hover` | `#6A4F78` | Button hover state |
 
 ### Text Opacity Hierarchy
 
-All text uses `text-[#1C1C1A]` with opacity — never use `text-gray-*`:
-- `100%` headings → `80%` emphasized → `70%` body → `60%` secondary → `50%` metadata
-- `45%` empty state → `38%` bill numbers, counts → `32%` timestamps → `30%` most subtle
+All text uses `text-fg` with Tailwind opacity modifiers — never use `text-gray-*`:
+- `/100` headings → `/80` emphasized → `/70` body → `/60` secondary → `/50` metadata
+- `/45` empty state → `/38` bill numbers, counts → `/32` timestamps → `/30` subtle → `/25` most faint
 
 ### Party & Status Styles
 
-**Always import from `@/lib/ui` — never hardcode these colors inline.**
+**Always import from `@/lib/ui` — never hardcode palette hexes in component files.**
 
-| Style | Colors |
-|-------|--------|
-| Democrat | `#5E85A8` — `PARTY_STYLES.Democrat` |
-| Republican | `#A87B7B` — `PARTY_STYLES.Republican` |
-| Independent | `#8A8A7A` — `PARTY_STYLES.Independent` |
-| Active | `#7B5E8A` — `STATUS_STYLES.Active` |
-| Committee | `#8A8A7A` — `STATUS_STYLES.Committee` |
-| Stalled/Failed | `#B85C38` — `STATUS_STYLES.Stalled` / `STATUS_STYLES.Failed` |
-| Passed | `#68B085` — `STATUS_STYLES.Passed` |
+| Style | Text color | Export |
+|-------|-----------|--------|
+| Democrat | `#7EA5C8` | `PARTY_STYLES.Democrat` |
+| Republican | `#C89B9B` | `PARTY_STYLES.Republican` |
+| Independent | `#A8A896` | `PARTY_STYLES.Independent` |
+| Active | `#9B7EAA` | `STATUS_STYLES.Active` |
+| Committee | `#A8A896` | `STATUS_STYLES.Committee` |
+| Stalled/Failed | `#C97A5A` | `STATUS_STYLES.Stalled` / `STATUS_STYLES.Failed` |
+| Passed | `#7FC29B` | `STATUS_STYLES.Passed` |
+
+Each entry has `.bg` (tinted background + 1px border), `.text` (Tailwind text class), and `.hex` (raw hex for SVG `fill`/`stroke` inline styles). Also exported from `@/lib/ui`: `DANGER_HOVER_CLASS`, `DANGER_BUTTON_CLASS` (destructive action styling), `IDEOLOGY_GRADIENT` (left-right D→I→R gradient for ideology bars), `getPartyStyle()`, `resultBadge()`.
 
 ### Typography
 
-- **Serif** (`var(--font-serif)`): headings, names, bill titles — apply via `style={{ fontFamily: 'var(--font-serif)' }}` (never a Tailwind class)
-- **Sans** (Tailwind default): all body text, labels, metadata
-- **Mono** (`font-mono`): bill numbers only (e.g. `S. 1247`, `H.R. 4521`)
-- Weights: `font-semibold` or `font-medium` for headings — never `font-bold` on body text
+- **Geist Sans** (`--font-sans`, via `@fontsource-variable/geist`): all text including headings. Headings use `font-semibold tracking-tight`.
+- **Geist Mono** (`font-mono`, via `@fontsource-variable/geist-mono`): numbers, money amounts, percentages, bill IDs (e.g. `S. 1247`, `H.R. 4521`).
+- **Serif is retired** — never reintroduce `font-serif`, `var(--font-serif)`, or `style={{ fontFamily: ... }}` for serif.
+- Weights: `font-semibold` or `font-medium` for headings — never `font-bold` on body text.
+
+### Elevation (No Shadows)
+
+There are **no box shadows**. Elevation is expressed through background steps:
+- Page: `bg-bg` → Cards: `bg-surface` → Raised/floating: `bg-raised`
+- Hover lift: border brightens + `bg-surface` → `bg-raised` (see `CARD_HOVER_CLASS` from `@/lib/ui`)
+
+### Motion
+
+All animations are gated by `prefers-reduced-motion` via CSS. Library: `motion` (`motion/react`).
+
+| Primitive | When to use |
+|-----------|-------------|
+| `<PageTransition>` from `@/components/ui/motion` | Wrap every route page component |
+| `<StaggerGrid>` / `<StaggerItem>` | First-load list entrance animations |
+| `TAP_SPRING` | `whileTap` spring for interactive elements |
+| `.animate-flow` CSS class | Money-flow shimmer on SVG paths |
 
 ### Component Patterns
 
-- **Card**: `<Card>` from `@/components/ui/Card`. Defaults: `padding="lg"` (p-6), standard border, soft shadow. Override via `padding` (`none`/`sm`/`md`/`lg`/`xl`), `border` (`standard`/`light`/`none`), `shadow` (bool), `hoverable` (bool, must be inside a `group` wrapper). Raw class constants `CARD_CLASS`, `CARD_LIGHT_BORDER_CLASS`, `CARD_HOVER_CLASS` are also exported from `@/lib/ui` for cases where a component isn't practical.
-- **Badge**: `text-[11px] font-medium px-2 py-0.5 rounded-full` + party/status style from `@/lib/ui`
-- **Section header**: `text-lg font-semibold` serif + `text-sm text-[#1C1C1A]/38` count/subtitle
-- **Skeleton**: `<Skeleton className="h-4 w-24 rounded-full" />` from `@/components/ui/Skeleton`. Pair with an ancestor `animate-pulse`. Uses `SKELETON_BG` (`bg-[#E8E3DA]`) from `@/lib/ui`.
-- **List dividers**: `border-b border-[rgba(28,28,26,0.05)]` or `divide-y divide-[rgba(28,28,26,0.05)]`
-- **Icons**: Lucide with `strokeWidth={1.8}`, size 16–19px
-- **Rounded corners**: `rounded-xl` cards, `rounded-lg` small buttons, `rounded-full` badges/pills/avatars
+- **Card**: `<Card>` from `@/components/ui/Card`. Defaults: `padding="lg"` (p-6), standard border, no shadow. Override via `padding` (`none`/`sm`/`md`/`lg`/`xl`), `border` (`standard`/`light`/`none`), `hoverable` (bool, must be inside a `group` wrapper). Raw class constants `CARD_CLASS`, `CARD_LIGHT_BORDER_CLASS`, `CARD_HOVER_CLASS` are also exported from `@/lib/ui`.
+- **Input**: `<Input>` from `@/components/ui/Input`. Dark-surfaced text field with focus ring.
+- **Badge**: `text-[11px] font-medium px-2.5 py-0.5 rounded-full` + party/status style from `@/lib/ui` (tinted bg + 1px border).
+- **Section header**: `text-lg font-semibold tracking-tight text-fg` + `text-sm text-fg/38` count/subtitle.
+- **Skeleton**: `<Skeleton className="h-4 w-24 rounded-full" />` from `@/components/ui/Skeleton`. Pair with an ancestor `animate-pulse`. Uses `SKELETON_BG` from `@/lib/ui`.
+- **List dividers**: `divide-y divide-edge-soft` or `border-b border-edge-soft`.
+- **Icons**: Lucide React with `strokeWidth={1.8}`, size 16–19px. Brand marks and data-viz SVGs may remain inline.
+- **Rounded corners**: `rounded-xl` cards, `rounded-lg` small buttons/inputs, `rounded-full` badges/pills/avatars.
 
 ### Don'ts
 
-- Never hardcode party/status colors — always use `PARTY_STYLES`/`STATUS_STYLES` from `@/lib/ui`
-- Never use `text-gray-*` or `bg-gray-*` — use `text-[#1C1C1A]` with opacity
-- Never use `shadow-lg` — only `shadow-sm` (buttons) and `shadow-[0_1px_4px_rgba(0,0,0,0.06)]` (cards)
-- Never use `font-bold` on body text
-- Never invent new colors outside the palette
+- Never hardcode palette hexes in component files — use Tailwind tokens (`bg-surface`, `text-fg/60`, etc.) or import from `@/lib/ui`
+- Never use `text-gray-*` or `bg-gray-*`
+- Never add any `shadow-*` Tailwind utilities — elevation is bg-step only
+- Never use serif fonts or `font-bold` on body text
+- Never bypass tokens with raw cream (`#F5F0E8`) or old ink (`#1C1C1A`) values — the only allowed exception is the sidebar's `bg-[#1C1C1A]` ink surface
+- Use `.hex` from party/status styles only for SVG `fill`/`stroke` inline attributes, not for Tailwind classes
 
 ## Environment Variables
 

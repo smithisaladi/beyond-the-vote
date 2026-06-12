@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
-import { Bookmark, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Bookmark, ExternalLink } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
@@ -172,9 +172,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                 to={backHref as any}
                 className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg transition-colors"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 12H5M12 5l-7 7 7 7" />
-                </svg>
+                <ArrowLeft size={16} strokeWidth={1.8} />
                 {backLabel}
               </Link>
 

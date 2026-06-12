@@ -41,7 +41,7 @@ function Initials({ name }: { name: string }) {
 export function RepresentativeCard({
   id, name, title, party, state, district, since, photo, userId, onSignInRequired,
 }: RepresentativeCardProps) {
-  const badge = PARTY_STYLES[party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
+  const badge = PARTY_STYLES[party] || PARTY_STYLES.Independent
   const { data: followedData } = useFollowedPoliticians()
   const followMutation = useFollowPolitician()
   const followedIds = new Set((followedData?.politicians ?? []).map((p: any) => p.id))

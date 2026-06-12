@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { ArrowLeft, Mail, X } from 'lucide-react'
 import { Modal } from './Modal'
 import { authClient } from '@/lib/auth/neon'
 import { useAuth } from '@/components/auth/AuthContext'
@@ -54,10 +55,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
           onClick={handleClose}
           className="absolute top-4 right-4 text-fg/40 hover:text-fg transition-colors"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
+          <X size={20} strokeWidth={1.8} />
         </button>
 
         {view === 'sign-in' && (
@@ -149,9 +147,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
               onClick={() => { setError(''); setView('sign-in') }}
               className="flex items-center gap-2 text-fg/50 hover:text-fg transition-colors mb-6 text-sm"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M19 12H5M12 5l-7 7 7 7" />
-              </svg>
+              <ArrowLeft size={16} strokeWidth={1.8} />
               Back to sign in
             </button>
 
@@ -190,10 +186,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
         {view === 'check-email' && (
           <div className="text-center py-4">
             <div className="w-16 h-16 bg-accent-deep/[0.12] rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-              </svg>
+              <Mail size={28} strokeWidth={1.8} className="text-accent" />
             </div>
             <h2 className="text-3xl text-fg mb-3 tracking-tight">Check your email</h2>
             <p className="text-fg/60 mb-8">

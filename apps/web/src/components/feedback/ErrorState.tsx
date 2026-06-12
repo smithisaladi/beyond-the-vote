@@ -16,6 +16,7 @@
 
 import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
+import { STATUS_STYLES } from '@/lib/ui'
 
 export interface ErrorStateProps {
   /** Short headline shown to the user. Sentence case, no trailing punctuation. */
@@ -51,25 +52,22 @@ export function ErrorState({
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
       <div className="max-w-sm w-full">
         {icon && (
-          <div className="w-12 h-12 rounded-full bg-[#B85C38]/10 flex items-center justify-center mx-auto mb-5">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-5 ${STATUS_STYLES.Failed.bg}`}>
             {icon}
           </div>
         )}
 
-        <h2
-          className="text-xl text-[#1C1C1A] mb-2"
-          style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-        >
+        <h2 className="text-xl font-semibold tracking-tight text-fg mb-2">
           {title}
         </h2>
 
-        <p className="text-sm text-[#1C1C1A]/55 mb-1 leading-relaxed">
+        <p className="text-sm text-fg/55 mb-1 leading-relaxed">
           {description}
         </p>
 
         {/* Digest is opaque to users but useful for correlating server logs. */}
         {error.digest ? (
-          <p className="text-[11px] text-[#1C1C1A]/30 font-mono mb-6">
+          <p className="text-[11px] text-fg/30 font-mono mb-6">
             Error ID: {error.digest}
           </p>
         ) : (
@@ -80,13 +78,13 @@ export function ErrorState({
           <button
             type="button"
             onClick={reset}
-            className="px-4 py-2 bg-[#7B5E8A] text-white text-sm font-medium rounded-lg hover:bg-[#6A4F78] transition-colors"
+            className="px-4 py-2 text-sm font-medium bg-accent-deep text-fg rounded-lg hover:bg-accent-deep-hover transition-colors"
           >
             Try again
           </button>
           <Link
             to={backHref as any}
-            className="px-4 py-2 text-sm text-[#1C1C1A]/60 border border-[rgba(28,28,26,0.15)] rounded-lg hover:text-[#1C1C1A] hover:border-[rgba(28,28,26,0.3)] transition-colors"
+            className="px-4 py-2 text-sm text-fg/60 border border-edge rounded-lg hover:text-fg hover:border-edge-soft transition-colors"
           >
             {backLabel}
           </Link>

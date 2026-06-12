@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
-import { ExternalLink } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ExternalLink } from 'lucide-react'
 import { PARTY_STYLES, STATUS_STYLES, getPartyStyle, resultBadge } from '@/lib/ui'
 import { formatDate } from '@/lib/format'
 import { PageTransition } from '@/components/ui/motion'
@@ -132,9 +132,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
         search={fromParam ? { from: fromParam } : {}}
         className="inline-flex items-center gap-2 text-sm text-fg/50 hover:text-fg transition-colors"
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M19 12H5M12 5l-7 7 7 7" />
-        </svg>
+        <ArrowLeft size={16} strokeWidth={1.8} />
         <span className="font-mono text-fg/38">{billNumber}</span>
       </Link>
 
@@ -229,9 +227,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
                   }`}
                 >
                   {filter !== 'All' ? filter : 'Position'}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
+                  <ChevronDown size={10} strokeWidth={1.8} />
                 </button>
                 {openDropdown === 'position' && (
                   <Card padding="none" className="absolute top-full left-0 mt-1.5 p-1.5 min-w-[140px] z-20">
@@ -261,9 +257,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
                   }`}
                 >
                   {partyFilter !== 'All' ? PARTY_STYLES[partyFilter].label : 'Party'}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M6 9l6 6 6-6" />
-                  </svg>
+                  <ChevronDown size={10} strokeWidth={1.8} />
                 </button>
                 {openDropdown === 'party' && (
                   <Card padding="none" className="absolute top-full left-0 mt-1.5 p-1.5 min-w-[150px] z-20">
