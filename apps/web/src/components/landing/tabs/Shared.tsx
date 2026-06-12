@@ -145,7 +145,7 @@ export function MockRepCard({ name, title, party, state, vote }: {
           <p className="text-[10px] text-fg/38 uppercase tracking-wider mb-1.5">Latest vote</p>
           <div className="flex items-start justify-between gap-2">
             <p className="text-xs text-fg/70 leading-snug flex-1">{vote.bill}</p>
-            <span className={`text-[11px] font-semibold flex-shrink-0 ${vote.position === 'Yea' ? 'text-[#68B085]' : 'text-[#C97A5A]'}`}>
+            <span className={`text-[11px] font-semibold flex-shrink-0 ${vote.position === 'Yea' ? STATUS_STYLES.Passed.text : STATUS_STYLES.Failed.text}`}>
               {vote.position}
             </span>
           </div>
@@ -180,15 +180,14 @@ export function MockBillCard({ number, title, status, category }: {
 export function MockDonorCard({ rank, name, total, lean, recipients }: {
   rank: number; name: string; total: string; lean: 'Democrat' | 'Republican' | 'Mixed'; recipients: number
 }) {
-  const leanStyle = lean === 'Mixed'
-    ? { bg: PARTY_STYLES.Independent.bg, text: PARTY_STYLES.Independent.text, dot: 'bg-[#8A8A7A]' }
-    : { bg: PARTY_STYLES[lean].bg, text: PARTY_STYLES[lean].text, dot: lean === 'Democrat' ? 'bg-[#5E85A8]' : 'bg-[#A87B7B]' }
+  const partyKey = lean === 'Mixed' ? 'Independent' : lean
+  const leanStyle = { bg: PARTY_STYLES[partyKey].bg, text: PARTY_STYLES[partyKey].text, dotHex: PARTY_STYLES[partyKey].hex }
   return (
     <Card padding="none" className="p-5">
       <div className="flex items-start justify-between gap-3 mb-2">
         <span className="text-xs font-mono text-fg/30">#{rank}</span>
         <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full ${leanStyle.bg} ${leanStyle.text}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${leanStyle.dot}`} />
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: leanStyle.dotHex }} />
           {lean === 'Mixed' ? 'Mixed' : `Leans ${lean}`}
         </span>
       </div>

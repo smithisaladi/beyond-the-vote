@@ -66,7 +66,7 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       <PageTransition>
-        <div className="relative z-10 flex flex-col flex-1">
+        <div className="flex flex-col flex-1">
           {/* ── Header ── */}
           <header className="sticky top-0 bg-bg/90 backdrop-blur-sm border-b border-edge px-8 py-5 flex items-center justify-between">
             <div>

@@ -6,6 +6,7 @@ import { Modal } from './Modal'
 import { authClient } from '@/lib/auth/neon'
 import { useAuth } from '@/components/auth/AuthContext'
 import { Input } from '@/components/ui/Input'
+import { STATUS_STYLES } from '@/lib/ui'
 
 interface SignUpModalProps {
   isOpen: boolean
@@ -80,7 +81,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
           </div>
         </div>
 
-        {error && <p className="text-[#C97A5A] text-sm mb-4">{error}</p>}
+        {error && <p className={`${STATUS_STYLES.Failed.text} text-sm mb-4`}>{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

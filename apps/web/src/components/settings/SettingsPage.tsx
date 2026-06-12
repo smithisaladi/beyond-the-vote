@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthContext'
 import { authClient } from '@/lib/auth/neon'
-import { DANGER_BUTTON_CLASS } from '@/lib/ui'
+import { DANGER_BUTTON_CLASS, STATUS_STYLES } from '@/lib/ui'
 import { Input } from '@/components/ui/Input'
 import { PageTransition } from '@/components/ui/motion'
 
@@ -148,7 +148,7 @@ export default function SettingsPage() {
                       className="w-full py-2.5"
                     />
                   </div>
-                  {nameState.error && <p className="text-sm text-[#C97A5A]">{nameState.error}</p>}
+                  {nameState.error && <p className={`text-sm ${STATUS_STYLES.Failed.text}`}>{nameState.error}</p>}
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
@@ -157,7 +157,7 @@ export default function SettingsPage() {
                     >
                       {nameState.loading ? 'Saving…' : 'Save'}
                     </button>
-                    {nameState.success && <span className="text-sm text-[#68B085]">Saved</span>}
+                    {nameState.success && <span className={`text-sm ${STATUS_STYLES.Passed.text}`}>Saved</span>}
                   </div>
                 </form>
               </div>
@@ -200,7 +200,7 @@ export default function SettingsPage() {
                       className="w-full py-2.5"
                     />
                   </div>
-                  {passwordState.error && <p className="text-sm text-[#C97A5A]">{passwordState.error}</p>}
+                  {passwordState.error && <p className={`text-sm ${STATUS_STYLES.Failed.text}`}>{passwordState.error}</p>}
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
@@ -209,7 +209,7 @@ export default function SettingsPage() {
                     >
                       {passwordState.loading ? 'Updating…' : 'Update password'}
                     </button>
-                    {passwordState.success && <span className="text-sm text-[#68B085]">Password updated</span>}
+                    {passwordState.success && <span className={`text-sm ${STATUS_STYLES.Passed.text}`}>Password updated</span>}
                   </div>
                 </form>
               </div>
