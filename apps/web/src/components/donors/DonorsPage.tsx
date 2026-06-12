@@ -51,7 +51,7 @@ function computeLean(recipients?: ContributorRecipient[]): Lean | null {
 
 function LeanPill({ lean }: { lean: Lean }) {
   if (lean.party) {
-    const style = PARTY_STYLES[lean.party] || { bg: 'bg-[#8A8A7A]/[0.14]', text: 'text-[#A8A896]', hex: '#A8A896' }
+    const style = PARTY_STYLES[lean.party] || PARTY_STYLES.Independent
     return (
       <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
         <span className="w-1.5 h-1.5 rounded-full" style={{ background: style.hex }} />
@@ -59,9 +59,10 @@ function LeanPill({ lean }: { lean: Lean }) {
       </span>
     )
   }
+  const independentStyle = PARTY_STYLES.Independent
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#8A8A7A]/[0.14] text-[#A8A896]">
-      <span className="w-1.5 h-1.5 rounded-full bg-[#8A8A7A]" />
+    <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${independentStyle.bg} ${independentStyle.text}`}>
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: independentStyle.hex }} />
       {lean.label}
     </span>
   )

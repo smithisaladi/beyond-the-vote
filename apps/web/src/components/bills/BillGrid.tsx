@@ -56,8 +56,8 @@ function BillCard({
   tracked: boolean
   onToggleTrack: () => void
 }) {
-  const party = PARTY_STYLES[bill.party as keyof typeof PARTY_STYLES] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
-  const status = STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
+  const party = PARTY_STYLES[bill.party as keyof typeof PARTY_STYLES] || PARTY_STYLES.Independent
+  const status = STATUS_STYLES[bill.status as keyof typeof STATUS_STYLES] || STATUS_STYLES.Committee
 
   return (
     <Link to="/bills/$billId" params={{ billId: bill.id }} className="block group">
