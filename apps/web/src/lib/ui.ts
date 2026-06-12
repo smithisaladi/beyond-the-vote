@@ -1,17 +1,17 @@
 import type { Party, BillStatus } from './types'
 
 export const PARTY_STYLES: Record<Party, { bg: string; text: string; hex: string; label: string }> = {
-  Democrat:    { bg: 'bg-[#5E85A8]/[0.14] border border-[#5E85A8]/25', text: 'text-[#7EA5C8]', hex: '#7EA5C8', label: 'Democrat' },
-  Republican:  { bg: 'bg-[#A87B7B]/[0.14] border border-[#A87B7B]/25', text: 'text-[#C89B9B]', hex: '#C89B9B', label: 'Republican' },
-  Independent: { bg: 'bg-[#8A8A7A]/[0.14] border border-[#8A8A7A]/25', text: 'text-[#A8A896]', hex: '#A8A896', label: 'Independent' },
+  Democrat:    { bg: 'bg-[#5E85A8]/[0.22] border border-[#8FBAE0]/40', text: 'text-[#8FBAE0]', hex: '#8FBAE0', label: 'Democrat' },
+  Republican:  { bg: 'bg-[#A87B7B]/[0.22] border border-[#DCA8A8]/40', text: 'text-[#DCA8A8]', hex: '#DCA8A8', label: 'Republican' },
+  Independent: { bg: 'bg-[#8A8A7A]/[0.22] border border-[#BBBBA6]/40', text: 'text-[#BBBBA6]', hex: '#BBBBA6', label: 'Independent' },
 }
 
 export const STATUS_STYLES: Record<BillStatus, { bg: string; text: string; hex: string }> = {
-  Active:    { bg: 'bg-[#7B5E8A]/[0.14] border border-[#7B5E8A]/25', text: 'text-[#9B7EAA]', hex: '#9B7EAA' },
-  Committee: { bg: 'bg-[#8A8A7A]/[0.14] border border-[#8A8A7A]/25', text: 'text-[#A8A896]', hex: '#A8A896' },
-  Stalled:   { bg: 'bg-[#B85C38]/[0.14] border border-[#B85C38]/25', text: 'text-[#C97A5A]', hex: '#C97A5A' },
-  Passed:    { bg: 'bg-[#68B085]/[0.14] border border-[#68B085]/25', text: 'text-[#7FC29B]', hex: '#7FC29B' },
-  Failed:    { bg: 'bg-[#B85C38]/[0.14] border border-[#B85C38]/25', text: 'text-[#C97A5A]', hex: '#C97A5A' },
+  Active:    { bg: 'bg-[#7B5E8A]/[0.22] border border-[#B794D4]/40', text: 'text-[#B794D4]', hex: '#B794D4' },
+  Committee: { bg: 'bg-[#8A8A7A]/[0.22] border border-[#BBBBA6]/40', text: 'text-[#BBBBA6]', hex: '#BBBBA6' },
+  Stalled:   { bg: 'bg-[#B85C38]/[0.22] border border-[#E08B66]/40', text: 'text-[#E08B66]', hex: '#E08B66' },
+  Passed:    { bg: 'bg-[#68B085]/[0.22] border border-[#8FD9AC]/40', text: 'text-[#8FD9AC]', hex: '#8FD9AC' },
+  Failed:    { bg: 'bg-[#B85C38]/[0.22] border border-[#E08B66]/40', text: 'text-[#E08B66]', hex: '#E08B66' },
 }
 
 /** Left-to-right ideology spectrum gradient (liberal → independent → conservative). */
@@ -30,18 +30,24 @@ export const CARD_HOVER_CLASS = 'group-hover:bg-raised group-hover:border-fg/15 
 export const SKELETON_BG = 'bg-fg/[0.06]'
 
 /** Destructive icon-button hover treatment — neutral at rest, danger on hover. */
-export const DANGER_HOVER_CLASS = 'text-fg/25 hover:text-[#C97A5A] hover:bg-[#B85C38]/[0.08]'
+export const DANGER_HOVER_CLASS = 'text-fg/25 hover:text-[#E08B66] hover:bg-[#B85C38]/[0.12]'
 
 /** Destructive solid button. */
-export const DANGER_BUTTON_CLASS = 'bg-[#B85C38]/[0.14] text-[#C97A5A] border border-[#B85C38]/25 hover:bg-[#B85C38]/[0.22] transition-colors'
+export const DANGER_BUTTON_CLASS = 'bg-[#B85C38]/[0.22] text-[#E08B66] border border-[#E08B66]/40 hover:bg-[#B85C38]/[0.3] transition-colors'
+
+/** Money stat numbers — purple-tinted cream. */
+export const STAT_MONEY_CLASS = 'text-[#E8D9F0]'
+
+/** Positive-metric stat numbers (scores, unity, passed counts) — green-tinted cream. */
+export const STAT_POSITIVE_CLASS = 'text-[#C9ECD9]'
 
 /** Returns Tailwind badge classes for a vote result string (passed/failed/neutral). */
 export function resultBadge(result: string | null): string | null {
   if (!result) return null
   const r = result.toLowerCase()
-  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#68B085]/[0.14] text-[#7FC29B]'
-  if (r.includes('fail') || r.includes('rejected')) return 'bg-[#B85C38]/[0.14] text-[#C97A5A]'
-  return 'bg-[#8A8A7A]/[0.14] text-[#A8A896]'
+  if (r.includes('pass') || r.includes('agreed')) return 'bg-[#68B085]/[0.22] text-[#8FD9AC]'
+  if (r.includes('fail') || r.includes('rejected')) return 'bg-[#B85C38]/[0.22] text-[#E08B66]'
+  return 'bg-[#8A8A7A]/[0.22] text-[#BBBBA6]'
 }
 
 const PARTY_CODE_MAP: Record<string, Party> = { D: 'Democrat', R: 'Republican', I: 'Independent' }

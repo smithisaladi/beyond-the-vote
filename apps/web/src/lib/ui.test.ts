@@ -4,6 +4,8 @@ import {
   STATUS_STYLES,
   IDEOLOGY_GRADIENT,
   DANGER_HOVER_CLASS,
+  STAT_MONEY_CLASS,
+  STAT_POSITIVE_CLASS,
   getPartyStyle,
   resultBadge,
 } from './ui'
@@ -13,7 +15,7 @@ describe('PARTY_STYLES', () => {
     const d = PARTY_STYLES.Democrat
     expect(d.bg).toBeTruthy()
     expect(d.text).toBeTruthy()
-    expect(d.hex).toBe('#7EA5C8')
+    expect(d.hex).toBe('#8FBAE0')
     expect(d.label).toBe('Democrat')
   })
 
@@ -21,7 +23,7 @@ describe('PARTY_STYLES', () => {
     const r = PARTY_STYLES.Republican
     expect(r.bg).toBeTruthy()
     expect(r.text).toBeTruthy()
-    expect(r.hex).toBe('#C89B9B')
+    expect(r.hex).toBe('#DCA8A8')
     expect(r.label).toBe('Republican')
   })
 
@@ -29,7 +31,7 @@ describe('PARTY_STYLES', () => {
     const i = PARTY_STYLES.Independent
     expect(i.bg).toBeTruthy()
     expect(i.text).toBeTruthy()
-    expect(i.hex).toBe('#A8A896')
+    expect(i.hex).toBe('#BBBBA6')
     expect(i.label).toBe('Independent')
   })
 })
@@ -38,31 +40,31 @@ describe('STATUS_STYLES', () => {
   it('has Active styles with bg, text, and hex', () => {
     expect(STATUS_STYLES.Active.bg).toBeTruthy()
     expect(STATUS_STYLES.Active.text).toBeTruthy()
-    expect(STATUS_STYLES.Active.hex).toBe('#9B7EAA')
+    expect(STATUS_STYLES.Active.hex).toBe('#B794D4')
   })
 
   it('has Committee styles with bg, text, and hex', () => {
     expect(STATUS_STYLES.Committee.bg).toBeTruthy()
     expect(STATUS_STYLES.Committee.text).toBeTruthy()
-    expect(STATUS_STYLES.Committee.hex).toBe('#A8A896')
+    expect(STATUS_STYLES.Committee.hex).toBe('#BBBBA6')
   })
 
   it('has Stalled styles with bg, text, and hex', () => {
     expect(STATUS_STYLES.Stalled.bg).toBeTruthy()
     expect(STATUS_STYLES.Stalled.text).toBeTruthy()
-    expect(STATUS_STYLES.Stalled.hex).toBe('#C97A5A')
+    expect(STATUS_STYLES.Stalled.hex).toBe('#E08B66')
   })
 
   it('has Passed styles with bg, text, and hex', () => {
     expect(STATUS_STYLES.Passed.bg).toBeTruthy()
     expect(STATUS_STYLES.Passed.text).toBeTruthy()
-    expect(STATUS_STYLES.Passed.hex).toBe('#7FC29B')
+    expect(STATUS_STYLES.Passed.hex).toBe('#8FD9AC')
   })
 
   it('has Failed styles with bg, text, and hex', () => {
     expect(STATUS_STYLES.Failed.bg).toBeTruthy()
     expect(STATUS_STYLES.Failed.text).toBeTruthy()
-    expect(STATUS_STYLES.Failed.hex).toBe('#C97A5A')
+    expect(STATUS_STYLES.Failed.hex).toBe('#E08B66')
   })
 })
 
@@ -77,8 +79,20 @@ describe('IDEOLOGY_GRADIENT', () => {
 describe('DANGER_HOVER_CLASS', () => {
   it('provides neutral at rest and danger color with background on hover', () => {
     expect(DANGER_HOVER_CLASS).toContain('text-fg/25')
-    expect(DANGER_HOVER_CLASS).toContain('hover:text-[#C97A5A]')
+    expect(DANGER_HOVER_CLASS).toContain('hover:text-[#E08B66]')
     expect(DANGER_HOVER_CLASS).toContain('hover:bg-[#B85C38]')
+  })
+})
+
+describe('STAT_MONEY_CLASS', () => {
+  it('provides purple-tinted cream color for money stats', () => {
+    expect(STAT_MONEY_CLASS).toBe('text-[#E8D9F0]')
+  })
+})
+
+describe('STAT_POSITIVE_CLASS', () => {
+  it('provides green-tinted cream color for positive stats', () => {
+    expect(STAT_POSITIVE_CLASS).toBe('text-[#C9ECD9]')
   })
 })
 
@@ -109,27 +123,27 @@ describe('getPartyStyle', () => {
 describe('resultBadge', () => {
   it('returns green classes for passed results', () => {
     const badge = resultBadge('passed')
-    expect(badge).toContain('#68B085')
+    expect(badge).toContain('#8FD9AC')
   })
 
   it('returns green classes for "agreed" results', () => {
     const badge = resultBadge('Agreed to')
-    expect(badge).toContain('#68B085')
+    expect(badge).toContain('#8FD9AC')
   })
 
   it('returns red classes for failed results', () => {
     const badge = resultBadge('failed')
-    expect(badge).toContain('#B85C38')
+    expect(badge).toContain('#E08B66')
   })
 
   it('returns red classes for rejected results', () => {
     const badge = resultBadge('rejected')
-    expect(badge).toContain('#B85C38')
+    expect(badge).toContain('#E08B66')
   })
 
   it('returns neutral classes for other results', () => {
     const badge = resultBadge('something else')
-    expect(badge).toContain('#8A8A7A')
+    expect(badge).toContain('#BBBBA6')
   })
 
   it('returns null for null input', () => {
