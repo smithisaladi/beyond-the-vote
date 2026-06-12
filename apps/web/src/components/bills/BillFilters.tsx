@@ -1,5 +1,8 @@
 
 
+import type { Topic } from '@/lib/topics'
+import type { BillStatus as Status } from '@/lib/types'
+import { ALL_TOPICS } from '@/lib/topics'
 
 interface BillFiltersState {
   query: string; setQuery: (q: string) => void; debouncedQuery: string;
@@ -12,9 +15,6 @@ interface BillFiltersState {
   openDropdown: string | null; setOpenDropdown: (d: string | null) => void;
   dropdownRef: React.RefObject<HTMLDivElement | null>;
 }
-import type { Topic } from '@/lib/topics'
-import type { BillStatus as Status } from '@/lib/types'
-import { ALL_TOPICS } from '@/lib/topics'
 
 type DateFilter = 'all' | 'month' | 'year'
 type SortOption = 'newest' | 'oldest'
