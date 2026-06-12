@@ -49,6 +49,7 @@ interface FlowRecipient {
 }
 
 const OFFICE_LABELS: Record<string, string> = { H: "House candidate", S: "Senate candidate", P: "Presidential" };
+const stalledHex = STATUS_STYLES.Stalled.hex;
 
 function recipientRole(r: FlowRecipient): string {
   // Current legislator — use chamber
@@ -219,10 +220,13 @@ function HorizontalFlow({
               ref={(el) => {
                 leftRefs.current[i] = el;
               }}
+              tabIndex={0}
               className="bg-surface rounded-lg border border-edge px-3 py-2 transition-opacity duration-200"
               style={{ opacity: hoveredId !== null && hoveredId !== id ? 0.35 : 1 }}
               onMouseEnter={() => setHoveredId(id)}
               onMouseLeave={() => setHoveredId(null)}
+              onFocus={() => setHoveredId(id)}
+              onBlur={() => setHoveredId(null)}
             >
               <div className="font-semibold text-[13px] text-fg/80 truncate">
                 {toTitleCase(f.name)}
@@ -280,10 +284,9 @@ function HorizontalFlow({
           const party = r.party ? toParty(r.party) : undefined;
           const style = party ? PARTY_STYLES[party] : undefined;
           const isOppose = (r.ieAgainst ?? 0) > (r.ieFor ?? 0) && (r.ieAgainst ?? 0) > (r.direct ?? 0);
-          const stalledHex = STATUS_STYLES.Stalled.hex;
           const content = (
             <div
-              className={`bg-surface rounded-lg border px-3 py-2 ${isOppose ? "border-edge" : "border-edge"}`}
+              className="bg-surface rounded-lg border border-edge px-3 py-2"
               style={isOppose ? { borderColor: `${stalledHex}40` } : undefined}
             >
               <div className="flex items-center gap-1.5">
@@ -328,6 +331,8 @@ function HorizontalFlow({
               style={{ opacity: hoveredId !== null && hoveredId !== r.entityId ? 0.35 : 1 }}
               onMouseEnter={() => setHoveredId(r.entityId)}
               onMouseLeave={() => setHoveredId(null)}
+              onFocus={() => setHoveredId(r.entityId)}
+              onBlur={() => setHoveredId(null)}
             >
               {r.bioguideId ? (
                 <Link
@@ -396,7 +401,7 @@ function FlowCurve({
         d={d}
         fill="none"
         stroke="currentColor"
-        strokeWidth={2}
+        strokeWidth={Math.max(1, strokeWidth * 0.8)}
         strokeLinecap="round"
         opacity={0.8}
         className="animate-flow"
@@ -478,7 +483,6 @@ function VerticalFlow({
             const party = r.party ? toParty(r.party) : undefined;
             const style = party ? PARTY_STYLES[party] : undefined;
             const isOppose = (r.ieAgainst ?? 0) > (r.ieFor ?? 0) && (r.ieAgainst ?? 0) > (r.direct ?? 0);
-            const stalledHex = STATUS_STYLES.Stalled.hex;
             return (
               <div
                 key={r.entityId}
