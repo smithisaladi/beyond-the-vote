@@ -50,7 +50,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose}>
-      <div className="p-8">
+      <div className="p-6">
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 text-fg/40 hover:text-fg transition-colors"
@@ -60,56 +60,56 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
 
         {view === 'sign-in' && (
           <>
-            <h2 className="text-3xl text-fg mb-2 tracking-tight">Welcome Back</h2>
-            <p className="text-fg/60 mb-8">Sign in to track your representatives</p>
+            <h2 className="text-2xl text-fg mb-2 tracking-tight">Welcome Back</h2>
+            <p className="text-xs text-fg/60 mb-6">Sign in to track your representatives</p>
 
             <button
               onClick={handleGoogleSignIn}
-              className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-raised border border-edge rounded-lg hover:bg-fg/[0.06] transition-colors mb-6"
+              className="w-full flex items-center justify-center gap-3 px-6 py-2.5 bg-raised border border-edge rounded-lg hover:bg-fg/[0.06] transition-colors mb-5"
             >
               <GoogleIcon />
-              <span className="text-fg">Continue with Google</span>
+              <span className="text-[13px] text-fg">Continue with Google</span>
             </button>
 
-            <div className="relative mb-6">
+            <div className="relative mb-5">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-edge" />
               </div>
-              <div className="relative flex justify-center text-sm">
+              <div className="relative flex justify-center text-xs">
                 <span className="px-4 bg-surface text-fg/60">Or continue with email</span>
               </div>
             </div>
 
-            {error && <p className={`${STATUS_STYLES.Failed.text} text-sm mb-4`}>{error}</p>}
+            {error && <p className={`${STATUS_STYLES.Failed.text} text-xs mb-3`}>{error}</p>}
 
-            <form onSubmit={handleSignIn} className="space-y-4">
+            <form onSubmit={handleSignIn} className="space-y-3">
               <div>
-                <label htmlFor="signin-email" className="block text-sm mb-2 text-fg">Email</label>
+                <label htmlFor="signin-email" className="block text-xs mb-1.5 text-fg">Email</label>
                 <Input
                   id="signin-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full py-3"
+                  className="w-full"
                   required
                 />
               </div>
 
               <div>
-                <label htmlFor="signin-password" className="block text-sm mb-2 text-fg">Password</label>
+                <label htmlFor="signin-password" className="block text-xs mb-1.5 text-fg">Password</label>
                 <Input
                   id="signin-password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full py-3"
+                  className="w-full"
                   required
                 />
               </div>
 
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs">
                 <label htmlFor="remember-me" className="flex items-center gap-2 text-fg/70">
                   <input id="remember-me" type="checkbox" className="rounded border-edge" />
                   Remember me
@@ -126,15 +126,15 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-6 py-3 bg-accent-deep text-fg rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
+                className="w-full px-6 py-2.5 bg-accent-deep text-fg text-[13px] rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
               >
                 {loading ? 'Signing in…' : 'Sign In'}
               </button>
             </form>
 
-            <p className="text-center text-sm text-fg/60 mt-6">
+            <p className="text-center text-xs text-fg/60 mt-5">
               Don&apos;t have an account?{' '}
-              <button onClick={onSwitchToSignUp} className="text-accent hover:text-accent-deep-hover font-medium">
+              <button onClick={onSwitchToSignUp} className="text-accent hover:text-accent-deep-hover font-medium text-xs">
                 Sign up
               </button>
             </p>
@@ -145,29 +145,29 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
           <>
             <button
               onClick={() => { setError(''); setView('sign-in') }}
-              className="flex items-center gap-2 text-fg/50 hover:text-fg transition-colors mb-6 text-sm"
+              className="flex items-center gap-2 text-fg/50 hover:text-fg transition-colors mb-5 text-xs"
             >
-              <ArrowLeft size={16} strokeWidth={1.8} />
+              <ArrowLeft size={14} strokeWidth={1.8} />
               Back to sign in
             </button>
 
-            <h2 className="text-3xl text-fg mb-2 tracking-tight">Reset Password</h2>
-            <p className="text-fg/60 mb-8">
+            <h2 className="text-2xl text-fg mb-2 tracking-tight">Reset Password</h2>
+            <p className="text-xs text-fg/60 mb-6">
               Enter your email and we&apos;ll send you a link to reset your password.
             </p>
 
-            {error && <p className={`${STATUS_STYLES.Failed.text} text-sm mb-4`}>{error}</p>}
+            {error && <p className={`${STATUS_STYLES.Failed.text} text-xs mb-3`}>{error}</p>}
 
-            <form onSubmit={handleForgotPassword} className="space-y-4">
+            <form onSubmit={handleForgotPassword} className="space-y-3">
               <div>
-                <label htmlFor="reset-email" className="block text-sm mb-2 text-fg">Email</label>
+                <label htmlFor="reset-email" className="block text-xs mb-1.5 text-fg">Email</label>
                 <Input
                   id="reset-email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full py-3"
+                  className="w-full"
                   required
                 />
               </div>
@@ -175,7 +175,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full px-6 py-3 bg-accent-deep text-fg rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
+                className="w-full px-6 py-2.5 bg-accent-deep text-fg text-[13px] rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
               >
                 {loading ? 'Sending…' : 'Send Reset Link'}
               </button>
@@ -184,17 +184,17 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
         )}
 
         {view === 'check-email' && (
-          <div className="text-center py-4">
-            <div className="w-16 h-16 bg-accent-deep/[0.12] rounded-full flex items-center justify-center mx-auto mb-6">
-              <Mail size={28} strokeWidth={1.8} className="text-accent" />
+          <div className="text-center py-3">
+            <div className="w-14 h-14 bg-accent-deep/[0.12] rounded-full flex items-center justify-center mx-auto mb-5">
+              <Mail size={24} strokeWidth={1.8} className="text-accent" />
             </div>
-            <h2 className="text-3xl text-fg mb-3 tracking-tight">Check your email</h2>
-            <p className="text-fg/60 mb-8">
+            <h2 className="text-2xl text-fg mb-2 tracking-tight">Check your email</h2>
+            <p className="text-xs text-fg/60 mb-6">
               We sent a password reset link to <span className="text-fg font-medium">{email}</span>
             </p>
             <button
               onClick={() => { setError(''); setView('sign-in') }}
-              className="text-sm text-accent hover:text-accent-deep-hover font-medium"
+              className="text-xs text-accent hover:text-accent-deep-hover font-medium"
             >
               Back to sign in
             </button>

@@ -38,7 +38,7 @@ export function LandingPage() {
                 key={id}
                 onClick={() => setTab(id)}
                 aria-current={tab === id ? 'page' : undefined}
-                className={`px-4 text-sm transition-colors relative ${
+                className={`px-4 text-[13px] transition-colors relative ${
                   tab === id
                     ? 'text-fg font-medium after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-fg after:rounded-t-full'
                     : 'text-fg/45 hover:text-fg/75'
@@ -53,13 +53,13 @@ export function LandingPage() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
               onClick={openSignIn}
-              className="text-sm text-fg/60 hover:text-fg transition-colors"
+              className="text-[13px] text-fg/60 hover:text-fg transition-colors"
             >
               Sign in
             </button>
             <button
               onClick={openSignUp}
-              className="text-sm bg-accent-deep text-fg px-4 py-2 rounded-lg hover:bg-accent-deep-hover transition-colors font-medium"
+              className="text-[13px] bg-accent-deep text-fg px-4 py-1.5 rounded-lg hover:bg-accent-deep-hover transition-colors font-medium"
             >
               Sign up
             </button>

@@ -5,7 +5,7 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden pt-24 pb-20 px-6">
+      <section className="relative overflow-hidden pt-20 pb-16 px-6">
         <TopoBackground />
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
@@ -13,10 +13,10 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
               <span className="inline-block text-xs font-medium text-accent bg-accent-deep/[0.12] border border-accent-deep/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Follow the Money
               </span>
-              <h1 className="text-5xl sm:text-6xl text-fg mb-6 leading-[1.08] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl text-fg mb-6 leading-[1.08] tracking-tight">
                 See who funds your representatives, and where the money goes
               </h1>
-              <p className="text-xl text-fg/55 mb-9 leading-relaxed max-w-lg">
+              <p className="text-lg text-fg/55 mb-8 leading-relaxed max-w-lg">
                 Explore the political action committees spending millions to influence Congress.
                 Track contributions, uncover political leanings, and understand the financial
                 forces shaping policy.
@@ -66,19 +66,19 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-6 bg-surface/50 border-y border-edge-soft" aria-labelledby="donors-features-heading">
+      <section className="py-16 px-6 bg-surface/50 border-y border-edge-soft" aria-labelledby="donors-features-heading">
         <div className="max-w-5xl mx-auto">
           <h2
             id="donors-features-heading"
-            className="text-3xl text-fg mb-2 text-center tracking-tight"
+            className="text-2xl text-fg mb-2 text-center tracking-tight"
           >
             Follow every dollar in politics
           </h2>
-          <p className="text-sm text-fg/50 text-center mb-14 max-w-md mx-auto tracking-[0.01em]">
+          <p className="text-[13px] text-fg/50 text-center mb-10 max-w-md mx-auto tracking-[0.01em]">
             Powerful tools to trace political money from source to candidate.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <Feature
               icon={<IconDollar />}
               title="Search & explore PACs"
@@ -99,28 +99,28 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* How it works */}
-      <section className="py-16 px-6" aria-labelledby="donors-how-heading">
+      <section className="py-12 px-6" aria-labelledby="donors-how-heading">
         <div className="max-w-3xl mx-auto">
           <h2
             id="donors-how-heading"
-            className="text-xl text-fg mb-10 text-center tracking-tight"
+            className="text-[15px] font-semibold tracking-tight text-fg mb-7 text-center"
           >
             How it works
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             {[
               { step: 1, title: 'Find a PAC', description: 'Search our database of political action committees or browse the top contributors ranked by total spending.' },
               { step: 2, title: 'See where money flows', description: 'View complete recipient lists, party breakdowns, and contribution types for every PAC in the system.' },
               { step: 3, title: 'Connect the dots', description: 'Link donor data to your own representatives and understand who is funding the people who represent you.' },
             ].map(({ step, title, description }) => (
               <div key={step} className="text-center">
-                <div className="w-8 h-8 rounded-full bg-accent-deep/[0.12] border border-accent-deep/15 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-sm font-medium text-accent">{step}</span>
+                <div className="w-7 h-7 rounded-full bg-accent-deep/[0.12] border border-accent-deep/15 flex items-center justify-center mx-auto mb-3">
+                  <span className="text-[13px] font-medium text-accent">{step}</span>
                 </div>
-                <h3 className="text-sm font-semibold text-fg mb-1.5 tracking-tight">
+                <h3 className="text-[13px] font-semibold text-fg mb-1.5 tracking-tight">
                   {title}
                 </h3>
-                <p className="text-sm text-fg/55 leading-[1.7]">{description}</p>
+                <p className="text-[13px] text-fg/55 leading-[1.7]">{description}</p>
               </div>
             ))}
           </div>
@@ -128,21 +128,21 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6 bg-accent-deep/[0.08] border-t border-accent-deep/15" aria-labelledby="donors-cta-heading">
+      <section className="py-16 px-6 bg-accent-deep/[0.08] border-t border-accent-deep/15" aria-labelledby="donors-cta-heading">
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="donors-cta-heading"
-            className="text-3xl text-fg mb-4 tracking-tight"
+            className="text-2xl text-fg mb-3 tracking-tight"
           >
             Money in politics shouldn&apos;t be a mystery
           </h2>
-          <p className="text-base text-fg/55 mb-8 leading-relaxed">
+          <p className="text-[13px] text-fg/55 mb-7 leading-relaxed">
             From PAC contributions to independent expenditures, Beyond the Vote makes political
             funding transparent and accessible to every voter.
           </p>
           <button
             onClick={onSignUp}
-            className="px-10 py-3.5 bg-accent-deep text-fg rounded-xl text-sm font-medium hover:bg-accent-deep-hover transition-colors"
+            className="px-8 py-2.5 bg-accent-deep text-fg rounded-xl text-sm font-medium hover:bg-accent-deep-hover transition-colors"
           >
             Create your account
           </button>

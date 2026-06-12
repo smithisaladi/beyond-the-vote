@@ -17,11 +17,11 @@ function DeleteModal({ onConfirm, onCancel, loading }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative w-full max-w-md bg-surface border border-edge rounded-xl p-7">
-        <h3 className="text-lg text-fg mb-2 tracking-tight">
+      <div className="relative w-full max-w-md bg-surface border border-edge rounded-xl p-6">
+        <h3 className="text-[15px] font-semibold text-fg mb-2 tracking-tight">
           Delete account?
         </h3>
-        <p className="text-sm text-fg/60 mb-6 leading-relaxed">
+        <p className="text-[13px] text-fg/60 mb-5 leading-relaxed">
           This action is permanent and cannot be undone. All your data — followed politicians, tracked bills, and topic preferences — will be erased.
         </p>
         <div className="flex gap-3 justify-end">
@@ -121,105 +121,105 @@ export default function SettingsPage() {
         <main className="flex-1 px-6 pt-8 pb-8">
           <div className="max-w-4xl mx-auto">
 
-            <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4">
 
               {/* Display name */}
               <div className="bg-surface rounded-xl border border-edge p-6">
-                <h2 className="text-base text-fg mb-5 tracking-tight">
+                <h2 className="text-[15px] font-semibold text-fg mb-4 tracking-tight">
                   Profile
                 </h2>
-                <form onSubmit={updateName} className="flex flex-col gap-4">
+                <form onSubmit={updateName} className="flex flex-col gap-3">
                   <div>
-                    <label className="block text-sm text-fg/70 mb-1.5">Display name</label>
+                    <label className="block text-xs text-fg/70 mb-1.5">Display name</label>
                     <Input
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Your name"
-                      className="w-full py-2.5"
+                      className="w-full"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-fg/70 mb-1.5">Email</label>
+                    <label className="block text-xs text-fg/70 mb-1.5">Email</label>
                     <Input
                       type="email"
                       value={user?.email ?? ''}
                       readOnly
-                      className="w-full py-2.5"
+                      className="w-full"
                     />
                   </div>
-                  {nameState.error && <p className={`text-sm ${STATUS_STYLES.Failed.text}`}>{nameState.error}</p>}
+                  {nameState.error && <p className={`text-xs ${STATUS_STYLES.Failed.text}`}>{nameState.error}</p>}
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
                       disabled={nameState.loading}
-                      className="px-4 py-2 bg-accent-deep text-fg text-sm rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
+                      className="px-4 py-2 bg-accent-deep text-fg text-[13px] rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
                     >
                       {nameState.loading ? 'Saving…' : 'Save'}
                     </button>
-                    {nameState.success && <span className={`text-sm ${STATUS_STYLES.Passed.text}`}>Saved</span>}
+                    {nameState.success && <span className={`text-xs ${STATUS_STYLES.Passed.text}`}>Saved</span>}
                   </div>
                 </form>
               </div>
 
               {/* Change password */}
               <div className="bg-surface rounded-xl border border-edge p-6">
-                <h2 className="text-base text-fg mb-5 tracking-tight">
+                <h2 className="text-[15px] font-semibold text-fg mb-4 tracking-tight">
                   Change password
                 </h2>
-                <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
+                <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
                   <div>
-                    <label className="block text-sm text-fg/70 mb-1.5">Current password</label>
+                    <label className="block text-xs text-fg/70 mb-1.5">Current password</label>
                     <Input
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full py-2.5"
+                      className="w-full"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-fg/70 mb-1.5">New password</label>
+                    <label className="block text-xs text-fg/70 mb-1.5">New password</label>
                     <Input
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••"
                       minLength={8}
-                      className="w-full py-2.5"
+                      className="w-full"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-fg/70 mb-1.5">Confirm new password</label>
+                    <label className="block text-xs text-fg/70 mb-1.5">Confirm new password</label>
                     <Input
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       minLength={8}
-                      className="w-full py-2.5"
+                      className="w-full"
                     />
                   </div>
-                  {passwordState.error && <p className={`text-sm ${STATUS_STYLES.Failed.text}`}>{passwordState.error}</p>}
+                  {passwordState.error && <p className={`text-xs ${STATUS_STYLES.Failed.text}`}>{passwordState.error}</p>}
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
                       disabled={passwordState.loading}
-                      className="px-4 py-2 bg-accent-deep text-fg text-sm rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
+                      className="px-4 py-2 bg-accent-deep text-fg text-[13px] rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
                     >
                       {passwordState.loading ? 'Updating…' : 'Update password'}
                     </button>
-                    {passwordState.success && <span className={`text-sm ${STATUS_STYLES.Passed.text}`}>Password updated</span>}
+                    {passwordState.success && <span className={`text-xs ${STATUS_STYLES.Passed.text}`}>Password updated</span>}
                   </div>
                 </form>
               </div>
 
               {/* Danger zone */}
               <div className="bg-surface rounded-xl border border-edge p-6">
-                <h2 className="text-base text-fg mb-1 tracking-tight">
+                <h2 className="text-[15px] font-semibold text-fg mb-1 tracking-tight">
                   Danger zone
                 </h2>
-                <p className="text-sm text-fg/55 mb-5">
+                <p className="text-[13px] text-fg/55 mb-4">
                   Permanently delete your account and all associated data.
                 </p>
                 <button
