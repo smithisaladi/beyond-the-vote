@@ -93,7 +93,7 @@ export function HeroCard({
         <button
           onClick={onFollow}
           disabled={followLoading}
-          className={`flex-shrink-0 px-5 py-2 rounded-lg text-[13px] border transition-colors disabled:opacity-60 ${
+          className={`flex-shrink-0 px-5 py-2.5 rounded-lg text-[13px] border transition-colors disabled:opacity-60 ${
             following
               ? 'bg-accent-deep border-accent-deep text-white'
               : 'bg-transparent border-accent text-accent hover:bg-accent-deep hover:border-accent-deep hover:text-white'

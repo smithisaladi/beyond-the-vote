@@ -7,7 +7,7 @@ export function ErrorState({ message }: { message: string }) {
         <p className="text-fg/40 mb-4">{message}</p>
         <Link
           to="/representatives"
-          className="text-sm text-accent hover:text-accent/80"
+          className="text-[13px] text-accent hover:text-accent/80"
         >
           ← Back to representatives
         </Link>
