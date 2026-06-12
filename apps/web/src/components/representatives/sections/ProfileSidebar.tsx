@@ -28,7 +28,7 @@ export function ProfileSidebar({ stats, nextElectionYear, committees }: ProfileS
                 label="About the ideology score"
                 content={
                   <>
-                    <p className="text-[11px] font-semibold text-fg mb-0.5">DW-NOMINATE</p>
+                    <p className="text-xs font-semibold text-fg mb-0.5">DW-NOMINATE</p>
                     Score from roll-call votes: <span className="font-mono">−1</span> (most progressive) to <span className="font-mono">+1</span> (most conservative).
                     {' '}
                     <a href="https://voteview.com/about" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">Source: VoteView</a>

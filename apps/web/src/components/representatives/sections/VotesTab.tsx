@@ -85,7 +85,7 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
                     )}
                     <p className="text-xs text-fg/40 mt-0.5">{v.date}</p>
                   </div>
-                  <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ml-4 ${
                     vote === 'Yea' ? `${STATUS_STYLES.Passed.bg} ${STATUS_STYLES.Passed.text}` : `${STATUS_STYLES.Failed.bg} ${STATUS_STYLES.Failed.text}`
                   }`}>
                     {vote}

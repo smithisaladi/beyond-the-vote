@@ -17,7 +17,7 @@ function DeleteModal({ onConfirm, onCancel, loading }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative w-full max-w-md bg-surface border border-edge rounded-xl p-6">
+      <div className="relative w-full max-w-md bg-surface border border-edge rounded-lg p-4">
         <h3 className="text-[15px] font-semibold text-fg mb-2 tracking-tight">
           Delete account?
         </h3>
@@ -124,7 +124,7 @@ export default function SettingsPage() {
             <div className="flex flex-col gap-4">
 
               {/* Display name */}
-              <div className="bg-surface rounded-xl border border-edge p-6">
+              <div className="bg-surface rounded-lg border border-edge p-4">
                 <h2 className="text-[15px] font-semibold text-fg mb-4 tracking-tight">
                   Profile
                 </h2>
@@ -163,7 +163,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Change password */}
-              <div className="bg-surface rounded-xl border border-edge p-6">
+              <div className="bg-surface rounded-lg border border-edge p-4">
                 <h2 className="text-[15px] font-semibold text-fg mb-4 tracking-tight">
                   Change password
                 </h2>
@@ -215,7 +215,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Danger zone */}
-              <div className="bg-surface rounded-xl border border-edge p-6">
+              <div className="bg-surface rounded-lg border border-edge p-4">
                 <h2 className="text-[15px] font-semibold text-fg mb-1 tracking-tight">
                   Danger zone
                 </h2>

@@ -67,7 +67,7 @@ export function ErrorState({
 
         {/* Digest is opaque to users but useful for correlating server logs. */}
         {error.digest ? (
-          <p className="text-[11px] text-fg/30 font-mono mb-6">
+          <p className="text-xs text-fg/30 font-mono mb-6">
             Error ID: {error.digest}
           </p>
         ) : (

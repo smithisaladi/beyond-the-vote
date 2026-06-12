@@ -132,6 +132,19 @@ Each entry has `.bg` (tinted background + 1px border), `.text` (Tailwind text cl
 - **Serif is retired** — never reintroduce `font-serif`, `var(--font-serif)`, or `style={{ fontFamily: ... }}` for serif.
 - Weights: `font-semibold` or `font-medium` for headings — never `font-bold` on body text.
 
+### Type Scale (Compact Density)
+
+| Role | Class | Notes |
+|------|-------|-------|
+| Page title | `text-xl font-semibold tracking-tight` | PageHeader `<h1>` |
+| Section heading | `text-[15px] font-semibold tracking-tight` | Card/section `<h2>` |
+| Card title / name | `text-sm font-semibold` | Politician name, bill title |
+| Body | `text-[13px]` | Default readable text |
+| Meta / label | `text-xs` | Dates, counts, secondary info |
+| Micro-label | `text-[10px] uppercase tracking-[0.07em] text-fg/40` | Stat card labels |
+| Stat number | `font-mono tabular-nums` at 17–20px (`text-xl`/`text-2xl`/`text-3xl`) | Money, counts, scores |
+| PageHeader subtitle | `text-xs` | Below the page title |
+
 ### Elevation (No Shadows)
 
 There are **no box shadows**. Elevation is expressed through background steps:
@@ -149,16 +162,26 @@ All animations are gated by `prefers-reduced-motion` via CSS. Library: `motion` 
 | `TAP_SPRING` | `whileTap` spring for interactive elements |
 | `.animate-flow` CSS class | Money-flow shimmer on SVG paths |
 
+### Spacing Conventions
+
+| Context | Value |
+|---------|-------|
+| Page padding | `px-6 py-6` |
+| Grid gaps | `gap-3` (dense) / `gap-4` (standard) |
+| Section stacks | `space-y-5` / `space-y-6` |
+| List row padding | `py-2.5` (compact) / `py-3` (standard) |
+
 ### Component Patterns
 
-- **Card**: `<Card>` from `@/components/ui/Card`. Defaults: `padding="lg"` (p-6), standard border, no shadow. Override via `padding` (`none`/`sm`/`md`/`lg`/`xl`), `border` (`standard`/`light`/`none`), `hoverable` (bool, must be inside a `group` wrapper). Raw class constants `CARD_CLASS`, `CARD_LIGHT_BORDER_CLASS`, `CARD_HOVER_CLASS` are also exported from `@/lib/ui`.
-- **Input**: `<Input>` from `@/components/ui/Input`. Dark-surfaced text field with focus ring.
-- **Badge**: `text-[11px] font-medium px-2.5 py-0.5 rounded-full` + party/status style from `@/lib/ui` (tinted bg + 1px border).
-- **Section header**: `text-lg font-semibold tracking-tight text-fg` + `text-sm text-fg/38` count/subtitle.
+- **Card**: `<Card>` from `@/components/ui/Card`. Defaults: `padding="lg"` (p-4), `rounded-lg`, standard border, no shadow. Padding map: `none` → `''`, `sm` → `p-2.5`, `md` → `p-3`, `lg` → `p-4`, `xl` → `p-8`. Override via `border` (`standard`/`light`/`none`), `hoverable` (bool, must be inside a `group` wrapper). Raw class constants `CARD_CLASS`, `CARD_LIGHT_BORDER_CLASS`, `CARD_HOVER_CLASS` are also exported from `@/lib/ui`.
+- **Input**: `<Input>` from `@/components/ui/Input`. Sizing: `px-3 py-1.5 text-[13px]`. Dark-surfaced text field with focus ring.
+- **Badge**: `text-[10px] font-medium px-1.5 py-px rounded-full` + party/status style from `@/lib/ui` (tinted bg + 1px border). `PartyBadge` has no size prop.
+- **Section header**: `text-[15px] font-semibold tracking-tight text-fg` + `text-xs text-fg/38` count/subtitle.
 - **Skeleton**: `<Skeleton className="h-4 w-24 rounded-full" />` from `@/components/ui/Skeleton`. Pair with an ancestor `animate-pulse`. Uses `SKELETON_BG` from `@/lib/ui`.
 - **List dividers**: `divide-y divide-edge-soft` or `border-b border-edge-soft`.
-- **Icons**: Lucide React with `strokeWidth={1.8}`, size 16–19px. Brand marks and data-viz SVGs may remain inline.
-- **Rounded corners**: `rounded-xl` cards, `rounded-lg` small buttons/inputs, `rounded-full` badges/pills/avatars.
+- **Icons**: Lucide React with `strokeWidth={1.8}`. Nav icons: 16px. Content icons: 14–18px. Brand marks and data-viz SVGs may remain inline.
+- **Rounded corners**: `rounded-lg` cards and modals, `rounded-lg` buttons/inputs, `rounded-full` badges/pills/avatars. Never `rounded-xl` on card/modal surfaces.
+- **Sidebar**: expanded 192px / collapsed 56px (constants in `@/lib/constants`).
 
 ### Don'ts
 
