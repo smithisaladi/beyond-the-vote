@@ -10,7 +10,6 @@ import { usePoliticianDetail } from '@/hooks/queries/usePoliticians'
 import { useFollowedPoliticians, useFollowPolitician } from '@/hooks/queries/useDashboard'
 import type { Politician } from '@/lib/types/politicians'
 import { DonorTab } from '@/components/representatives/DonorTab'
-import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { PageTransition } from '@/components/ui/motion'
 import { ProfileSkeleton } from './sections/ProfileSkeleton'
@@ -59,10 +58,8 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
 
   return (
     <PageTransition>
-    <div className="relative flex flex-col min-h-screen overflow-hidden">
-      <DotGridBackground id="dot-grid-rep-detail" />
-
-      <div className="relative z-10 flex flex-col flex-1">
+    <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col flex-1">
         <main className="flex-1 px-6 pt-8 pb-8">
           {loading ? (
             <ProfileSkeleton />

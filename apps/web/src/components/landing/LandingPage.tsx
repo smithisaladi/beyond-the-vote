@@ -13,22 +13,19 @@ export function LandingPage() {
   const { openSignIn, openSignUp } = useAuthModal()
 
   return (
-    <div className="min-h-screen bg-[#F5F0E8]">
+    <div className="min-h-screen bg-bg">
 
       {/* ── Top nav ── */}
-      <header className="sticky top-0 z-20 bg-[#F5F0E8]/95 backdrop-blur-sm border-b border-[rgba(28,28,26,0.1)]">
+      <header className="sticky top-0 z-20 bg-bg/95 backdrop-blur-sm border-b border-edge">
         <div className="max-w-6xl mx-auto px-6 flex items-center h-16 gap-6">
 
           {/* Logo */}
-          <span
-            className="text-base text-[#1C1C1A] tracking-[0.01em] flex-shrink-0"
-            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-          >
+          <span className="text-base text-fg tracking-tight font-semibold flex-shrink-0">
             Beyond the Vote
           </span>
 
           {/* Divider */}
-          <div className="w-px h-5 bg-[rgba(28,28,26,0.15)]" />
+          <div className="w-px h-5 bg-fg/15" />
 
           {/* Tab nav */}
           <nav className="flex gap-1 flex-1 h-full items-stretch" aria-label="Main navigation">
@@ -43,8 +40,8 @@ export function LandingPage() {
                 aria-current={tab === id ? 'page' : undefined}
                 className={`px-4 text-sm transition-colors relative ${
                   tab === id
-                    ? 'text-[#1C1C1A] font-medium after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-[#1C1C1A] after:rounded-t-full'
-                    : 'text-[#1C1C1A]/45 hover:text-[#1C1C1A]/75'
+                    ? 'text-fg font-medium after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-fg after:rounded-t-full'
+                    : 'text-fg/45 hover:text-fg/75'
                 }`}
               >
                 {label}
@@ -56,13 +53,13 @@ export function LandingPage() {
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
               onClick={openSignIn}
-              className="text-sm text-[#1C1C1A]/60 hover:text-[#1C1C1A] transition-colors"
+              className="text-sm text-fg/60 hover:text-fg transition-colors"
             >
               Sign in
             </button>
             <button
               onClick={openSignUp}
-              className="text-sm bg-[#7B5E8A] text-white px-4 py-2 rounded-lg hover:bg-[#6A4F78] transition-colors shadow-sm font-medium"
+              className="text-sm bg-accent-deep text-fg px-4 py-2 rounded-lg hover:bg-accent-deep-hover transition-colors font-medium"
             >
               Sign up
             </button>
@@ -81,15 +78,12 @@ export function LandingPage() {
       </main>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-[rgba(28,28,26,0.1)] py-8 px-6">
+      <footer className="border-t border-edge py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span
-            className="text-sm text-[#1C1C1A]/60"
-            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-          >
+          <span className="text-sm text-fg/60 font-semibold tracking-tight">
             Beyond the Vote
           </span>
-          <p className="text-xs text-[#1C1C1A]/38">
+          <p className="text-xs text-fg/38">
             © 2026 Beyond the Vote. Bringing transparency to democracy.
           </p>
         </div>

@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Modal } from './Modal'
 import { authClient } from '@/lib/auth/neon'
 import { useAuth } from '@/components/auth/AuthContext'
+import { Input } from '@/components/ui/Input'
 
 interface SignUpModalProps {
   isOpen: boolean
@@ -51,7 +52,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
       <div className="p-8">
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 text-[#1C1C1A]/40 hover:text-[#1C1C1A] transition-colors"
+          className="absolute top-4 right-4 text-fg/40 hover:text-fg transition-colors"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
@@ -59,103 +60,103 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
           </svg>
         </button>
 
-        <h2 className="text-3xl mb-2" style={{ fontFamily: 'var(--font-serif)' }}>Join Beyond the Vote</h2>
-        <p className="text-[#1C1C1A]/60 mb-8">Start tracking your representatives today</p>
+        <h2 className="text-3xl text-fg mb-2 tracking-tight">Join Beyond the Vote</h2>
+        <p className="text-fg/60 mb-8">Start tracking your representatives today</p>
 
         <button
           onClick={handleGoogleSignUp}
-          className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border border-[rgba(28,28,26,0.2)] rounded-lg hover:bg-white/80 transition-colors mb-6"
+          className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-raised border border-edge rounded-lg hover:bg-fg/[0.06] transition-colors mb-6"
         >
           <GoogleIcon />
-          <span className="text-[#1C1C1A]">Continue with Google</span>
+          <span className="text-fg">Continue with Google</span>
         </button>
 
         <div className="relative mb-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[rgba(28,28,26,0.1)]" />
+            <div className="w-full border-t border-edge" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-[#F5F0E8] text-[#1C1C1A]/60">Or continue with email</span>
+            <span className="px-4 bg-surface text-fg/60">Or continue with email</span>
           </div>
         </div>
 
-        {error && <p className="text-red-600 text-sm mb-4">{error}</p>}
+        {error && <p className="text-[#C97A5A] text-sm mb-4">{error}</p>}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="signup-name" className="block text-sm mb-2 text-[#1C1C1A]">Full Name</label>
-            <input
+            <label htmlFor="signup-name" className="block text-sm mb-2 text-fg">Full Name</label>
+            <Input
               id="signup-name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Jane Doe"
-              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              className="w-full py-3"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="signup-email" className="block text-sm mb-2 text-[#1C1C1A]">Email</label>
-            <input
+            <label htmlFor="signup-email" className="block text-sm mb-2 text-fg">Email</label>
+            <Input
               id="signup-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              className="w-full py-3"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="signup-password" className="block text-sm mb-2 text-[#1C1C1A]">Password</label>
-            <input
+            <label htmlFor="signup-password" className="block text-sm mb-2 text-fg">Password</label>
+            <Input
               id="signup-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              className="w-full py-3"
               required
             />
           </div>
 
           <div>
-            <label htmlFor="signup-confirm" className="block text-sm mb-2 text-[#1C1C1A]">Confirm Password</label>
-            <input
+            <label htmlFor="signup-confirm" className="block text-sm mb-2 text-fg">Confirm Password</label>
+            <Input
               id="signup-confirm"
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 bg-white border border-[rgba(28,28,26,0.15)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/50 text-[#1C1C1A] placeholder:text-[#1C1C1A]/40"
+              className="w-full py-3"
               required
             />
           </div>
 
-          <label htmlFor="agree-terms" className="flex items-start gap-2 text-sm text-[#1C1C1A]/70">
-            <input id="agree-terms" type="checkbox" className="mt-0.5 rounded border-[rgba(28,28,26,0.2)]" required />
+          <label htmlFor="agree-terms" className="flex items-start gap-2 text-sm text-fg/70">
+            <input id="agree-terms" type="checkbox" className="mt-0.5 rounded border-edge" required />
             <span>
               I agree to the{' '}
-              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#7B5E8A] hover:text-[#6A4F78]">Terms of Service</a>
+              <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-deep-hover">Terms of Service</a>
               {' '}and{' '}
-              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#7B5E8A] hover:text-[#6A4F78]">Privacy Policy</a>
+              <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-accent hover:text-accent-deep-hover">Privacy Policy</a>
             </span>
           </label>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 bg-[#7B5E8A] text-white rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
+            className="w-full px-6 py-3 bg-accent-deep text-fg rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
           >
             {loading ? 'Creating account…' : 'Create Account'}
           </button>
         </form>
 
-        <p className="text-center text-sm text-[#1C1C1A]/60 mt-6">
+        <p className="text-center text-sm text-fg/60 mt-6">
           Already have an account?{' '}
-          <button onClick={onSwitchToSignIn} className="text-[#7B5E8A] hover:text-[#6A4F78] font-medium">
+          <button onClick={onSwitchToSignIn} className="text-accent hover:text-accent-deep-hover font-medium">
             Sign in
           </button>
         </p>

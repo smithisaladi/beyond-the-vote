@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthContext'
 import { authClient } from '@/lib/auth/neon'
-import { DotGridBackground } from '@/components/shared/DotGridBackground'
+import { DANGER_BUTTON_CLASS } from '@/lib/ui'
+import { Input } from '@/components/ui/Input'
 import { PageTransition } from '@/components/ui/motion'
 
 // ── Delete confirmation modal ─────────────────────────────────────────────────
@@ -15,25 +16,25 @@ function DeleteModal({ onConfirm, onCancel, loading }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-[#1C1C1A]/40" onClick={onCancel} />
-      <div className="relative w-full max-w-md bg-white rounded-xl border border-[#D6CFC4] shadow-xl p-7">
-        <h3 className="text-lg text-[#1C1C1A] mb-2" style={{ fontFamily: 'var(--font-serif)' }}>
+      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
+      <div className="relative w-full max-w-md bg-surface border border-edge rounded-xl p-7">
+        <h3 className="text-lg text-fg mb-2 tracking-tight">
           Delete account?
         </h3>
-        <p className="text-sm text-[#1C1C1A]/60 mb-6 leading-relaxed">
+        <p className="text-sm text-fg/60 mb-6 leading-relaxed">
           This action is permanent and cannot be undone. All your data — followed politicians, tracked bills, and topic preferences — will be erased.
         </p>
         <div className="flex gap-3 justify-end">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg border border-[#D6CFC4] text-sm text-[#1C1C1A]/70 hover:border-[#1C1C1A]/40 transition-colors"
+            className="px-4 py-2 rounded-lg border border-edge text-sm text-fg/70 hover:border-fg/40 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="px-4 py-2 rounded-lg bg-[#B85C38] text-white text-sm hover:bg-[#a34f2e] transition-colors disabled:opacity-60"
+            className={`px-4 py-2 rounded-lg text-sm disabled:opacity-60 ${DANGER_BUTTON_CLASS}`}
           >
             {loading ? 'Deleting…' : 'Yes, delete my account'}
           </button>
@@ -114,10 +115,8 @@ export default function SettingsPage() {
   return (
     <>
     <PageTransition>
-    <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
-      <DotGridBackground id="dot-grid-settings" />
-
-      <div className="relative z-10 flex flex-col flex-1">
+    <div className="flex flex-col flex-1 min-h-screen">
+      <div className="flex flex-col flex-1">
         {/* Content */}
         <main className="flex-1 px-6 pt-8 pb-8">
           <div className="max-w-4xl mx-auto">
@@ -125,36 +124,36 @@ export default function SettingsPage() {
             <div className="flex flex-col gap-6">
 
               {/* Display name */}
-              <div className="bg-white rounded-xl border border-[#D6CFC4] p-6">
-                <h2 className="text-base text-[#1C1C1A] mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
+              <div className="bg-surface rounded-xl border border-edge p-6">
+                <h2 className="text-base text-fg mb-5 tracking-tight">
                   Profile
                 </h2>
                 <form onSubmit={updateName} className="flex flex-col gap-4">
                   <div>
-                    <label className="block text-sm text-[#1C1C1A]/70 mb-1.5">Display name</label>
-                    <input
+                    <label className="block text-sm text-fg/70 mb-1.5">Display name</label>
+                    <Input
                       type="text"
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
                       placeholder="Your name"
-                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/40 placeholder:text-[#1C1C1A]/35"
+                      className="w-full py-2.5"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-[#1C1C1A]/70 mb-1.5">Email</label>
-                    <input
+                    <label className="block text-sm text-fg/70 mb-1.5">Email</label>
+                    <Input
                       type="email"
                       value={user?.email ?? ''}
                       readOnly
-                      className="w-full px-4 py-2.5 bg-[#E8E3DA] border border-[rgba(28,28,26,0.08)] rounded-lg text-sm text-[#1C1C1A]/50 cursor-not-allowed select-none"
+                      className="w-full py-2.5"
                     />
                   </div>
-                  {nameState.error && <p className="text-sm text-[#B85C38]">{nameState.error}</p>}
+                  {nameState.error && <p className="text-sm text-[#C97A5A]">{nameState.error}</p>}
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
                       disabled={nameState.loading}
-                      className="px-4 py-2 bg-[#7B5E8A] text-white text-sm rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
+                      className="px-4 py-2 bg-accent-deep text-fg text-sm rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
                     >
                       {nameState.loading ? 'Saving…' : 'Save'}
                     </button>
@@ -164,49 +163,49 @@ export default function SettingsPage() {
               </div>
 
               {/* Change password */}
-              <div className="bg-white rounded-xl border border-[#D6CFC4] p-6">
-                <h2 className="text-base text-[#1C1C1A] mb-5" style={{ fontFamily: 'var(--font-serif)' }}>
+              <div className="bg-surface rounded-xl border border-edge p-6">
+                <h2 className="text-base text-fg mb-5 tracking-tight">
                   Change password
                 </h2>
                 <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
                   <div>
-                    <label className="block text-sm text-[#1C1C1A]/70 mb-1.5">Current password</label>
-                    <input
+                    <label className="block text-sm text-fg/70 mb-1.5">Current password</label>
+                    <Input
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/40 placeholder:text-[#1C1C1A]/35"
+                      className="w-full py-2.5"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-[#1C1C1A]/70 mb-1.5">New password</label>
-                    <input
+                    <label className="block text-sm text-fg/70 mb-1.5">New password</label>
+                    <Input
                       type="password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="••••••••"
                       minLength={8}
-                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/40 placeholder:text-[#1C1C1A]/35"
+                      className="w-full py-2.5"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm text-[#1C1C1A]/70 mb-1.5">Confirm new password</label>
-                    <input
+                    <label className="block text-sm text-fg/70 mb-1.5">Confirm new password</label>
+                    <Input
                       type="password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
                       minLength={8}
-                      className="w-full px-4 py-2.5 bg-[#F5F0E8] border border-[rgba(28,28,26,0.12)] rounded-lg text-sm text-[#1C1C1A] focus:outline-none focus:ring-2 focus:ring-[#7B5E8A]/40 placeholder:text-[#1C1C1A]/35"
+                      className="w-full py-2.5"
                     />
                   </div>
-                  {passwordState.error && <p className="text-sm text-[#B85C38]">{passwordState.error}</p>}
+                  {passwordState.error && <p className="text-sm text-[#C97A5A]">{passwordState.error}</p>}
                   <div className="flex items-center gap-3">
                     <button
                       type="submit"
                       disabled={passwordState.loading}
-                      className="px-4 py-2 bg-[#7B5E8A] text-white text-sm rounded-lg hover:bg-[#6A4F78] transition-colors disabled:opacity-60"
+                      className="px-4 py-2 bg-accent-deep text-fg text-sm rounded-lg hover:bg-accent-deep-hover transition-colors disabled:opacity-60"
                     >
                       {passwordState.loading ? 'Updating…' : 'Update password'}
                     </button>
@@ -216,16 +215,16 @@ export default function SettingsPage() {
               </div>
 
               {/* Danger zone */}
-              <div className="bg-white rounded-xl border border-[#D6CFC4] p-6">
-                <h2 className="text-base text-[#1C1C1A] mb-1" style={{ fontFamily: 'var(--font-serif)' }}>
+              <div className="bg-surface rounded-xl border border-edge p-6">
+                <h2 className="text-base text-fg mb-1 tracking-tight">
                   Danger zone
                 </h2>
-                <p className="text-sm text-[#1C1C1A]/55 mb-5">
+                <p className="text-sm text-fg/55 mb-5">
                   Permanently delete your account and all associated data.
                 </p>
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="px-4 py-2 rounded-lg border border-[#B85C38]/40 text-sm text-[#B85C38] hover:bg-[#B85C38]/8 transition-colors"
+                  className={`px-4 py-2 rounded-lg text-sm ${DANGER_BUTTON_CLASS}`}
                 >
                   Delete account
                 </button>

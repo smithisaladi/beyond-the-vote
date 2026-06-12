@@ -10,29 +10,26 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
             <div>
-              <span className="inline-block text-xs font-medium text-[#7B5E8A] bg-[#7B5E8A]/10 border border-[#7B5E8A]/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
+              <span className="inline-block text-xs font-medium text-accent bg-accent-deep/[0.12] border border-accent-deep/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Know Your Representative
               </span>
-              <h1
-                className="text-5xl sm:text-6xl text-[#1C1C1A] mb-6 leading-[1.08] tracking-[-0.02em]"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
-              >
+              <h1 className="text-5xl sm:text-6xl text-fg mb-6 leading-[1.08] tracking-tight">
                 Know exactly who represents you, and what they stand for
               </h1>
-              <p className="text-xl text-[#1C1C1A]/55 mb-9 leading-relaxed max-w-lg">
+              <p className="text-xl text-fg/55 mb-9 leading-relaxed max-w-lg">
                 Beyond the Vote connects you directly to your elected officials&apos; voting records,
                 positions, and actions so you can hold them accountable.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={onSignUp}
-                  className="px-6 py-3 bg-[#7B5E8A] text-white rounded-xl text-sm font-medium hover:bg-[#6A4F78] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-accent-deep text-fg rounded-xl text-sm font-medium hover:bg-accent-deep-hover transition-colors"
                 >
                   Get started
                 </button>
                 <Link
                   to="/representatives"
-                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-surface border border-edge text-fg rounded-xl text-sm font-medium hover:border-accent-deep/50 hover:text-accent transition-colors"
                 >
                   Find your representatives →
                 </Link>
@@ -61,16 +58,15 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-6 bg-white/50 border-y border-[rgba(28,28,26,0.07)]" aria-labelledby="rep-features-heading">
+      <section className="py-20 px-6 bg-surface/50 border-y border-edge-soft" aria-labelledby="rep-features-heading">
         <div className="max-w-5xl mx-auto">
           <h2
             id="rep-features-heading"
-            className="text-3xl text-[#1C1C1A] mb-2 text-center"
-            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
+            className="text-3xl text-fg mb-2 text-center tracking-tight"
           >
             Everything you need to stay informed
           </h2>
-          <p className="text-sm text-[#1C1C1A]/50 text-center mb-14 max-w-md mx-auto tracking-[0.01em]">
+          <p className="text-sm text-fg/50 text-center mb-14 max-w-md mx-auto tracking-[0.01em]">
             One platform to find, follow, and understand the people who represent you.
           </p>
 
@@ -103,31 +99,30 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
             { stat: '100%', label: 'Open and accessible' },
           ].map(({ stat, label }) => (
             <div key={label}>
-              <p className="text-4xl font-semibold text-[#7B5E8A] mb-1.5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}>
+              <p className="text-4xl font-semibold text-accent mb-1.5 font-mono">
                 {stat}
               </p>
-              <p className="text-[11px] text-[#1C1C1A]/50 leading-snug uppercase tracking-[0.04em]">{label}</p>
+              <p className="text-[11px] text-fg/50 leading-snug uppercase tracking-[0.04em]">{label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6 bg-[#7B5E8A]/[0.07] border-t border-[#7B5E8A]/15" aria-labelledby="rep-cta-heading">
+      <section className="py-20 px-6 bg-accent-deep/[0.08] border-t border-accent-deep/15" aria-labelledby="rep-cta-heading">
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="rep-cta-heading"
-            className="text-3xl text-[#1C1C1A] mb-4"
-            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
+            className="text-3xl text-fg mb-4 tracking-tight"
           >
             Democracy works when voters are informed
           </h2>
-          <p className="text-base text-[#1C1C1A]/55 mb-8 leading-relaxed">
+          <p className="text-base text-fg/55 mb-8 leading-relaxed">
             Join Beyond the Vote and start building a clearer picture of who really represents your interests.
           </p>
           <button
             onClick={onSignUp}
-            className="px-10 py-3.5 bg-[#7B5E8A] text-white rounded-xl text-sm font-medium hover:bg-[#6A4F78] transition-colors shadow-sm"
+            className="px-10 py-3.5 bg-accent-deep text-fg rounded-xl text-sm font-medium hover:bg-accent-deep-hover transition-colors"
           >
             Create your account
           </button>

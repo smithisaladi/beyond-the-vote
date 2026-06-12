@@ -10,19 +10,19 @@ export function TopoBackground() {
       aria-hidden="true"
       className="absolute inset-0 w-full h-full pointer-events-none"
       xmlns="http://www.w3.org/2000/svg"
-      style={{ opacity: 0.04 }}
+      style={{ opacity: 0.06 }}
     >
       <defs>
         <pattern id="topo-landing" x="0" y="0" width="900" height="700" patternUnits="userSpaceOnUse">
-          <ellipse cx="700" cy="200" rx="420" ry="300" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="700" cy="200" rx="340" ry="240" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="705" cy="197" rx="265" ry="185" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="708" cy="194" rx="195" ry="135" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="711" cy="191" rx="130" ry="90" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="713" cy="189" rx="72"  ry="50" fill="none" stroke="#1C1C1A" strokeWidth="1.2" />
-          <ellipse cx="120" cy="580" rx="180" ry="120" fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="124" cy="576" rx="120" ry="78" fill="none" stroke="#1C1C1A" strokeWidth="1" />
-          <ellipse cx="127" cy="573" rx="68"  ry="44" fill="none" stroke="#1C1C1A" strokeWidth="1" />
+          <ellipse cx="700" cy="200" rx="420" ry="300" fill="none" stroke="currentColor" strokeWidth="1.2" />
+          <ellipse cx="700" cy="200" rx="340" ry="240" fill="none" stroke="currentColor" strokeWidth="1.2" />
+          <ellipse cx="705" cy="197" rx="265" ry="185" fill="none" stroke="currentColor" strokeWidth="1.2" />
+          <ellipse cx="708" cy="194" rx="195" ry="135" fill="none" stroke="currentColor" strokeWidth="1.2" />
+          <ellipse cx="711" cy="191" rx="130" ry="90" fill="none" stroke="currentColor" strokeWidth="1.2" />
+          <ellipse cx="713" cy="189" rx="72"  ry="50" fill="none" stroke="currentColor" strokeWidth="1.2" />
+          <ellipse cx="120" cy="580" rx="180" ry="120" fill="none" stroke="currentColor" strokeWidth="1" />
+          <ellipse cx="124" cy="576" rx="120" ry="78" fill="none" stroke="currentColor" strokeWidth="1" />
+          <ellipse cx="127" cy="573" rx="68"  ry="44" fill="none" stroke="currentColor" strokeWidth="1" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#topo-landing)" />
@@ -35,12 +35,12 @@ export function TopoBackground() {
 export function Feature({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
     <div className="flex gap-4">
-      <div className="w-10 h-10 rounded-lg bg-[#7B5E8A]/10 border border-[#7B5E8A]/15 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <span className="text-[#7B5E8A]">{icon}</span>
+      <div className="w-10 h-10 rounded-lg bg-accent-deep/[0.12] border border-accent-deep/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <span className="text-accent">{icon}</span>
       </div>
       <div>
-        <h3 className="text-sm font-semibold text-[#1C1C1A] mb-1.5" style={{ fontFamily: 'var(--font-serif)', fontWeight: 500 }}>{title}</h3>
-        <p className="text-sm text-[#1C1C1A]/55 leading-[1.7]">{description}</p>
+        <h3 className="text-sm font-semibold text-fg mb-1.5 tracking-tight">{title}</h3>
+        <p className="text-sm text-fg/55 leading-[1.7]">{description}</p>
       </div>
     </div>
   )
@@ -124,28 +124,28 @@ export function MockRepCard({ name, title, party, state, vote }: {
   return (
     <Card>
       <div className="flex items-start gap-3 mb-4">
-        <div className="w-11 h-11 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0">
-          <span className="text-sm text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
+        <div className="w-11 h-11 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0">
+          <span className="text-sm text-fg/50 font-medium tracking-tight">
             {initials}
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-[#1C1C1A] truncate" style={{ fontFamily: 'var(--font-serif)' }}>
+          <p className="text-sm font-medium text-fg truncate tracking-tight">
             {name}
           </p>
-          <p className="text-xs text-[#1C1C1A]/50 mt-0.5 truncate">{title}</p>
-          <p className="text-xs text-[#1C1C1A]/38">{state}</p>
+          <p className="text-xs text-fg/50 mt-0.5 truncate">{title}</p>
+          <p className="text-xs text-fg/38">{state}</p>
         </div>
       </div>
       <span className={`inline-block text-[11px] font-medium px-2 py-0.5 rounded-full ${style.bg} ${style.text} mb-3`}>
         {party}
       </span>
       {vote && (
-        <div className="border-t border-[rgba(28,28,26,0.06)] pt-3">
-          <p className="text-[10px] text-[#1C1C1A]/38 uppercase tracking-wider mb-1.5">Latest vote</p>
+        <div className="border-t border-edge-soft pt-3">
+          <p className="text-[10px] text-fg/38 uppercase tracking-wider mb-1.5">Latest vote</p>
           <div className="flex items-start justify-between gap-2">
-            <p className="text-xs text-[#1C1C1A]/70 leading-snug flex-1">{vote.bill}</p>
-            <span className={`text-[11px] font-semibold flex-shrink-0 ${vote.position === 'Yea' ? 'text-[#68B085]' : 'text-[#B85C38]'}`}>
+            <p className="text-xs text-fg/70 leading-snug flex-1">{vote.bill}</p>
+            <span className={`text-[11px] font-semibold flex-shrink-0 ${vote.position === 'Yea' ? 'text-[#68B085]' : 'text-[#C97A5A]'}`}>
               {vote.position}
             </span>
           </div>
@@ -162,15 +162,15 @@ export function MockBillCard({ number, title, status, category }: {
   return (
     <Card>
       <div className="flex items-start justify-between gap-3 mb-3">
-        <span className="text-[11px] font-mono text-[#1C1C1A]/38">{number}</span>
+        <span className="text-[11px] font-mono text-fg/38">{number}</span>
         <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full flex-shrink-0 ${style.bg} ${style.text}`}>
           {status}
         </span>
       </div>
-      <p className="text-sm text-[#1C1C1A] leading-snug mb-3" style={{ fontFamily: 'var(--font-serif)' }}>
+      <p className="text-sm text-fg leading-snug mb-3 tracking-tight">
         {title}
       </p>
-      <span className="inline-block text-[11px] text-[#1C1C1A]/40 bg-[#F5F0E8] border border-[rgba(28,28,26,0.08)] px-2.5 py-1 rounded-full">
+      <span className="inline-block text-[11px] text-fg/40 bg-fg/[0.06] border border-edge px-2.5 py-1 rounded-full">
         {category}
       </span>
     </Card>
@@ -181,20 +181,20 @@ export function MockDonorCard({ rank, name, total, lean, recipients }: {
   rank: number; name: string; total: string; lean: 'Democrat' | 'Republican' | 'Mixed'; recipients: number
 }) {
   const leanStyle = lean === 'Mixed'
-    ? { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]', dot: 'bg-[#8A8A7A]' }
+    ? { bg: PARTY_STYLES.Independent.bg, text: PARTY_STYLES.Independent.text, dot: 'bg-[#8A8A7A]' }
     : { bg: PARTY_STYLES[lean].bg, text: PARTY_STYLES[lean].text, dot: lean === 'Democrat' ? 'bg-[#5E85A8]' : 'bg-[#A87B7B]' }
   return (
     <Card padding="none" className="p-5">
       <div className="flex items-start justify-between gap-3 mb-2">
-        <span className="text-xs font-mono text-[#1C1C1A]/30">#{rank}</span>
+        <span className="text-xs font-mono text-fg/30">#{rank}</span>
         <span className={`inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-0.5 rounded-full ${leanStyle.bg} ${leanStyle.text}`}>
           <span className={`w-1.5 h-1.5 rounded-full ${leanStyle.dot}`} />
           {lean === 'Mixed' ? 'Mixed' : `Leans ${lean}`}
         </span>
       </div>
-      <p className="text-sm text-[#1C1C1A] mb-1.5" style={{ fontFamily: 'var(--font-serif)' }}>{name}</p>
-      <p className="text-lg font-semibold text-[#1C1C1A] mb-2" style={{ fontFamily: 'var(--font-serif)' }}>{total}</p>
-      <p className="text-xs text-[#1C1C1A]/38">{recipients} candidates supported</p>
+      <p className="text-sm text-fg mb-1.5 tracking-tight">{name}</p>
+      <p className="text-lg font-semibold text-fg mb-2 font-mono">{total}</p>
+      <p className="text-xs text-fg/38">{recipients} candidates supported</p>
     </Card>
   )
 }

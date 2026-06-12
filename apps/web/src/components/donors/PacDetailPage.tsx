@@ -17,7 +17,6 @@ interface PacDetailRecipient {
   type: string
 }
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
-import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { PageTransition } from '@/components/ui/motion'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
@@ -233,10 +232,8 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
 
   return (
     <PageTransition>
-    <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
-      <DotGridBackground id="dot-grid-pac-detail" />
-
-      <div className="relative z-10 flex flex-col flex-1">
+    <div className="flex flex-col flex-1 min-h-screen">
+      <div className="flex flex-col flex-1">
         <main className="flex-1 px-6 pt-10 pb-8">
 
           {loading ? (

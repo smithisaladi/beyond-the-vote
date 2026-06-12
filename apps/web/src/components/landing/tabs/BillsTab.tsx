@@ -11,29 +11,26 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="relative z-10 max-w-5xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-center">
             <div>
-              <span className="inline-block text-xs font-medium text-[#7B5E8A] bg-[#7B5E8A]/10 border border-[#7B5E8A]/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
+              <span className="inline-block text-xs font-medium text-accent bg-accent-deep/[0.12] border border-accent-deep/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Bills Tracker
               </span>
-              <h1
-                className="text-5xl sm:text-6xl text-[#1C1C1A] mb-6 leading-[1.08] tracking-[-0.02em]"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 700 }}
-              >
+              <h1 className="text-5xl sm:text-6xl text-fg mb-6 leading-[1.08] tracking-tight">
                 Follow legislation from introduction to law
               </h1>
-              <p className="text-xl text-[#1C1C1A]/55 mb-9 leading-relaxed max-w-lg">
+              <p className="text-xl text-fg/55 mb-9 leading-relaxed max-w-lg">
                 Track thousands of bills in real time. Understand what&apos;s being debated in Congress
                 and how it could affect your community before it becomes law.
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
                   onClick={onSignUp}
-                  className="px-6 py-3 bg-[#7B5E8A] text-white rounded-xl text-sm font-medium hover:bg-[#6A4F78] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-accent-deep text-fg rounded-xl text-sm font-medium hover:bg-accent-deep-hover transition-colors"
                 >
                   Start tracking bills
                 </button>
                 <Link
                   to="/bills"
-                  className="px-6 py-3 bg-white border border-[#D6CFC4] text-[#1C1C1A] rounded-xl text-sm font-medium hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors shadow-sm"
+                  className="px-6 py-3 bg-surface border border-edge text-fg rounded-xl text-sm font-medium hover:border-accent-deep/50 hover:text-accent transition-colors"
                 >
                   Browse legislation →
                 </Link>
@@ -66,16 +63,15 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-6 bg-white/50 border-y border-[rgba(28,28,26,0.07)]" aria-labelledby="bills-features-heading">
+      <section className="py-20 px-6 bg-surface/50 border-y border-edge-soft" aria-labelledby="bills-features-heading">
         <div className="max-w-5xl mx-auto">
           <h2
             id="bills-features-heading"
-            className="text-3xl text-[#1C1C1A] mb-2 text-center"
-            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
+            className="text-3xl text-fg mb-2 text-center tracking-tight"
           >
             Track legislation like a professional
           </h2>
-          <p className="text-sm text-[#1C1C1A]/50 text-center mb-14 max-w-md mx-auto tracking-[0.01em]">
+          <p className="text-sm text-fg/50 text-center mb-14 max-w-md mx-auto tracking-[0.01em]">
             Powerful search and filtering tools make it easy to find what matters to you.
           </p>
 
@@ -104,8 +100,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-5xl mx-auto">
           <h2
             id="topics-heading"
-            className="text-xl text-[#1C1C1A] mb-7 text-center"
-            style={{ fontFamily: 'var(--font-serif)', fontWeight: 500 }}
+            className="text-xl text-fg mb-7 text-center tracking-tight"
           >
             Explore by topic
           </h2>
@@ -115,7 +110,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
                 key={t}
                 to="/bills"
                 search={{ topics: topicToSlug(t) }}
-                className="text-sm font-medium text-[#1C1C1A]/60 bg-white border border-[rgba(28,28,26,0.1)] px-4 py-2 rounded-full hover:border-[#7B5E8A]/50 hover:text-[#7B5E8A] transition-colors tracking-[0.01em]"
+                className="text-sm font-medium text-fg/60 bg-surface border border-edge px-4 py-2 rounded-full hover:border-accent-deep/50 hover:text-accent transition-colors tracking-[0.01em]"
               >
                 {t}
               </Link>
@@ -125,22 +120,21 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6 bg-[#7B5E8A]/[0.07] border-t border-[#7B5E8A]/15" aria-labelledby="bills-cta-heading">
+      <section className="py-20 px-6 bg-accent-deep/[0.08] border-t border-accent-deep/15" aria-labelledby="bills-cta-heading">
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="bills-cta-heading"
-            className="text-3xl text-[#1C1C1A] mb-4"
-            style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
+            className="text-3xl text-fg mb-4 tracking-tight"
           >
             Legislation shapes everyday life
           </h2>
-          <p className="text-base text-[#1C1C1A]/55 mb-8 leading-relaxed">
+          <p className="text-base text-fg/55 mb-8 leading-relaxed">
             From healthcare costs to housing prices to climate policy, the bills moving through
             Congress today will affect you tomorrow. Stay ahead of it.
           </p>
           <button
             onClick={onSignUp}
-            className="px-10 py-3.5 bg-[#7B5E8A] text-white rounded-xl text-sm font-medium hover:bg-[#6A4F78] transition-colors shadow-sm"
+            className="px-10 py-3.5 bg-accent-deep text-fg rounded-xl text-sm font-medium hover:bg-accent-deep-hover transition-colors"
           >
             Create your account
           </button>

@@ -6,7 +6,6 @@ import { Link } from '@tanstack/react-router'
 import { ExternalLink } from 'lucide-react'
 import { PARTY_STYLES, STATUS_STYLES, getPartyStyle, resultBadge } from '@/lib/ui'
 import { formatDate } from '@/lib/format'
-import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { PageTransition } from '@/components/ui/motion'
 import { Card } from '@/components/ui/Card'
 import { Skeleton as SkeletonBox } from '@/components/ui/Skeleton'
@@ -350,9 +349,8 @@ export default function VoteBreakdownPage({ billId, voteId }: { billId: string; 
 
   return (
     <PageTransition>
-    <div className="relative flex flex-col min-h-screen overflow-hidden">
-      <DotGridBackground id="dot-grid-vote" />
-      <div className="relative z-10 flex flex-col flex-1">
+    <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col flex-1">
         <main className="flex-1 px-6 pt-10 pb-8">
           {loading ? (
             <VoteBreakdownSkeleton />

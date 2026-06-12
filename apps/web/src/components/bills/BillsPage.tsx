@@ -7,7 +7,6 @@ import { useDebounce } from '@/hooks/useDebounce'
 import { useBills } from '@/hooks/queries/useBills'
 import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
 import { topicToSlug } from '@/lib/topics'
-import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { PageTransition } from '@/components/ui/motion'
 import { BillSearchBar } from '@/components/bills/BillSearchBar'
 import { BillFilters as BillFiltersComponent } from '@/components/bills/BillFilters'
@@ -134,10 +133,8 @@ function BillsContent() {
 
   return (
     <PageTransition>
-    <div className="relative flex flex-col flex-1 min-h-screen overflow-hidden">
-      <DotGridBackground id="dot-grid-bills" />
-
-      <div className="relative z-10 flex flex-col flex-1">
+    <div className="flex flex-col flex-1 min-h-screen">
+      <div className="flex flex-col flex-1">
 
         <main className="flex-1 px-6 pt-24 pb-8">
           <div className="max-w-4xl mx-auto">

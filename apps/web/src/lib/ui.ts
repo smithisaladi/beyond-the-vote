@@ -32,6 +32,9 @@ export const SKELETON_BG = 'bg-fg/[0.06]'
 /** Destructive icon-button hover treatment — neutral at rest, danger on hover. */
 export const DANGER_HOVER_CLASS = 'text-fg/25 hover:text-[#C97A5A] hover:bg-[#B85C38]/[0.08]'
 
+/** Destructive solid button. */
+export const DANGER_BUTTON_CLASS = 'bg-[#B85C38]/[0.14] text-[#C97A5A] border border-[#B85C38]/25 hover:bg-[#B85C38]/[0.22] transition-colors'
+
 /** Returns Tailwind badge classes for a vote result string (passed/failed/neutral). */
 export function resultBadge(result: string | null): string | null {
   if (!result) return null

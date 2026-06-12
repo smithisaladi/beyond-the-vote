@@ -7,7 +7,6 @@ import { LogOut, UserMinus } from 'lucide-react'
 import { PARTY_STYLES, STATUS_STYLES, DANGER_HOVER_CLASS } from '@/lib/ui'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useFollowedPoliticians, useFollowPolitician, useTrackedBills, useTopicPreferences } from "@/hooks/queries/useDashboard"
-import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -65,9 +64,7 @@ export default function DashboardPage() {
   const isNew = (_timestamp: number) => false
 
   return (
-    <div className="relative flex-1 flex flex-col min-h-screen overflow-hidden">
-      <DotGridBackground id="dot-grid-dashboard" />
-
+    <div className="flex-1 flex flex-col min-h-screen">
       <PageTransition>
         <div className="relative z-10 flex flex-col flex-1">
           {/* ── Header ── */}
