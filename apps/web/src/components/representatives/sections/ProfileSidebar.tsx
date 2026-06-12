@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/Card'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
-import { PARTY_STYLES } from '@/lib/ui'
+import { PARTY_STYLES, IDEOLOGY_GRADIENT } from '@/lib/ui'
 import type { PoliticianStats, Committee } from '@/lib/types/politicians'
 
 interface ProfileSidebarProps {
@@ -37,7 +37,7 @@ export function ProfileSidebar({ stats, nextElectionYear, committees }: ProfileS
               />
             </p>
             <div className="relative h-1.5 rounded-full mb-2 overflow-hidden"
-                 style={{ background: 'linear-gradient(to right, #7EA5C8, #A8A896, #C89B9B)' }}>
+                 style={{ background: IDEOLOGY_GRADIENT }}>
               <div
                 className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-surface border-2 border-accent rounded-full"
                 style={{ left: `calc(${((stats.ideologyScore + 1) / 2) * 100}% - 6px)` }}

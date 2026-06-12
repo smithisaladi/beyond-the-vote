@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   PARTY_STYLES,
   STATUS_STYLES,
+  IDEOLOGY_GRADIENT,
   getPartyStyle,
   resultBadge,
 } from './ui'
@@ -33,14 +34,43 @@ describe('PARTY_STYLES', () => {
 })
 
 describe('STATUS_STYLES', () => {
-  const statuses = ['Active', 'Committee', 'Stalled', 'Passed', 'Failed'] as const
+  it('has Active styles with bg, text, and hex', () => {
+    expect(STATUS_STYLES.Active.bg).toBeTruthy()
+    expect(STATUS_STYLES.Active.text).toBeTruthy()
+    expect(STATUS_STYLES.Active.hex).toBe('#9B7EAA')
+  })
 
-  for (const status of statuses) {
-    it(`has ${status} styles with bg and text`, () => {
-      expect(STATUS_STYLES[status].bg).toBeTruthy()
-      expect(STATUS_STYLES[status].text).toBeTruthy()
-    })
-  }
+  it('has Committee styles with bg, text, and hex', () => {
+    expect(STATUS_STYLES.Committee.bg).toBeTruthy()
+    expect(STATUS_STYLES.Committee.text).toBeTruthy()
+    expect(STATUS_STYLES.Committee.hex).toBe('#A8A896')
+  })
+
+  it('has Stalled styles with bg, text, and hex', () => {
+    expect(STATUS_STYLES.Stalled.bg).toBeTruthy()
+    expect(STATUS_STYLES.Stalled.text).toBeTruthy()
+    expect(STATUS_STYLES.Stalled.hex).toBe('#C97A5A')
+  })
+
+  it('has Passed styles with bg, text, and hex', () => {
+    expect(STATUS_STYLES.Passed.bg).toBeTruthy()
+    expect(STATUS_STYLES.Passed.text).toBeTruthy()
+    expect(STATUS_STYLES.Passed.hex).toBe('#7FC29B')
+  })
+
+  it('has Failed styles with bg, text, and hex', () => {
+    expect(STATUS_STYLES.Failed.bg).toBeTruthy()
+    expect(STATUS_STYLES.Failed.text).toBeTruthy()
+    expect(STATUS_STYLES.Failed.hex).toBe('#C97A5A')
+  })
+})
+
+describe('IDEOLOGY_GRADIENT', () => {
+  it('is a left-to-right gradient using party hex values', () => {
+    expect(IDEOLOGY_GRADIENT).toBe(
+      `linear-gradient(to right, ${PARTY_STYLES.Democrat.hex}, ${PARTY_STYLES.Independent.hex}, ${PARTY_STYLES.Republican.hex})`
+    )
+  })
 })
 
 describe('getPartyStyle', () => {

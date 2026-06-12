@@ -1,6 +1,6 @@
 
 
-import { getPartyStyle } from '@/lib/ui'
+import { getPartyStyle, IDEOLOGY_GRADIENT } from '@/lib/ui'
 import { getIdeologyLabel } from '@/lib/ideology'
 
 interface IdeologySpectrumProps {
@@ -41,7 +41,7 @@ export default function IdeologySpectrum({
       </div>
 
       <div className="relative h-3 rounded-full overflow-hidden"
-           style={{ background: 'linear-gradient(to right, #7EA5C8, #A8A896, #C89B9B)' }}>
+           style={{ background: IDEOLOGY_GRADIENT }}>
 
         {/* Chamber median marker */}
         {chamberMedian !== null && chamberMedian !== undefined && (

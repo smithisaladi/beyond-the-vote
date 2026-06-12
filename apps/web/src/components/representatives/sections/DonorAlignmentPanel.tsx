@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { DonorAlignment } from '@/lib/types/politicians'
+import { STATUS_STYLES } from '@/lib/ui'
 
 export function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment[] }) {
   const [open, setOpen] = useState(false)
@@ -34,7 +35,7 @@ export function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment
         <div className="px-3 py-2 bg-surface space-y-2.5">
           {alignments.map((a, i) => (
             <div key={i} className="flex items-start gap-2">
-              <span className={`mt-0.5 flex-shrink-0 w-1.5 h-1.5 rounded-full ${a.voteAligns ? 'bg-[#7FC29B]' : 'bg-[#C97A5A]'}`} />
+              <span className="mt-0.5 flex-shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: a.voteAligns ? STATUS_STYLES.Passed.hex : STATUS_STYLES.Failed.hex }} />
               <div className="min-w-0">
                 <p className="text-xs text-fg/70 leading-relaxed">
                   <span className="font-medium text-fg">{a.donorName}</span>

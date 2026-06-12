@@ -6,13 +6,16 @@ export const PARTY_STYLES: Record<Party, { bg: string; text: string; hex: string
   Independent: { bg: 'bg-[#8A8A7A]/[0.14] border border-[#8A8A7A]/25', text: 'text-[#A8A896]', hex: '#A8A896', label: 'Independent' },
 }
 
-export const STATUS_STYLES: Record<BillStatus, { bg: string; text: string }> = {
-  Active:    { bg: 'bg-[#7B5E8A]/[0.14] border border-[#7B5E8A]/25', text: 'text-[#9B7EAA]' },
-  Committee: { bg: 'bg-[#8A8A7A]/[0.14] border border-[#8A8A7A]/25', text: 'text-[#A8A896]' },
-  Stalled:   { bg: 'bg-[#B85C38]/[0.14] border border-[#B85C38]/25', text: 'text-[#C97A5A]' },
-  Passed:    { bg: 'bg-[#68B085]/[0.14] border border-[#68B085]/25', text: 'text-[#7FC29B]' },
-  Failed:    { bg: 'bg-[#B85C38]/[0.14] border border-[#B85C38]/25', text: 'text-[#C97A5A]' },
+export const STATUS_STYLES: Record<BillStatus, { bg: string; text: string; hex: string }> = {
+  Active:    { bg: 'bg-[#7B5E8A]/[0.14] border border-[#7B5E8A]/25', text: 'text-[#9B7EAA]', hex: '#9B7EAA' },
+  Committee: { bg: 'bg-[#8A8A7A]/[0.14] border border-[#8A8A7A]/25', text: 'text-[#A8A896]', hex: '#A8A896' },
+  Stalled:   { bg: 'bg-[#B85C38]/[0.14] border border-[#B85C38]/25', text: 'text-[#C97A5A]', hex: '#C97A5A' },
+  Passed:    { bg: 'bg-[#68B085]/[0.14] border border-[#68B085]/25', text: 'text-[#7FC29B]', hex: '#7FC29B' },
+  Failed:    { bg: 'bg-[#B85C38]/[0.14] border border-[#B85C38]/25', text: 'text-[#C97A5A]', hex: '#C97A5A' },
 }
+
+/** Left-to-right ideology spectrum gradient (liberal → independent → conservative). */
+export const IDEOLOGY_GRADIENT = `linear-gradient(to right, ${PARTY_STYLES.Democrat.hex}, ${PARTY_STYLES.Independent.hex}, ${PARTY_STYLES.Republican.hex})`
 
 /** Standard card shell — dark surface, hairline border, no shadow. No padding; compose with your own. */
 export const CARD_CLASS = 'bg-surface rounded-xl border border-edge'

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { CheckCircle, XCircle, MinusCircle } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { parseLocalDate } from '@/lib/format'
+import { STATUS_STYLES } from '@/lib/ui'
 
 interface BillVote {
   billId:    string
@@ -107,8 +108,8 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
             </span>
 
             <span className={`flex items-center gap-1 font-medium whitespace-nowrap ${
-              v.position === 'Yea'       ? 'text-[#7FC29B]' :
-              v.position === 'Nay'       ? 'text-[#C97A5A]' :
+              v.position === 'Yea'       ? STATUS_STYLES.Passed.text :
+              v.position === 'Nay'       ? STATUS_STYLES.Failed.text :
               'text-fg/45'
             }`}>
               {v.position === 'Yea'  ? <CheckCircle size={13} strokeWidth={1.8} /> :
@@ -119,7 +120,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
 
             <span title={v.withParty ? 'Voted with party' : 'Voted against party'}>
               {v.withParty
-                ? <CheckCircle size={14} strokeWidth={1.8} className="text-[#7FC29B]" />
+                ? <CheckCircle size={14} strokeWidth={1.8} className={STATUS_STYLES.Passed.text} />
                 : <XCircle    size={14} strokeWidth={1.8} className="text-fg/38" />}
             </span>
           </div>

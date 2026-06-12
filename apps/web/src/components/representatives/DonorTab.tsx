@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import type { FecTermKey } from '@/lib/fec'
 import { formatTotal, toTitleCase } from '@/lib/format'
+import { STATUS_STYLES } from '@/lib/ui'
 
 interface Donor {
   rank?: number
@@ -381,13 +382,13 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             {(bd.superpacIeFor ?? 0) > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-fg/60">Super PAC Support</span>
-                <span className="text-[#7FC29B] tabular-nums font-mono">{formatTotal(bd.superpacIeFor!)}</span>
+                <span className={`${STATUS_STYLES.Passed.text} tabular-nums font-mono`}>{formatTotal(bd.superpacIeFor!)}</span>
               </div>
             )}
             {(bd.superpacIeAgainst ?? 0) > 0 && (
               <div className="flex justify-between text-sm">
                 <span className="text-fg/60">Super PAC Opposition</span>
-                <span className="text-[#C97A5A] tabular-nums font-mono">{formatTotal(bd.superpacIeAgainst!)}</span>
+                <span className={`${STATUS_STYLES.Failed.text} tabular-nums font-mono`}>{formatTotal(bd.superpacIeAgainst!)}</span>
               </div>
             )}
           </div>
