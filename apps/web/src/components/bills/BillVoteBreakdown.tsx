@@ -43,7 +43,7 @@ function VoteBar({ yeas, nays, partyBreakdown }: { yeas: number; nays: number; p
 
   if (!partyBreakdown) {
     return (
-      <div className="w-full h-4 rounded-full overflow-hidden flex">
+      <div className="w-full h-4 rounded-full overflow-hidden flex bg-fg/[0.08]">
         <div className="h-full transition-all" style={{ width: `${yeaPct}%`, background: STATUS_STYLES.Passed.hex }} />
         <div className="h-full transition-all flex-1" style={{ background: STATUS_STYLES.Failed.hex }} />
       </div>
@@ -61,7 +61,7 @@ function VoteBar({ yeas, nays, partyBreakdown }: { yeas: number; nays: number; p
   ]
 
   return (
-    <div className="w-full h-4 rounded-full overflow-hidden flex" title={`${yeas} Yea – ${nays} Nay`}>
+    <div className="w-full h-4 rounded-full overflow-hidden flex bg-fg/[0.08]" title={`${yeas} Yea – ${nays} Nay`}>
       {segments.map(s => s.count > 0 && (
         <div
           key={s.label}
