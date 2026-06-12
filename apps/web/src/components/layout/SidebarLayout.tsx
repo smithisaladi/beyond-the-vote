@@ -18,7 +18,7 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
   }, [collapsed, hydrated])
 
   return (
-    <div className="flex min-h-screen bg-[#F5F0E8]">
+    <div className="flex min-h-screen bg-bg">
       <AppSidebar collapsed={collapsed} onToggle={() => setCollapsed(c => !c)} />
       <div
         className="flex-1 min-h-screen transition-[margin-left] duration-200 ease-in-out"
