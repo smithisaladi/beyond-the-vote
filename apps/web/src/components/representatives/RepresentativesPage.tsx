@@ -82,10 +82,10 @@ function RepresentativesContent() {
           <div className="max-w-4xl mx-auto mb-10">
             {/* Page heading */}
             <div className="mb-5 text-center">
-              <h1 className="text-2xl sm:text-3xl text-fg mb-1.5 tracking-tight font-semibold">
+              <h1 className="text-xl sm:text-2xl text-fg mb-1.5 tracking-tight font-semibold">
                 Find a Politician
               </h1>
-              <p className="text-sm text-fg/50">
+              <p className="text-[13px] text-fg/50">
                 {searchMode === 'name'
                   ? 'Search any current U.S. Senator or House Representative.'
                   : 'Enter your home address to find your federal representatives.'
@@ -99,25 +99,25 @@ function RepresentativesContent() {
               <div className="flex border-b border-edge-soft">
                 <button
                   onClick={() => setSearchMode('name')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium transition-colors relative ${
                     searchMode === 'name'
                       ? 'text-fg after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:bg-accent-deep after:rounded-t-full'
                       : 'text-fg/40 hover:text-fg/65'
                   }`}
                 >
-                  <User size={15} strokeWidth={1.8} />
+                  <User size={14} strokeWidth={1.8} />
                   Name
                 </button>
                 <div className="w-px bg-edge-soft" />
                 <button
                   onClick={() => setSearchMode('address')}
-                  className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
+                  className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-[13px] font-medium transition-colors relative ${
                     searchMode === 'address'
                       ? 'text-fg after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:bg-accent-deep after:rounded-t-full'
                       : 'text-fg/40 hover:text-fg/65'
                   }`}
                 >
-                  <MapPin size={15} strokeWidth={1.8} />
+                  <MapPin size={14} strokeWidth={1.8} />
                   Address
                 </button>
               </div>
@@ -126,8 +126,8 @@ function RepresentativesContent() {
               {searchMode === 'address' ? (
                 <div className="relative" ref={containerRef}>
                   <form onSubmit={handleSubmit}>
-                    <div className="flex items-center px-5 py-4 gap-3">
-                      <Search size={17} strokeWidth={1.8} className="text-fg/25 flex-shrink-0" />
+                    <div className="flex items-center px-4 py-3 gap-3">
+                      <Search size={16} strokeWidth={1.8} className="text-fg/25 flex-shrink-0" />
                       <input
                         type="text"
                         value={inputDisplayValue}
@@ -135,7 +135,7 @@ function RepresentativesContent() {
                         onFocus={() => { setInputFocused(true); suggestions.length > 0 && setShowSuggestions(true) }}
                         onBlur={() => { setInputFocused(false); setTimeout(() => setShowSuggestions(false), 200) }}
                         placeholder="Enter your home address"
-                        className="flex-1 bg-transparent outline-none text-[15px] text-fg placeholder:text-fg/35"
+                        className="flex-1 bg-transparent outline-none text-[13px] text-fg placeholder:text-fg/35"
                         autoComplete="off"
                       />
                     </div>
@@ -149,7 +149,7 @@ function RepresentativesContent() {
                           key={i}
                           type="button"
                           onClick={() => handleSelectSuggestion(s)}
-                          className="w-full text-left px-5 py-3 text-sm text-fg/80 hover:bg-fg/[0.04] hover:text-fg transition-colors border-b border-edge-soft last:border-0"
+                          className="w-full text-left px-4 py-2.5 text-[13px] text-fg/80 hover:bg-fg/[0.04] hover:text-fg transition-colors border-b border-edge-soft last:border-0"
                         >
                           {s}
                         </button>
@@ -159,14 +159,14 @@ function RepresentativesContent() {
                 </div>
               ) : (
                 <div className="relative">
-                  <div className="flex items-center px-5 py-4 gap-3">
-                    <Search size={17} strokeWidth={1.8} className="text-fg/25 flex-shrink-0" />
+                  <div className="flex items-center px-4 py-3 gap-3">
+                    <Search size={16} strokeWidth={1.8} className="text-fg/25 flex-shrink-0" />
                     <input
                       type="text"
                       value={nameQuery}
                       onChange={(e) => setNameQuery(e.target.value)}
                       placeholder="Search by name"
-                      className="flex-1 bg-transparent outline-none text-[15px] text-fg placeholder:text-fg/35"
+                      className="flex-1 bg-transparent outline-none text-[13px] text-fg placeholder:text-fg/35"
                       autoComplete="off"
                       autoFocus
                     />
@@ -190,11 +190,11 @@ function RepresentativesContent() {
               )}
 
               {displayLoading && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[1, 2, 3].map(i => (
-                    <Card key={i} padding="md" className="animate-pulse">
-                      <div className="flex flex-col items-center gap-3">
-                        <Skeleton className="w-20 h-24 rounded-full" />
+                    <Card key={i} padding="sm" className="animate-pulse">
+                      <div className="flex flex-col items-center gap-2.5">
+                        <Skeleton className="w-16 h-20 rounded-full" />
                         <div className="space-y-1.5 w-full text-center">
                           <Skeleton className="h-4 w-3/4 mx-auto" />
                           <Skeleton className="h-3 w-1/2 mx-auto" />
@@ -222,7 +222,7 @@ function RepresentativesContent() {
               )}
 
               {!displayLoading && !displayError && displayRepresentatives.length > 0 && (
-                <StaggerGrid className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <StaggerGrid className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {displayRepresentatives.map((rep: any) => (
                     <StaggerItem key={rep.id}>
                       <RepresentativeCard

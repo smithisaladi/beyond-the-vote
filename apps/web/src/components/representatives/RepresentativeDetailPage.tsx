@@ -69,10 +69,10 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
               message={error === 'Politician not found' ? 'Representative not found.' : 'Failed to load representative data.'}
             />
           ) : !politician ? null : (
-            <div className="max-w-5xl mx-auto space-y-6">
+            <div className="max-w-5xl mx-auto space-y-5">
               <Link
                 to="/representatives"
-                className="flex items-center gap-2 text-sm text-fg/50 hover:text-fg transition-colors"
+                className="flex items-center gap-2 text-[13px] text-fg/50 hover:text-fg transition-colors"
               >
                 <ArrowLeft size={16} strokeWidth={1.8} />
                 Back to representatives
@@ -87,7 +87,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
                 onPhotoError={() => setPhotoError(true)}
               />
 
-              <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6 items-start">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4 items-start">
                 <Card padding="none" className="overflow-hidden">
                   <div className="flex border-b border-edge" role="tablist">
                     {tabs.map(tab => (
@@ -96,7 +96,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
                         role="tab"
                         aria-selected={activeTab === tab.key}
                         onClick={() => setActiveTab(tab.key)}
-                        className={`relative px-5 py-4 text-sm font-medium transition-colors ${
+                        className={`relative px-4 py-3 text-[13px] font-medium transition-colors ${
                           activeTab === tab.key
                             ? 'text-fg'
                             : 'text-fg/50 hover:text-fg/70'

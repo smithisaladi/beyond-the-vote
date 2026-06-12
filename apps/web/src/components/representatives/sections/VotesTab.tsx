@@ -57,7 +57,7 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
       )}
 
       {filteredVotes.length === 0 ? (
-        <p className="px-6 py-8 text-sm text-fg/40 text-center">
+        <p className="px-6 py-8 text-[13px] text-fg/40 text-center">
           {voteFilter === 'final' ? 'No final passage votes found.' : 'No recent votes found.'}
         </p>
       ) : (
@@ -69,19 +69,19 @@ export function VotesTab({ votes, politicianId }: VotesTabProps) {
               : v.billId ? `${question}: ${formatBillId(v.billId)}` : v.question ?? question
             const vote = v.position ?? v.vote
             return (
-              <div key={v.id} className="px-6 py-4">
+              <div key={v.id} className="px-5 py-3">
                 <div className="flex items-center justify-between">
                   <div>
                     {v.billId ? (
                       <Link
                         to="/bills/$billId"
                         params={{ billId: v.billId }}
-                        className="text-sm text-fg hover:text-accent hover:underline transition-colors"
+                        className="text-[13px] text-fg hover:text-accent hover:underline transition-colors"
                       >
                         {displayTitle}
                       </Link>
                     ) : (
-                      <p className="text-sm text-fg">{displayTitle}</p>
+                      <p className="text-[13px] text-fg">{displayTitle}</p>
                     )}
                     <p className="text-xs text-fg/40 mt-0.5">{v.date}</p>
                   </div>

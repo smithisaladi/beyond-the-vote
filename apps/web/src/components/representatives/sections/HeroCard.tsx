@@ -27,21 +27,21 @@ export function HeroCard({
   onPhotoError,
 }: HeroCardProps) {
   return (
-    <Card padding="none" className="p-6 sm:p-8">
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+    <Card>
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
         {politician.photo && !photoError
-          ? <img src={politician.photo} alt={politician.name} width={96} height={96} className="rounded-full object-cover flex-shrink-0" onError={onPhotoError} />
+          ? <img src={politician.photo} alt={politician.name} width={80} height={80} className="w-20 h-20 rounded-full object-cover flex-shrink-0" onError={onPhotoError} />
           : <Initials name={politician.name} />
         }
 
         <div className="flex-1 text-center sm:text-left">
-          <h1 className="text-2xl sm:text-3xl text-fg mb-1 leading-[1.15] tracking-tight font-semibold">
+          <h1 className="text-xl sm:text-2xl text-fg mb-0.5 leading-[1.15] tracking-tight font-semibold">
             {politician.name}
           </h1>
-          <p className="text-base text-fg/60 mb-3">{politician.title}</p>
+          <p className="text-[13px] text-fg/60 mb-3">{politician.title}</p>
 
-          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start mb-4">
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${PARTY_STYLES[politician.party].bg} ${PARTY_STYLES[politician.party].text}`}>
+          <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-start mb-3">
+            <span className={`text-[10px] font-medium px-1.5 py-px rounded-full ${PARTY_STYLES[politician.party].bg} ${PARTY_STYLES[politician.party].text}`}>
               {politician.party}
             </span>
             <span className="text-xs text-fg/40">·</span>
@@ -60,7 +60,7 @@ export function HeroCard({
             )}
           </div>
 
-          <div className="flex items-center gap-4 flex-wrap justify-center sm:justify-start">
+          <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
             {politician.website && (
               <a
                 href={politician.website}
@@ -93,7 +93,7 @@ export function HeroCard({
         <button
           onClick={onFollow}
           disabled={followLoading}
-          className={`flex-shrink-0 px-6 py-2.5 rounded-lg text-sm border transition-colors disabled:opacity-60 ${
+          className={`flex-shrink-0 px-5 py-2 rounded-lg text-[13px] border transition-colors disabled:opacity-60 ${
             following
               ? 'bg-accent-deep border-accent-deep text-white'
               : 'bg-transparent border-accent text-accent hover:bg-accent-deep hover:border-accent-deep hover:text-white'

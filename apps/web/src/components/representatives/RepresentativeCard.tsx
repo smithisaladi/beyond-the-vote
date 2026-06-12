@@ -30,8 +30,8 @@ function Initials({ name }: { name: string }) {
     ? `${parts[0][0]}${parts[parts.length - 1][0]}`
     : parts[0][0]
   return (
-    <div className="w-20 h-24 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0">
-      <span className="text-lg text-fg/50 font-medium tracking-tight">
+    <div className="w-16 h-20 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0">
+      <span className="text-base text-fg/50 font-medium tracking-tight">
         {initials.toUpperCase()}
       </span>
     </div>
@@ -55,30 +55,30 @@ export function RepresentativeCard({
 
   return (
     <Link to="/representatives/$id" params={{ id }} className="block group">
-      <Card hoverable padding="md" className="flex flex-col items-center text-center gap-3 h-full">
+      <Card hoverable padding="sm" className="flex flex-col items-center text-center gap-2.5 h-full">
         {photo && !photoError
-          ? <img src={photo} alt={name} width={80} height={96} className="w-20 h-24 rounded-full object-cover flex-shrink-0" onError={() => setPhotoError(true)} />
+          ? <img src={photo} alt={name} width={64} height={80} className="w-16 h-20 rounded-full object-cover flex-shrink-0" onError={() => setPhotoError(true)} />
           : <Initials name={name} />
         }
 
-        <div className="flex flex-col items-center gap-1">
-          <h3 className="text-base text-fg leading-snug group-hover:text-accent transition-colors tracking-tight">
+        <div className="flex flex-col items-center gap-0.5">
+          <h3 className="text-sm font-semibold text-fg leading-snug group-hover:text-accent transition-colors tracking-tight">
             {name}
           </h3>
           <p className="text-xs text-fg/60">{title}</p>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap justify-center">
-          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
+        <div className="flex items-center gap-1 flex-wrap justify-center">
+          <span className={`text-[10px] font-medium px-1.5 py-px rounded-full ${badge.bg} ${badge.text}`}>
             {badge.label}
           </span>
-          <span className="text-[11px] text-fg/50">
+          <span className="text-[10px] text-fg/50">
             {state}{district ? ` · ${district}` : ''}
           </span>
           {since && (
             <>
-              <span className="text-[11px] text-fg/25">·</span>
-              <span className="text-[11px] text-fg/40">Since {since}</span>
+              <span className="text-[10px] text-fg/25">·</span>
+              <span className="text-[10px] text-fg/40">Since {since}</span>
             </>
           )}
         </div>

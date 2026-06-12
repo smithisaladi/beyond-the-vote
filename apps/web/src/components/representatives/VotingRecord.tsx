@@ -45,7 +45,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
   return (
     <div className="space-y-4">
       {/* Summary bar */}
-      <div className="flex items-center gap-4 text-sm">
+      <div className="flex items-center gap-4 text-[13px]">
         <span className="text-fg/55">
           Voted with party <span className="text-fg font-semibold font-mono">{withPartyPercent}%</span>
           {' '}of the time (<span className="font-mono">{withPartyCount}/{votes.length}</span> votes)
@@ -84,7 +84,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
         {filtered.map((v, i) => (
           <div
             key={`${v.billId}-${i}`}
-            className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-start py-3 text-sm"
+            className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 items-start py-2.5 text-[13px]"
           >
             <div className="space-y-0.5 min-w-0">
               <Link

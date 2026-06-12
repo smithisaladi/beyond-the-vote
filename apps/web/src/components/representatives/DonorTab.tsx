@@ -164,7 +164,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
   if (!hasDonorData && !bd) {
     return (
       <div className="px-6 py-12 text-center">
-        <p className="text-sm text-fg/45">Donor data unavailable.</p>
+        <p className="text-[13px] text-fg/45">Donor data unavailable.</p>
         {fecUrl && (
           <a href={fecUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:text-accent/80 mt-2 inline-block">
             View on FEC →
@@ -190,7 +190,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
   const visibleContributors = topContributors.slice(0, 5)
 
   return (
-    <div className="px-6 py-6 sm:px-8 space-y-7">
+    <div className="px-5 py-5 sm:px-6 space-y-6">
 
       {/* ── Funding Breakdown (rich data from OpenSecrets-style source) ── */}
       {bd && bd.total > 0 && (
@@ -200,7 +200,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
           </SectionLabel>
 
           {/* Hero total */}
-          <p className="text-3xl text-fg tabular-nums leading-none mb-1 font-mono font-semibold">
+          <p className="text-2xl text-fg tabular-nums leading-none mb-1 font-mono font-semibold">
             {formatTotal(bd.total)}
           </p>
           <p className="text-fg/35 uppercase tracking-[0.10em] mb-5" style={{ fontSize: '0.5625rem' }}>
@@ -254,7 +254,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             <div>
               <div className="flex items-baseline justify-between mb-2">
                 <p className="text-xs text-fg/50 uppercase tracking-wide">In-state</p>
-                <p className="text-sm text-accent tabular-nums font-medium font-mono">
+                <p className="text-[13px] text-accent tabular-nums font-medium font-mono">
                   {Math.round(bd.inStatePct)}%
                 </p>
               </div>
@@ -271,7 +271,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             <div>
               <div className="flex items-baseline justify-between mb-2">
                 <p className="text-xs text-fg/50 uppercase tracking-wide">Out-of-state</p>
-                <p className="text-sm text-fg/70 tabular-nums font-medium font-mono">
+                <p className="text-[13px] text-fg/70 tabular-nums font-medium font-mono">
                   {Math.round(bd.outOfStatePct)}%
                 </p>
               </div>
@@ -300,20 +300,20 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
           <div className="divide-y divide-edge-soft">
             {visibleContributors.map(c => {
               const content = (
-                <div className="flex items-center gap-3 py-3">
+                <div className="flex items-center gap-2.5 py-2.5">
                   <span
                     className="w-5 h-5 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0 text-[10px] text-fg/45 tabular-nums font-medium"
                   >
                     {c.rank}
                   </span>
                   <span
-                    className={`text-sm text-fg leading-snug truncate flex-1 ${
+                    className={`text-[13px] text-fg leading-snug truncate flex-1 ${
                       c.cmteId ? 'group-hover:text-accent transition-colors' : ''
                     }`}
                   >
                     {toTitleCase(c.orgName)}
                   </span>
-                  <span className="flex-shrink-0 text-sm font-medium text-fg tabular-nums font-mono">
+                  <span className="flex-shrink-0 text-[13px] font-medium text-fg tabular-nums font-mono">
                     {c.total}
                   </span>
                 </div>
@@ -344,14 +344,14 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
               const label = donorDisplayName(d)
               const amt = donorDisplayAmount(d)
               const content = (
-                <div className="flex items-center gap-3 py-3">
+                <div className="flex items-center gap-2.5 py-2.5">
                   <span className="w-5 h-5 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0 text-[10px] text-fg/45 tabular-nums font-medium">
                     {i + 1}
                   </span>
-                  <span className="text-sm text-fg leading-snug truncate flex-1 group-hover:text-accent transition-colors">
+                  <span className="text-[13px] text-fg leading-snug truncate flex-1 group-hover:text-accent transition-colors">
                     {label}
                   </span>
-                  <span className="flex-shrink-0 text-sm font-medium text-fg tabular-nums font-mono">
+                  <span className="flex-shrink-0 text-[13px] font-medium text-fg tabular-nums font-mono">
                     {amt}
                   </span>
                 </div>
@@ -372,21 +372,21 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
       {!bd?.total && bd?.pacDirectTotal != null && (
         <div className="border-t border-edge pt-6">
           <SectionLabel>Funding Summary</SectionLabel>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {bd.pacDirectTotal > 0 && (
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-[13px]">
                 <span className="text-fg/60">PAC Direct</span>
                 <span className="text-fg tabular-nums font-mono">{formatTotal(bd.pacDirectTotal)}</span>
               </div>
             )}
             {(bd.superpacIeFor ?? 0) > 0 && (
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-[13px]">
                 <span className="text-fg/60">Super PAC Support</span>
                 <span className={`${STATUS_STYLES.Passed.text} tabular-nums font-mono`}>{formatTotal(bd.superpacIeFor!)}</span>
               </div>
             )}
             {(bd.superpacIeAgainst ?? 0) > 0 && (
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-[13px]">
                 <span className="text-fg/60">Super PAC Opposition</span>
                 <span className={`${STATUS_STYLES.Failed.text} tabular-nums font-mono`}>{formatTotal(bd.superpacIeAgainst!)}</span>
               </div>

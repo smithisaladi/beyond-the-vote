@@ -12,17 +12,17 @@ interface ProfileSidebarProps {
 export function ProfileSidebar({ stats, nextElectionYear, committees }: ProfileSidebarProps) {
   return (
     <div className="space-y-4">
-      <Card className="flex flex-col gap-6">
+      <Card className="flex flex-col gap-5">
         <div>
-          <p className="text-xs text-fg/50 uppercase tracking-wide mb-1">Years in Office</p>
-          <p className="text-4xl font-medium text-fg font-mono">
+          <p className="text-[10px] text-fg/40 uppercase tracking-[0.07em] mb-1">Years in Office</p>
+          <p className="text-3xl font-medium text-fg font-mono tabular-nums">
             {stats.yearsInOffice}
           </p>
         </div>
 
         {stats.ideologyScore !== null && (
           <div>
-            <p className="text-xs text-fg/50 uppercase tracking-wide mb-3 flex items-center gap-1">
+            <p className="text-[10px] text-fg/40 uppercase tracking-[0.07em] mb-3 flex items-center gap-1">
               Ideology Score
               <InfoTooltip
                 label="About the ideology score"
@@ -52,8 +52,8 @@ export function ProfileSidebar({ stats, nextElectionYear, committees }: ProfileS
 
         {nextElectionYear && (
           <div>
-            <p className="text-xs text-fg/50 uppercase tracking-wide mb-1">Next Election</p>
-            <p className="text-3xl font-medium text-fg font-mono">
+            <p className="text-[10px] text-fg/40 uppercase tracking-[0.07em] mb-1">Next Election</p>
+            <p className="text-2xl font-medium text-fg font-mono tabular-nums">
               {nextElectionYear}
             </p>
           </div>
@@ -62,7 +62,7 @@ export function ProfileSidebar({ stats, nextElectionYear, committees }: ProfileS
 
       {committees.length > 0 && (
         <Card>
-          <p className="text-xs text-fg/50 uppercase tracking-wide mb-3">Committees</p>
+          <p className="text-[10px] text-fg/40 uppercase tracking-[0.07em] mb-3">Committees</p>
           <ul className="space-y-2">
             {committees.map((c, i) => (
               <li key={i} className="flex flex-col gap-0.5">
@@ -71,12 +71,12 @@ export function ProfileSidebar({ stats, nextElectionYear, committees }: ProfileS
                     href={c.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-fg hover:text-accent transition-colors leading-snug"
+                    className="text-[13px] text-fg hover:text-accent transition-colors leading-snug"
                   >
                     {c.name}
                   </a>
                 ) : (
-                  <span className="text-sm text-fg leading-snug">{c.name}</span>
+                  <span className="text-[13px] text-fg leading-snug">{c.name}</span>
                 )}
                 {c.title && (
                   <span className="text-xs text-fg/40">{c.title}</span>
