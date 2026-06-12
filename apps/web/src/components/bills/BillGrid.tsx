@@ -1,6 +1,11 @@
 
-
 import { Link } from '@tanstack/react-router'
+import { motion } from 'motion/react'
+import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
+import { slugToTopic } from '@/lib/topics'
+import { Card } from '@/components/ui/Card'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { StaggerGrid, StaggerItem, TAP_SPRING } from '@/components/ui/motion'
 
 interface Bill {
   id: string
@@ -13,12 +18,6 @@ interface Bill {
   lastAction: string | null
   summary: string | null
 }
-import { motion } from 'motion/react'
-import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
-import { slugToTopic } from '@/lib/topics'
-import { Card } from '@/components/ui/Card'
-import { Skeleton } from '@/components/ui/Skeleton'
-import { StaggerGrid, StaggerItem, TAP_SPRING } from '@/components/ui/motion'
 
 function BookmarkIcon({ filled }: { filled: boolean }) {
   return (

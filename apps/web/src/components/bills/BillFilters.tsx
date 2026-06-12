@@ -15,7 +15,6 @@ interface BillFiltersState {
 import type { Topic } from '@/lib/topics'
 import type { BillStatus as Status } from '@/lib/types'
 import { ALL_TOPICS } from '@/lib/topics'
-import { Card } from '@/components/ui/Card'
 
 type DateFilter = 'all' | 'month' | 'year'
 type SortOption = 'newest' | 'oldest'
@@ -101,11 +100,11 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           </svg>
         </button>
         {openDropdown === 'status' && (
-          <Card padding="sm" className="absolute top-full left-0 mt-1.5 min-w-[140px] z-20 space-y-1.5">
+          <div className="absolute top-full left-0 mt-1.5 min-w-[140px] z-20 bg-raised rounded-lg border border-edge p-3 space-y-1.5">
             {ALL_STATUSES.map(s => (
               <FilterCheckbox key={s} label={s} checked={selectedStatuses.has(s)} onChange={() => toggleStatus(s)} />
             ))}
-          </Card>
+          </div>
         )}
       </div>
 
@@ -126,7 +125,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           </svg>
         </button>
         {openDropdown === 'date' && (
-          <Card padding="sm" className="absolute top-full left-0 mt-1.5 min-w-[150px] z-20 space-y-2">
+          <div className="absolute top-full left-0 mt-1.5 min-w-[150px] z-20 bg-raised rounded-lg border border-edge p-3 space-y-2">
             {([
               { key: 'all', label: 'All time' },
               { key: 'month', label: 'Past month' },
@@ -149,7 +148,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                 <span className={`text-sm ${dateFilter === opt.key ? 'text-fg' : 'text-fg/60'}`}>{opt.label}</span>
               </div>
             ))}
-          </Card>
+          </div>
         )}
       </div>
 
@@ -170,11 +169,11 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           </svg>
         </button>
         {openDropdown === 'topics' && (
-          <Card padding="sm" className="absolute top-full left-0 mt-1.5 min-w-[200px] max-h-[280px] overflow-y-auto z-20 space-y-1.5">
+          <div className="absolute top-full left-0 mt-1.5 min-w-[200px] max-h-[280px] overflow-y-auto z-20 bg-raised rounded-lg border border-edge p-3 space-y-1.5">
             {ALL_TOPICS.map(t => (
               <FilterCheckbox key={t} label={t} checked={selectedTopics.has(t)} onChange={() => toggleTopic(t)} />
             ))}
-          </Card>
+          </div>
         )}
       </div>
 
@@ -196,7 +195,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
             </svg>
           </button>
           {openDropdown === 'sort' && (
-            <Card padding="sm" className="absolute top-full left-0 mt-1.5 min-w-[140px] z-20 space-y-2">
+            <div className="absolute top-full left-0 mt-1.5 min-w-[140px] z-20 bg-raised rounded-lg border border-edge p-3 space-y-2">
               {([
                 { key: 'newest', label: 'Latest first' },
                 { key: 'oldest', label: 'Oldest first' },
@@ -218,7 +217,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                   <span className={`text-sm ${sort === opt.key ? 'text-fg' : 'text-fg/60'}`}>{opt.label}</span>
                 </div>
               ))}
-            </Card>
+            </div>
           )}
         </div>
       )}
