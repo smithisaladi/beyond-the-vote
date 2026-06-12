@@ -11,7 +11,7 @@ describe('PARTY_STYLES', () => {
     const d = PARTY_STYLES.Democrat
     expect(d.bg).toBeTruthy()
     expect(d.text).toBeTruthy()
-    expect(d.hex).toBe('#5E85A8')
+    expect(d.hex).toBe('#7EA5C8')
     expect(d.label).toBe('Democrat')
   })
 
@@ -19,7 +19,7 @@ describe('PARTY_STYLES', () => {
     const r = PARTY_STYLES.Republican
     expect(r.bg).toBeTruthy()
     expect(r.text).toBeTruthy()
-    expect(r.hex).toBe('#A87B7B')
+    expect(r.hex).toBe('#C89B9B')
     expect(r.label).toBe('Republican')
   })
 
@@ -27,7 +27,7 @@ describe('PARTY_STYLES', () => {
     const i = PARTY_STYLES.Independent
     expect(i.bg).toBeTruthy()
     expect(i.text).toBeTruthy()
-    expect(i.hex).toBe('#8A8A7A')
+    expect(i.hex).toBe('#A8A896')
     expect(i.label).toBe('Independent')
   })
 })
