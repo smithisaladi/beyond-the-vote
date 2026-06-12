@@ -13,7 +13,7 @@ export function DonorAlignmentPanel({ alignments }: { alignments: DonorAlignment
     <div className="mt-2 border border-edge-soft rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center justify-between px-3 py-2 text-left bg-raised hover:bg-raised/80 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 text-left bg-surface hover:bg-raised transition-colors"
       >
         <span className="text-xs text-fg/50 font-medium flex items-center gap-1.5">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60">
