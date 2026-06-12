@@ -46,9 +46,9 @@ function positionColor(position: string) {
 
 function VoteBreakdownSkeleton() {
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
+    <div className="max-w-4xl mx-auto space-y-5 animate-pulse">
       <SkeletonBox className="h-5 w-28" />
-      <Card padding="none" className="p-6 sm:p-8 space-y-4">
+      <Card padding="none" className="p-5 sm:p-6 space-y-4">
         <div className="flex gap-3">
           <SkeletonBox className="h-4 w-20" />
           <SkeletonBox className="h-5 w-16 rounded-full" />
@@ -58,7 +58,7 @@ function VoteBreakdownSkeleton() {
         <SkeletonBox className="h-4 w-1/2" />
         <SkeletonBox className="h-3 rounded-full w-full" />
       </Card>
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
         <Card className="h-72" />
         <Card className="h-48" />
       </div>
@@ -78,7 +78,7 @@ function MemberRow({ m }: { m: MemberPosition }) {
         {m.name}
       </Link>
       <div className="flex items-center gap-2 shrink-0">
-        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ps.bg} ${ps.text}`}>{m.state}</span>
+        <span className={`text-[10px] px-1.5 py-px rounded-full ${ps.bg} ${ps.text}`}>{m.state}</span>
         <span className={`text-xs font-medium w-16 text-right ${positionColor(m.position)}`}>{m.position}</span>
       </div>
     </div>

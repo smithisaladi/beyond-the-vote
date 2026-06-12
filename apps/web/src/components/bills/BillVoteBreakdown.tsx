@@ -152,7 +152,7 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
                     >
                       <span className="text-fg/70">{m.name}</span>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${ps.bg} ${ps.text}`}>
+                        <span className={`text-[10px] px-1.5 py-px rounded-full ${ps.bg} ${ps.text}`}>
                           {m.state}
                         </span>
                         <span className={

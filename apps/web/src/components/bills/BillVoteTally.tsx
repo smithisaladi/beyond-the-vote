@@ -57,7 +57,7 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
           )}
         </div>
         {vote.result && badge && (
-          <span className={`shrink-0 text-[11px] font-medium px-2 py-0.5 rounded-full ${badge}`}>
+          <span className={`shrink-0 text-[10px] font-medium px-1.5 py-px rounded-full ${badge}`}>
             {vote.result}
           </span>
         )}

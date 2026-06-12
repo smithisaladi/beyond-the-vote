@@ -85,9 +85,9 @@ import { Skeleton } from '@/components/ui/Skeleton'
 
 function DetailSkeleton() {
   return (
-    <div className="max-w-4xl mx-auto space-y-6 animate-pulse">
+    <div className="max-w-4xl mx-auto space-y-5 animate-pulse">
       <Skeleton className="h-5 w-28" />
-      <Card padding="none" className="p-6 sm:p-8 space-y-4">
+      <Card padding="none" className="p-5 sm:p-6 space-y-4">
         <div className="flex gap-3">
           <Skeleton className="h-5 w-20 rounded-full" />
           <Skeleton className="h-5 w-16 rounded-full" />
@@ -96,8 +96,8 @@ function DetailSkeleton() {
         <Skeleton className="h-4 w-1/4" />
       </Card>
       <Card className="h-32" />
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5">
+        <div className="space-y-5">
           <Card className="h-40" />
           <Card className="h-48" />
         </div>
