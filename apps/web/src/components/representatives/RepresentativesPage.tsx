@@ -12,6 +12,7 @@ import { useAuth } from '@/components/auth/AuthContext'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { StaggerGrid, StaggerItem } from '@/components/ui/motion'
 
 function RepresentativesContent() {
   const navigate = useNavigate()
@@ -82,13 +83,10 @@ function RepresentativesContent() {
           <div className="max-w-4xl mx-auto mb-10">
             {/* Page heading */}
             <div className="mb-5 text-center">
-              <h1
-                className="text-2xl sm:text-3xl text-[#1C1C1A] mb-1.5"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-              >
+              <h1 className="text-2xl sm:text-3xl text-fg mb-1.5 tracking-tight font-semibold">
                 Find a Politician
               </h1>
-              <p className="text-sm text-[#1C1C1A]/50">
+              <p className="text-sm text-fg/50">
                 {searchMode === 'name'
                   ? 'Search any current U.S. Senator or House Representative.'
                   : 'Enter your home address to find your federal representatives.'
@@ -99,25 +97,25 @@ function RepresentativesContent() {
             {/* Unified search control */}
             <Card padding="none">
               {/* Integrated tabs */}
-              <div className="flex border-b border-[rgba(28,28,26,0.06)]">
+              <div className="flex border-b border-edge-soft">
                 <button
                   onClick={() => setSearchMode('name')}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
                     searchMode === 'name'
-                      ? 'text-[#1C1C1A] after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:bg-[#7B5E8A] after:rounded-t-full'
-                      : 'text-[#1C1C1A]/40 hover:text-[#1C1C1A]/65'
+                      ? 'text-fg after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:bg-accent-deep after:rounded-t-full'
+                      : 'text-fg/40 hover:text-fg/65'
                   }`}
                 >
                   <User size={15} strokeWidth={1.8} />
                   Name
                 </button>
-                <div className="w-px bg-[rgba(28,28,26,0.06)]" />
+                <div className="w-px bg-edge-soft" />
                 <button
                   onClick={() => setSearchMode('address')}
                   className={`flex-1 flex items-center justify-center gap-2 py-3 text-sm font-medium transition-colors relative ${
                     searchMode === 'address'
-                      ? 'text-[#1C1C1A] after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:bg-[#7B5E8A] after:rounded-t-full'
-                      : 'text-[#1C1C1A]/40 hover:text-[#1C1C1A]/65'
+                      ? 'text-fg after:absolute after:bottom-0 after:left-4 after:right-4 after:h-[2px] after:bg-accent-deep after:rounded-t-full'
+                      : 'text-fg/40 hover:text-fg/65'
                   }`}
                 >
                   <MapPin size={15} strokeWidth={1.8} />
@@ -130,7 +128,7 @@ function RepresentativesContent() {
                 <div className="relative" ref={containerRef}>
                   <form onSubmit={handleSubmit}>
                     <div className="flex items-center px-5 py-4 gap-3">
-                      <Search size={17} strokeWidth={1.8} className="text-[#1C1C1A]/25 flex-shrink-0" />
+                      <Search size={17} strokeWidth={1.8} className="text-fg/25 flex-shrink-0" />
                       <input
                         type="text"
                         value={inputDisplayValue}
@@ -138,7 +136,7 @@ function RepresentativesContent() {
                         onFocus={() => { setInputFocused(true); suggestions.length > 0 && setShowSuggestions(true) }}
                         onBlur={() => { setInputFocused(false); setTimeout(() => setShowSuggestions(false), 200) }}
                         placeholder="Enter your home address"
-                        className="flex-1 bg-transparent outline-none text-[15px] text-[#1C1C1A] placeholder:text-[#1C1C1A]/35"
+                        className="flex-1 bg-transparent outline-none text-[15px] text-fg placeholder:text-fg/35"
                         autoComplete="off"
                       />
                     </div>
@@ -146,13 +144,13 @@ function RepresentativesContent() {
 
                   {/* Autocomplete dropdown */}
                   {showSuggestions && suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-[rgba(28,28,26,0.12)] shadow-[0_1px_4px_rgba(0,0,0,0.06)] overflow-hidden z-20">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-raised rounded-lg border border-edge overflow-hidden z-20">
                       {suggestions.map((s, i) => (
                         <button
                           key={i}
                           type="button"
                           onClick={() => handleSelectSuggestion(s)}
-                          className="w-full text-left px-5 py-3 text-sm text-[#1C1C1A]/80 hover:bg-[#F5F0E8] hover:text-[#1C1C1A] transition-colors border-b border-[rgba(28,28,26,0.05)] last:border-0"
+                          className="w-full text-left px-5 py-3 text-sm text-fg/80 hover:bg-fg/[0.04] hover:text-fg transition-colors border-b border-edge-soft last:border-0"
                         >
                           {s}
                         </button>
@@ -163,18 +161,18 @@ function RepresentativesContent() {
               ) : (
                 <div className="relative">
                   <div className="flex items-center px-5 py-4 gap-3">
-                    <Search size={17} strokeWidth={1.8} className="text-[#1C1C1A]/25 flex-shrink-0" />
+                    <Search size={17} strokeWidth={1.8} className="text-fg/25 flex-shrink-0" />
                     <input
                       type="text"
                       value={nameQuery}
                       onChange={(e) => setNameQuery(e.target.value)}
                       placeholder="Search by name"
-                      className="flex-1 bg-transparent outline-none text-[15px] text-[#1C1C1A] placeholder:text-[#1C1C1A]/35"
+                      className="flex-1 bg-transparent outline-none text-[15px] text-fg placeholder:text-fg/35"
                       autoComplete="off"
                       autoFocus
                     />
                     {nameQuery.length > 0 && nameQuery.length < 3 && (
-                      <span className="text-xs text-[#1C1C1A]/32 flex-shrink-0">3 characters min</span>
+                      <span className="text-xs text-fg/32 flex-shrink-0">3 characters min</span>
                     )}
                   </div>
                 </div>
@@ -187,8 +185,8 @@ function RepresentativesContent() {
           {displayHasResults && (
             <div className="max-w-4xl mx-auto">
               {hasResults && searchMode === 'address' && (
-                <p className="text-xs text-[#1C1C1A]/38 mb-5">
-                  Results for <span className="text-[#1C1C1A]/55 font-medium">{addressParam}</span>
+                <p className="text-xs text-fg/38 mb-5">
+                  Results for <span className="text-fg/55 font-medium">{addressParam}</span>
                 </p>
               )}
 
@@ -212,29 +210,30 @@ function RepresentativesContent() {
 
               {displayError && !displayLoading && (
                 <Card padding="none" className="max-w-md mx-auto text-center px-8 py-10">
-                  <p className="text-sm text-[#1C1C1A]/60">{displayError}</p>
+                  <p className="text-sm text-fg/60">{displayError}</p>
                 </Card>
               )}
 
               {!displayLoading && !displayError && displayRepresentatives.length === 0 && searchMode === 'name' && nameQuery.length >= 3 && (
-                <p className="text-center text-sm text-[#1C1C1A]/50 py-8">No politicians found matching &ldquo;{nameQuery}&rdquo;</p>
+                <p className="text-center text-sm text-fg/50 py-8">No politicians found matching &ldquo;{nameQuery}&rdquo;</p>
               )}
 
               {!displayLoading && !displayError && searchMode === 'address' && representatives.length === 0 && hasResults && (
-                <p className="text-center text-sm text-[#1C1C1A]/50 py-8">No representatives found for this address</p>
+                <p className="text-center text-sm text-fg/50 py-8">No representatives found for this address</p>
               )}
 
               {!displayLoading && !displayError && displayRepresentatives.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <StaggerGrid className="grid grid-cols-1 md:grid-cols-3 gap-5">
                   {displayRepresentatives.map((rep: any) => (
-                    <RepresentativeCard
-                      key={rep.id}
-                      {...rep}
-                      userId={userId}
-                      onSignInRequired={openSignIn}
-                    />
+                    <StaggerItem key={rep.id}>
+                      <RepresentativeCard
+                        {...rep}
+                        userId={userId}
+                        onSignInRequired={openSignIn}
+                      />
+                    </StaggerItem>
                   ))}
-                </div>
+                </StaggerGrid>
               )}
             </div>
           )}

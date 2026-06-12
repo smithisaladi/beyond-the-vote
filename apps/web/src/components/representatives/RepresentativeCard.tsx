@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Check } from 'lucide-react'
+import { motion } from 'motion/react'
 import { useFollowedPoliticians, useFollowPolitician } from '@/hooks/queries/useDashboard'
 import type { Party } from '@/lib/types'
 import { PARTY_STYLES } from '@/lib/ui'
 import { Card } from '@/components/ui/Card'
+import { TAP_SPRING } from '@/components/ui/motion'
 
 interface RepresentativeCardProps {
   id: string
@@ -28,8 +30,8 @@ function Initials({ name }: { name: string }) {
     ? `${parts[0][0]}${parts[parts.length - 1][0]}`
     : parts[0][0]
   return (
-    <div className="w-20 h-24 rounded-full bg-[#E8E3DA] flex items-center justify-center flex-shrink-0">
-      <span className="text-lg text-[#1C1C1A]/50 font-medium" style={{ fontFamily: 'var(--font-serif)' }}>
+    <div className="w-20 h-24 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0">
+      <span className="text-lg text-fg/50 font-medium tracking-tight">
         {initials.toUpperCase()}
       </span>
     </div>
@@ -60,43 +62,44 @@ export function RepresentativeCard({
         }
 
         <div className="flex flex-col items-center gap-1">
-          <h3 className="text-base text-[#1C1C1A] leading-snug group-hover:text-[#7B5E8A] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
+          <h3 className="text-base text-fg leading-snug group-hover:text-accent transition-colors tracking-tight">
             {name}
           </h3>
-          <p className="text-xs text-[#1C1C1A]/60">{title}</p>
+          <p className="text-xs text-fg/60">{title}</p>
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap justify-center">
           <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
             {badge.label}
           </span>
-          <span className="text-[11px] text-[#1C1C1A]/50">
+          <span className="text-[11px] text-fg/50">
             {state}{district ? ` · ${district}` : ''}
           </span>
           {since && (
             <>
-              <span className="text-[11px] text-[#1C1C1A]/25">·</span>
-              <span className="text-[11px] text-[#1C1C1A]/40">Since {since}</span>
+              <span className="text-[11px] text-fg/25">·</span>
+              <span className="text-[11px] text-fg/40">Since {since}</span>
             </>
           )}
         </div>
 
-        <button
+        <motion.button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFollow() }}
           disabled={followLoading}
+          {...TAP_SPRING}
           className={`mt-auto w-full py-1.5 px-3 rounded-lg text-xs border transition-colors ${
             followLoading ? 'opacity-50 cursor-not-allowed' : ''
           } ${
             following
-              ? 'bg-[#7B5E8A] border-[#7B5E8A] text-white'
-              : 'bg-transparent border-[#7B5E8A] text-[#7B5E8A] hover:bg-[#7B5E8A] hover:text-white'
+              ? 'bg-accent-deep border-accent-deep text-white'
+              : 'bg-transparent border-accent text-accent hover:bg-accent-deep hover:border-accent-deep hover:text-white'
           }`}
         >
           {following
             ? <span className="flex items-center justify-center gap-1"><Check size={12} />Following</span>
             : 'Follow'
           }
-        </button>
+        </motion.button>
       </Card>
     </Link>
   )

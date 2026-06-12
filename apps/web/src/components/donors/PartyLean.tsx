@@ -1,6 +1,7 @@
 
 
 import { toParty } from '@/lib/party'
+import { PARTY_STYLES } from '@/lib/ui'
 
 interface Recipient {
   party: string
@@ -32,10 +33,10 @@ export function PartyLean({ recipients, barClassName = 'w-24' }: Props) {
     else i++
   }
   const total = d + r + i
-  const segments: Array<{ key: string; pct: number; className: string }> = []
-  if (r > 0) segments.push({ key: 'R', pct: (r / total) * 100, className: 'bg-[#A87B7B]/70' })
-  if (d > 0) segments.push({ key: 'D', pct: (d / total) * 100, className: 'bg-[#5E85A8]/70' })
-  if (i > 0) segments.push({ key: 'I', pct: (i / total) * 100, className: 'bg-[#8A8A7A]/70' })
+  const segments: Array<{ key: string; pct: number; hex: string }> = []
+  if (r > 0) segments.push({ key: 'R', pct: (r / total) * 100, hex: PARTY_STYLES.Republican.hex })
+  if (d > 0) segments.push({ key: 'D', pct: (d / total) * 100, hex: PARTY_STYLES.Democrat.hex })
+  if (i > 0) segments.push({ key: 'I', pct: (i / total) * 100, hex: PARTY_STYLES.Independent.hex })
 
   const parts: string[] = []
   if (r > 0) parts.push(`${r}R`)
@@ -44,12 +45,12 @@ export function PartyLean({ recipients, barClassName = 'w-24' }: Props) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className={`flex h-1 rounded-full overflow-hidden bg-[#E8E3DA] ${barClassName}`}>
+      <div className={`flex h-1 rounded-full overflow-hidden bg-fg/[0.06] ${barClassName}`}>
         {segments.map(s => (
-          <div key={s.key} className={s.className} style={{ width: `${s.pct}%` }} />
+          <div key={s.key} style={{ width: `${s.pct}%`, backgroundColor: `${s.hex}b3` }} />
         ))}
       </div>
-      <span className="text-[11px] text-[#1C1C1A]/45 tabular-nums">{parts.join(' · ')}</span>
+      <span className="text-[11px] text-fg/45 tabular-nums">{parts.join(' · ')}</span>
     </div>
   )
 }

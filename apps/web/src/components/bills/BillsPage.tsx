@@ -142,13 +142,10 @@ function BillsContent() {
 
             {/* Page heading */}
             <div className="mb-5 text-center">
-              <h1
-                className="text-2xl sm:text-3xl text-[#1C1C1A] mb-1.5"
-                style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-              >
+              <h1 className="text-2xl sm:text-3xl text-fg mb-1.5 tracking-tight font-semibold">
                 Search Bills
               </h1>
-              <p className="text-sm text-[#1C1C1A]/50">
+              <p className="text-sm text-fg/50">
                 Follow legislation that matters to you.
               </p>
             </div>

@@ -13,14 +13,16 @@ interface Bill {
   lastAction: string | null
   summary: string | null
 }
+import { motion } from 'motion/react'
 import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { StaggerGrid, StaggerItem, TAP_SPRING } from '@/components/ui/motion'
 
 function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )
@@ -64,15 +66,15 @@ function BillCard({
           <div className="flex-1 min-w-0">
             {/* Top meta row */}
             <div className="flex items-center gap-2 flex-wrap mb-3">
-              <span className="text-xs font-mono text-[#1C1C1A]/40 tracking-wide">{bill.number}</span>
-              <span className="text-xs text-[#1C1C1A]/20">·</span>
+              <span className="text-xs font-mono text-fg/40 tracking-wide">{bill.number}</span>
+              <span className="text-xs text-fg/20">·</span>
               <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${status.bg} ${status.text}`}>
                 {bill.status}
               </span>
               {bill.topics.length > 0 && (
                 <>
-                  <span className="text-xs text-[#1C1C1A]/20">·</span>
-                  <span className="text-xs font-medium text-[#7B5E8A] bg-[#7B5E8A]/[0.12] px-2.5 py-0.5 rounded-full">
+                  <span className="text-xs text-fg/20">·</span>
+                  <span className="text-xs font-medium text-accent bg-accent/[0.12] px-2.5 py-0.5 rounded-full">
                     {slugToTopic(bill.topics[0]) ?? bill.topics[0]}
                   </span>
                 </>
@@ -80,38 +82,39 @@ function BillCard({
             </div>
 
             {/* Title */}
-            <h2 className="text-base text-[#1C1C1A] leading-snug mb-2 group-hover:text-[#7B5E8A] transition-colors" style={{ fontFamily: 'var(--font-serif)' }}>
+            <h2 className="text-base text-fg leading-snug mb-2 group-hover:text-accent transition-colors tracking-tight">
               {bill.title}
             </h2>
 
             {/* Summary */}
-            <p className="text-sm text-[#1C1C1A]/55 leading-relaxed mb-4 line-clamp-2">
+            <p className="text-sm text-fg/55 leading-relaxed mb-4 line-clamp-2">
               {bill.summary}
             </p>
 
             {/* Bottom row */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-[#1C1C1A]/60">{bill.sponsor}</span>
+              <span className="text-xs text-fg/60">{bill.sponsor}</span>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${party.bg} ${party.text}`}>
                 {bill.party}
               </span>
               {bill.lastAction && (
                 <>
-                  <span className="text-xs text-[#1C1C1A]/25">·</span>
-                  <span className="text-xs text-[#1C1C1A]/40">Last action {bill.lastAction}</span>
+                  <span className="text-xs text-fg/25">·</span>
+                  <span className="text-xs text-fg/40">Last action {bill.lastAction}</span>
                 </>
               )}
             </div>
           </div>
 
           {/* Track button */}
-          <button
+          <motion.button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleTrack(); }}
             aria-label={tracked ? 'Untrack bill' : 'Track bill'}
-            className="flex-shrink-0 p-2 rounded-lg hover:bg-[#7B5E8A]/8 transition-colors mt-0.5"
+            {...TAP_SPRING}
+            className="flex-shrink-0 p-2 rounded-lg hover:bg-accent/[0.08] transition-colors mt-0.5"
           >
             <BookmarkIcon filled={tracked} />
-          </button>
+          </motion.button>
         </div>
       </Card>
     </Link>
@@ -132,6 +135,8 @@ interface BillGridProps {
   onRefetch: () => void
 }
 
+const FIRST_PAGE_SIZE = 20
+
 export function BillGrid({
   bills,
   loading,
@@ -150,10 +155,10 @@ export function BillGrid({
       <div className="flex-1 min-w-0">
         {/* Result count */}
         {!loading && !error && (
-          <p className="text-xs text-[#1C1C1A]/40 mb-4">
+          <p className="text-xs text-fg/40 mb-4">
             {`${bills.length} bills`}
             {trackedBills.size > 0 && (
-              <span className="ml-2 text-[#7B5E8A]">· {trackedBills.size} tracked</span>
+              <span className="ml-2 text-accent">· {trackedBills.size} tracked</span>
             )}
           </p>
         )}
@@ -166,49 +171,64 @@ export function BillGrid({
           </div>
         ) : error ? (
           <Card padding="xl" className="text-center">
-            <p className="text-[#1C1C1A]/40 text-sm mb-3">
+            <p className="text-fg/40 text-sm mb-3">
               {error.includes('CONGRESS_API_KEY')
                 ? 'Congress.gov API key is not configured.'
                 : 'Failed to load bills.'}
             </p>
             <button
               onClick={() => onRefetch()}
-              className="text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
+              className="text-sm text-accent hover:text-accent-deep-hover"
             >
               Try again
             </button>
           </Card>
         ) : bills.length === 0 ? (
           <Card padding="xl" className="text-center">
-            <p className="text-[#1C1C1A]/40 text-sm">
+            <p className="text-fg/40 text-sm">
               {showTrackedOnly ? 'You haven\'t tracked any bills yet.' : 'No bills match your filters.'}
             </p>
             <button
               onClick={onClearFilters}
-              className="mt-3 text-sm text-[#7B5E8A] hover:text-[#6A4F78]"
+              className="mt-3 text-sm text-accent hover:text-accent-deep-hover"
             >
               Clear all filters
             </button>
           </Card>
         ) : (
           <>
-            <div className="space-y-4">
-              {bills.map(bill => (
-                <BillCard
-                  key={bill.id}
-                  bill={bill}
-                  tracked={trackedBills.has(bill.id)}
-                  onToggleTrack={() => onToggleTrack(bill.id)}
-                />
+            {/* First page wrapped in StaggerGrid; subsequent pages rendered plainly */}
+            <StaggerGrid className="space-y-4">
+              {bills.slice(0, FIRST_PAGE_SIZE).map(bill => (
+                <StaggerItem key={bill.id}>
+                  <BillCard
+                    bill={bill}
+                    tracked={trackedBills.has(bill.id)}
+                    onToggleTrack={() => onToggleTrack(bill.id)}
+                  />
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerGrid>
+
+            {bills.length > FIRST_PAGE_SIZE && (
+              <div className="space-y-4 mt-4">
+                {bills.slice(FIRST_PAGE_SIZE).map(bill => (
+                  <BillCard
+                    key={bill.id}
+                    bill={bill}
+                    tracked={trackedBills.has(bill.id)}
+                    onToggleTrack={() => onToggleTrack(bill.id)}
+                  />
+                ))}
+              </div>
+            )}
 
             {hasMore && (
               <div className="mt-6 text-center">
                 <button
                   onClick={onLoadMore}
                   disabled={loadingMore}
-                  className="text-sm text-[#7B5E8A] hover:text-[#6A4F78] disabled:opacity-50 border border-[#7B5E8A]/30 rounded-lg px-5 py-2.5 hover:bg-[#7B5E8A]/5 transition-colors"
+                  className="text-sm text-accent hover:text-accent-deep-hover disabled:opacity-50 border border-accent/30 rounded-lg px-5 py-2.5 hover:bg-accent/[0.05] transition-colors"
                 >
                   {loadingMore ? 'Loading…' : 'Load more bills'}
                 </button>

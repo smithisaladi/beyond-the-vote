@@ -26,7 +26,7 @@ export function InfoTooltip({ term, content, label, className }: Props) {
         <button
           type="button"
           aria-label={ariaLabel}
-          className={`inline-flex items-center justify-center text-[#1C1C1A]/38 hover:text-[#7B5E8A] focus:text-[#7B5E8A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7B5E8A]/40 rounded-full transition-colors ${className ?? ''}`}
+          className={`inline-flex items-center justify-center text-fg/38 hover:text-accent focus:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 rounded-full transition-colors ${className ?? ''}`}
         >
           <HelpCircle size={13} strokeWidth={1.8} />
         </button>
@@ -37,15 +37,15 @@ export function InfoTooltip({ term, content, label, className }: Props) {
           align="center"
           sideOffset={4}
           collisionPadding={8}
-          className="z-50 max-w-xs bg-white rounded-lg border border-[rgba(28,28,26,0.08)] shadow-[0_4px_12px_rgba(0,0,0,0.08)] p-3 text-xs text-[#1C1C1A]/75 leading-relaxed data-[state=delayed-open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=delayed-open]:fade-in-0"
+          className="z-50 max-w-xs bg-raised rounded-lg border border-edge p-3 text-xs text-fg/75 leading-relaxed data-[state=delayed-open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=delayed-open]:fade-in-0"
         >
           {entry && (
-            <p className="text-[11px] font-semibold text-[#1C1C1A] mb-0.5">
+            <p className="text-[11px] font-semibold text-fg mb-0.5">
               {entry.term}
             </p>
           )}
           <div>{body}</div>
-          <Tooltip.Arrow className="fill-white" width={10} height={5} />
+          <Tooltip.Arrow className="fill-raised" width={10} height={5} />
         </Tooltip.Content>
       </Tooltip.Portal>
     </Tooltip.Root>

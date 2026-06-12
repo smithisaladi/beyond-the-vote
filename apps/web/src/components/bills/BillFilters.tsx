@@ -24,7 +24,7 @@ const ALL_STATUSES: Status[] = ['Active', 'Committee', 'Stalled', 'Passed', 'Fai
 
 function BookmarkIcon({ filled }: { filled: boolean }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? '#7B5E8A' : 'none'} stroke="#7B5E8A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   )
@@ -45,8 +45,8 @@ function FilterCheckbox({
         onClick={onChange}
         className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
           checked
-            ? 'bg-[#7B5E8A] border-[#7B5E8A]'
-            : 'bg-white border-[rgba(28,28,26,0.2)] group-hover:border-[#7B5E8A]/60'
+            ? 'bg-accent-deep border-accent-deep'
+            : 'bg-surface border-edge/50 group-hover:border-accent/60'
         }`}
       >
         {checked && (
@@ -55,7 +55,7 @@ function FilterCheckbox({
           </svg>
         )}
       </div>
-      <span className={`text-sm ${checked ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>
+      <span className={`text-sm ${checked ? 'text-fg' : 'text-fg/60'}`}>
         {label}
       </span>
     </label>
@@ -91,8 +91,8 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           aria-expanded={openDropdown === 'status'}
           className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
             selectedStatuses.size > 0
-              ? 'border-[#7B5E8A] bg-[#7B5E8A]/8 text-[#7B5E8A]'
-              : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#7B5E8A]/50'
+              ? 'border-accent bg-accent/[0.08] text-accent'
+              : 'border-edge/50 text-fg/55 hover:border-accent/50'
           }`}
         >
           {selectedStatuses.size > 0 ? `Status: ${[...selectedStatuses].join(', ')}` : 'Status'}
@@ -116,8 +116,8 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           aria-expanded={openDropdown === 'date'}
           className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
             dateFilter !== 'all'
-              ? 'border-[#7B5E8A] bg-[#7B5E8A]/8 text-[#7B5E8A]'
-              : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#7B5E8A]/50'
+              ? 'border-accent bg-accent/[0.08] text-accent'
+              : 'border-edge/50 text-fg/55 hover:border-accent/50'
           }`}
         >
           {dateFilter === 'month' ? 'Last Action: Past month' : dateFilter === 'year' ? 'Last Action: Past year' : 'Last Action'}
@@ -140,13 +140,13 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                 <div
                   className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
                     dateFilter === opt.key
-                      ? 'border-[#7B5E8A]'
-                      : 'bg-white border-[rgba(28,28,26,0.2)] group-hover:border-[#7B5E8A]/60'
+                      ? 'border-accent'
+                      : 'bg-surface border-edge/50 group-hover:border-accent/60'
                   }`}
                 >
-                  {dateFilter === opt.key && <div className="w-2 h-2 rounded-full bg-[#7B5E8A]" />}
+                  {dateFilter === opt.key && <div className="w-2 h-2 rounded-full bg-accent" />}
                 </div>
-                <span className={`text-sm ${dateFilter === opt.key ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>{opt.label}</span>
+                <span className={`text-sm ${dateFilter === opt.key ? 'text-fg' : 'text-fg/60'}`}>{opt.label}</span>
               </div>
             ))}
           </Card>
@@ -160,8 +160,8 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           aria-expanded={openDropdown === 'topics'}
           className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
             selectedTopics.size > 0
-              ? 'border-[#7B5E8A] bg-[#7B5E8A]/8 text-[#7B5E8A]'
-              : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#7B5E8A]/50'
+              ? 'border-accent bg-accent/[0.08] text-accent'
+              : 'border-edge/50 text-fg/55 hover:border-accent/50'
           }`}
         >
           {selectedTopics.size > 0 ? `Topics: ${selectedTopics.size}` : 'Topics'}
@@ -186,8 +186,8 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
             aria-expanded={openDropdown === 'sort'}
             className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
               sort !== 'newest'
-                ? 'border-[#7B5E8A] bg-[#7B5E8A]/8 text-[#7B5E8A]'
-                : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#7B5E8A]/50'
+                ? 'border-accent bg-accent/[0.08] text-accent'
+                : 'border-edge/50 text-fg/55 hover:border-accent/50'
             }`}
           >
             {sort === 'newest' ? 'Latest first' : 'Oldest first'}
@@ -209,13 +209,13 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
                   <div
                     className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
                       sort === opt.key
-                        ? 'border-[#7B5E8A]'
-                        : 'bg-white border-[rgba(28,28,26,0.2)] group-hover:border-[#7B5E8A]/60'
+                        ? 'border-accent'
+                        : 'bg-surface border-edge/50 group-hover:border-accent/60'
                     }`}
                   >
-                    {sort === opt.key && <div className="w-2 h-2 rounded-full bg-[#7B5E8A]" />}
+                    {sort === opt.key && <div className="w-2 h-2 rounded-full bg-accent" />}
                   </div>
-                  <span className={`text-sm ${sort === opt.key ? 'text-[#1C1C1A]' : 'text-[#1C1C1A]/60'}`}>{opt.label}</span>
+                  <span className={`text-sm ${sort === opt.key ? 'text-fg' : 'text-fg/60'}`}>{opt.label}</span>
                 </div>
               ))}
             </Card>
@@ -229,8 +229,8 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
           onClick={() => setShowTrackedOnly(prev => !prev)}
           className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
             showTrackedOnly
-              ? 'border-[#7B5E8A] bg-[#7B5E8A]/8 text-[#7B5E8A]'
-              : 'border-[rgba(28,28,26,0.15)] text-[#1C1C1A]/55 hover:border-[#7B5E8A]/50'
+              ? 'border-accent bg-accent/[0.08] text-accent'
+              : 'border-edge/50 text-fg/55 hover:border-accent/50'
           }`}
         >
           <BookmarkIcon filled={showTrackedOnly} />
@@ -242,7 +242,7 @@ export function BillFilters({ filters, user }: BillFiltersProps) {
       {(hasFilters || showTrackedOnly || selectedTopics.size > 0 || sort !== 'newest') && (
         <button
           onClick={clearAll}
-          className="text-xs text-[#7B5E8A] hover:text-[#6A4F78] px-2"
+          className="text-xs text-accent hover:text-accent-deep-hover px-2"
         >
           Clear all ×
         </button>
