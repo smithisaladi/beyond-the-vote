@@ -43,7 +43,7 @@ function DetailSkeleton() {
       <Skeleton className="h-4 w-2/3 mb-8" />
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i} padding="none" className="p-5">
+          <Card key={i} padding="none" className="p-4">
             <Skeleton className="h-2.5 w-16 mb-3" />
             <Skeleton className="h-6 w-24" />
           </Card>
@@ -80,11 +80,11 @@ function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
     <Link
       to="/representatives/$id"
       params={{ id: recipient.bioguideId }}
-      className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-3 hover:bg-raised transition-colors group"
+      className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2.5 hover:bg-raised transition-colors group"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="text-sm text-fg/75 truncate group-hover:text-accent transition-colors">
+          <span className="text-[13px] text-fg/75 truncate group-hover:text-accent transition-colors">
             {recipient.name}
           </span>
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${ps.bg} ${ps.text}`}>
@@ -98,7 +98,7 @@ function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
           <p className="text-[10px] text-fg/38 mt-0.5 font-mono tabular-nums">{breakdown}</p>
         )}
       </div>
-      <span className="text-sm text-fg/60 font-mono tabular-nums flex-shrink-0 min-w-[64px] text-right">
+      <span className="text-[13px] text-fg/60 font-mono tabular-nums flex-shrink-0 min-w-[64px] text-right">
         {formatTotal(recipient.amount)}
       </span>
       <ChevronRight
@@ -129,12 +129,12 @@ function FundingCard({
   valueClassName?: string
 }) {
   return (
-    <Card padding="none" className="p-5 text-center">
+    <Card padding="none" className="p-4 text-center">
       <p className="text-[10px] text-fg/50 uppercase tracking-wider mb-2 inline-flex items-center gap-1">
         {label}
         <InfoTooltip term={tooltip} />
       </p>
-      <p className={`text-xl sm:text-2xl font-medium font-mono tabular-nums ${valueClassName}`}>
+      <p className={`text-lg sm:text-xl font-medium font-mono tabular-nums ${valueClassName}`}>
         {formatTotal(amount)}
       </p>
       {sublabel && (
@@ -254,7 +254,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
 
               {/* PAC Header */}
               <div className="mb-8">
-                <h1 className="text-2xl sm:text-3xl font-semibold text-fg mb-2 leading-[1.15] tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-semibold text-fg mb-2 leading-[1.15] tracking-tight">
                   {pac.name}
                 </h1>
 
@@ -287,7 +287,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                     </div>
                   ) : pac.summary ? (
                     <>
-                      <div className="text-sm text-fg/70 leading-relaxed space-y-3">
+                      <div className="text-[13px] text-fg/70 leading-relaxed space-y-3">
                         {pac.summary.split('\n\n').map((paragraph: string, i: number) => (
                           <p key={i}>{paragraph}</p>
                         ))}
@@ -308,7 +308,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
               {/* Funding breakdown row — zero-value cards hidden */}
               {fundingCards.length > 0 && (
                 <div
-                  className={`grid gap-4 mb-8 grid-cols-1 ${
+                  className={`grid gap-3 mb-6 grid-cols-1 ${
                     fundingCards.length === 1 ? '' : fundingCards.length === 2 ? 'sm:grid-cols-2' : 'sm:grid-cols-3'
                   }`}
                 >
@@ -318,8 +318,8 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
 
               {/* All Recipients */}
               <div className="mb-10">
-                <div className="flex items-baseline justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-fg tracking-tight">
+                <div className="flex items-baseline justify-between mb-3">
+                  <h2 className="text-[15px] font-semibold text-fg tracking-tight">
                     All Recipients
                   </h2>
                   <span className="inline-flex items-center gap-2 text-xs text-fg/38">

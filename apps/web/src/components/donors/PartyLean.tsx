@@ -50,7 +50,7 @@ export function PartyLean({ recipients, barClassName = 'w-24' }: Props) {
           <div key={s.key} style={{ width: `${s.pct}%`, backgroundColor: `${s.hex}b3` }} />
         ))}
       </div>
-      <span className="text-[11px] text-fg/45 tabular-nums">{parts.join(' · ')}</span>
+      <span className="text-xs text-fg/45 tabular-nums">{parts.join(' · ')}</span>
     </div>
   )
 }

@@ -54,7 +54,7 @@ function LeanPill({ lean }: { lean: Lean }) {
   if (lean.party) {
     const style = PARTY_STYLES[lean.party] || PARTY_STYLES.Independent
     return (
-      <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>
+      <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-px rounded-full ${style.bg} ${style.text}`}>
         <span className="w-1.5 h-1.5 rounded-full" style={{ background: style.hex }} />
         {lean.label}
       </span>
@@ -62,7 +62,7 @@ function LeanPill({ lean }: { lean: Lean }) {
   }
   const independentStyle = PARTY_STYLES.Independent
   return (
-    <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full ${independentStyle.bg} ${independentStyle.text}`}>
+    <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-px rounded-full ${independentStyle.bg} ${independentStyle.text}`}>
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: independentStyle.hex }} />
       {lean.label}
     </span>
@@ -72,7 +72,7 @@ function LeanPill({ lean }: { lean: Lean }) {
 
 function CardSkeleton() {
   return (
-    <Card padding="none" className="p-5 animate-pulse">
+    <Card padding="none" className="p-4 animate-pulse">
       <div className="flex items-baseline justify-between mb-1">
         <div className="flex items-baseline gap-3">
           <Skeleton className="h-4 w-4" />
@@ -101,7 +101,7 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
             {/* Rank + Name */}
             <div className="flex items-baseline gap-2.5 mb-1">
               <span className="text-xs font-mono text-fg/30 flex-shrink-0">#{rank}</span>
-              <h2 className="text-lg text-fg leading-snug group-hover:text-accent transition-colors tracking-tight">
+              <h2 className="text-sm font-semibold text-fg leading-snug group-hover:text-accent transition-colors tracking-tight">
                 {contributor.cmteName}
               </h2>
             </div>
@@ -114,7 +114,7 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
 
           {/* Total + lean pill */}
           <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-            <span className="text-xl text-fg font-mono font-medium tabular-nums text-right">
+            <span className="text-base text-fg font-mono font-medium tabular-nums text-right">
               {formatTotal(contributor.totalContributions)}
             </span>
             {lean && <LeanPill lean={lean} />}
@@ -172,10 +172,10 @@ function DonorsContent() {
 
             {/* Page heading */}
             <div className="mb-5 text-center">
-              <h1 className="text-2xl sm:text-3xl text-fg mb-1.5 tracking-tight font-semibold">
+              <h1 className="text-xl sm:text-2xl text-fg mb-1.5 tracking-tight font-semibold">
                 Top Contributors
               </h1>
-              <p className="text-sm text-fg/50">
+              <p className="text-[13px] text-fg/50">
                 PACs that spend the most supporting candidates across Congress.
                 <span className="inline-flex items-center ml-1.5 text-xs text-fg/38">
                   FEC · {cycleLabel(selectedCycle)}
@@ -217,10 +217,10 @@ function DonorsContent() {
             </Card>
 
             {/* Contributor list */}
-            <div className="mt-8">
+            <div className="mt-6">
 
               {loading ? (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <CardSkeleton key={i} />
                   ))}
@@ -249,7 +249,7 @@ function DonorsContent() {
                 </Card>
               ) : (
                 <>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {contributors.map((c) => (
                       <ContributorCard key={c.cmteId} contributor={c} rank={c.rank} />
                     ))}

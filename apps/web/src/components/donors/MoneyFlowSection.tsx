@@ -74,10 +74,10 @@ export function MoneyFlowSection({ cmteId, cmteName }: MoneyFlowSectionProps) {
   return (
     <Card padding="lg">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-fg tracking-tight">
+        <h2 className="text-[15px] font-semibold text-fg tracking-tight">
           Follow the Money
         </h2>
-        <p className="text-sm text-fg/50">
+        <p className="text-[13px] text-fg/50">
           {data.funderType === "individual"
             ? "Top individual funders and where the money goes"
             : "Top PAC sources and where the money goes"}
@@ -209,7 +209,7 @@ function HorizontalFlow({
 
       {/* Left: Funders */}
       <div className="flex-1 min-w-0 z-10 space-y-1.5">
-        <div className="text-[11px] font-medium uppercase tracking-wide text-fg/38 mb-2">
+        <div className="text-[10px] font-medium uppercase tracking-[0.07em] text-fg/40 mb-2">
           {funderType === "individual" ? "Top Funders" : "Top PAC Sources"}
         </div>
         {funders.slice(0, 5).map((f, i) => {
@@ -247,7 +247,7 @@ function HorizontalFlow({
           );
         })}
         {funderCount > 5 && (
-          <div className="text-[11px] text-fg/38 text-center pt-1">
+          <div className="text-[10px] text-fg/38 text-center pt-1">
             +{funderCount - 5} more
           </div>
         )}
@@ -277,7 +277,7 @@ function HorizontalFlow({
 
       {/* Right: Recipients */}
       <div className="flex-1 min-w-0 z-10 space-y-1.5">
-        <div className="text-[11px] font-medium uppercase tracking-wide text-fg/38 mb-2">
+        <div className="text-[10px] font-medium uppercase tracking-[0.07em] text-fg/40 mb-2">
           Top Recipients
         </div>
         {recipients.slice(0, 5).map((r, i) => {
@@ -349,7 +349,7 @@ function HorizontalFlow({
           );
         })}
         {recipientCount > 5 && (
-          <div className="text-[11px] text-fg/38 text-center pt-1">
+          <div className="text-[10px] text-fg/38 text-center pt-1">
             +{recipientCount - 5} more
           </div>
         )}
@@ -429,7 +429,7 @@ function VerticalFlow({
     <div className="space-y-4">
       {/* Funders */}
       <div>
-        <div className="text-[11px] font-medium uppercase tracking-wide text-fg/38 mb-2">
+        <div className="text-[10px] font-medium uppercase tracking-[0.07em] text-fg/40 mb-2">
           {funderType === "individual" ? "Top Funders" : "Top PAC Sources"}
         </div>
         <div className="space-y-1.5">
@@ -475,7 +475,7 @@ function VerticalFlow({
 
       {/* Recipients */}
       <div>
-        <div className="text-[11px] font-medium uppercase tracking-wide text-fg/38 mb-2">
+        <div className="text-[10px] font-medium uppercase tracking-[0.07em] text-fg/40 mb-2">
           Top Recipients
         </div>
         <div className="space-y-1.5">
@@ -532,8 +532,8 @@ function MoneyFlowSkeleton() {
   return (
     <Card padding="lg">
       <div className="animate-pulse">
-        <Skeleton className="h-5 w-40 rounded-full mb-1" />
-        <Skeleton className="h-3.5 w-64 rounded-full mb-5" />
+        <Skeleton className="h-4 w-40 rounded-full mb-1" />
+        <Skeleton className="h-3 w-64 rounded-full mb-4" />
         <div className="flex items-center gap-8">
           <div className="flex-1 space-y-2">
             {[1, 2, 3].map((i) => (
