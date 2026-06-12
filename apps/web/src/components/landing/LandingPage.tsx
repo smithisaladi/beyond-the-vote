@@ -59,7 +59,7 @@ export function LandingPage() {
             </button>
             <button
               onClick={openSignUp}
-              className="text-[13px] bg-accent-deep text-fg px-4 py-1.5 rounded-lg hover:bg-accent-deep-hover transition-colors font-medium"
+              className="text-[13px] bg-accent-deep text-fg px-4 py-2 rounded-lg hover:bg-accent-deep-hover transition-colors font-medium"
             >
               Sign up
             </button>
