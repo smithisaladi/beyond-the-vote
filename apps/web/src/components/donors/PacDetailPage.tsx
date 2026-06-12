@@ -19,7 +19,7 @@ interface PacDetailRecipient {
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { DotGridBackground } from '@/components/shared/DotGridBackground'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
-import { PARTY_STYLES } from '@/lib/ui'
+import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import { FEC_DISPLAY_CYCLES, getFecCommitteeUrl, getOpenSecretsUrl } from '@/lib/fec'
 import { formatTotal } from '@/lib/format'
 import { partyAbbrev, toParty } from '@/lib/party'
@@ -78,38 +78,38 @@ function breakdownText(r: PacDetailRecipient): string | null {
 
 function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
   const party = toParty(recipient.party)
-  const ps = PARTY_STYLES[party] || { bg: 'bg-[#8A8A7A]/[0.12]', text: 'text-[#8A8A7A]' }
+  const ps = PARTY_STYLES[party] || { bg: PARTY_STYLES.Independent.bg, text: PARTY_STYLES.Independent.text }
   const breakdown = breakdownText(recipient)
 
   return (
     <Link
       to="/representatives/$id"
       params={{ id: recipient.bioguideId }}
-      className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-3 hover:bg-[#F5F0E8]/60 transition-colors group"
+      className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-3 hover:bg-raised transition-colors group"
     >
       <div className="min-w-0">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="text-sm text-[#1C1C1A]/75 truncate group-hover:text-[#7B5E8A] transition-colors">
+          <span className="text-sm text-fg/75 truncate group-hover:text-accent transition-colors">
             {recipient.name}
           </span>
           <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 ${ps.bg} ${ps.text}`}>
             {partyAbbrev(party)}-{recipient.state}
           </span>
-          <span className="text-[10px] text-[#1C1C1A]/38 flex-shrink-0 capitalize">
+          <span className="text-[10px] text-fg/38 flex-shrink-0 capitalize">
             {recipient.chamber}
           </span>
         </div>
         {breakdown && (
-          <p className="text-[10px] text-[#1C1C1A]/38 mt-0.5 tabular-nums">{breakdown}</p>
+          <p className="text-[10px] text-fg/38 mt-0.5 font-mono tabular-nums">{breakdown}</p>
         )}
       </div>
-      <span className="text-sm text-[#1C1C1A]/60 tabular-nums flex-shrink-0 min-w-[64px] text-right">
+      <span className="text-sm text-fg/60 font-mono tabular-nums flex-shrink-0 min-w-[64px] text-right">
         {formatTotal(recipient.amount)}
       </span>
       <ChevronRight
         size={14}
         strokeWidth={1.8}
-        className="text-[#1C1C1A]/20 group-hover:text-[#7B5E8A] transition-colors flex-shrink-0"
+        className="text-fg/20 group-hover:text-accent transition-colors flex-shrink-0"
       />
     </Link>
   )
@@ -125,7 +125,7 @@ function FundingCard({
   sublabel,
   tooltip,
   amount,
-  valueClassName = 'text-[#1C1C1A]/80',
+  valueClassName = 'text-fg/80',
 }: {
   label: string
   sublabel?: string
@@ -135,18 +135,15 @@ function FundingCard({
 }) {
   return (
     <Card padding="none" className="p-5 text-center">
-      <p className="text-[10px] text-[#1C1C1A]/50 uppercase tracking-wider mb-2 inline-flex items-center gap-1">
+      <p className="text-[10px] text-fg/50 uppercase tracking-wider mb-2 inline-flex items-center gap-1">
         {label}
         <InfoTooltip term={tooltip} />
       </p>
-      <p
-        className={`text-xl sm:text-2xl font-medium tabular-nums ${valueClassName}`}
-        style={{ fontFamily: 'var(--font-serif)' }}
-      >
+      <p className={`text-xl sm:text-2xl font-medium font-mono tabular-nums ${valueClassName}`}>
         {formatTotal(amount)}
       </p>
       {sublabel && (
-        <p className="text-[10px] text-[#1C1C1A]/38 mt-1">{sublabel}</p>
+        <p className="text-[10px] text-fg/38 mt-1">{sublabel}</p>
       )}
     </Card>
   )
@@ -210,7 +207,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
             sublabel="Supporting candidates"
             tooltip="ieFor"
             amount={pac.ieForTotal}
-            valueClassName="text-[#68B085]"
+            valueClassName={STATUS_STYLES.Passed.text}
           />
         ),
         pac.ieAgainstTotal > 0 && (
@@ -220,7 +217,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
             sublabel="Opposing candidates"
             tooltip="ieAgainst"
             amount={pac.ieAgainstTotal}
-            valueClassName="text-[#B85C38]"
+            valueClassName={STATUS_STYLES.Stalled.text}
           />
         ),
       ].filter(Boolean)
@@ -244,12 +241,12 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
             <DetailSkeleton />
           ) : error || !pac ? (
             <div className="max-w-4xl mx-auto">
-              <Link to="/donors" className="inline-flex items-center gap-1.5 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70 transition-colors mb-8">
+              <Link to="/donors" className="inline-flex items-center gap-1.5 text-sm text-fg/50 hover:text-fg/70 transition-colors mb-8">
                 <BackArrow /> Top Contributors
               </Link>
               <Card padding="xl" className="text-center">
-                <p className="text-[#1C1C1A]/45 text-sm">{error ?? 'PAC not found.'}</p>
-                <Link to="/donors" className="mt-3 inline-block text-sm text-[#7B5E8A] hover:underline underline-offset-2">
+                <p className="text-fg/45 text-sm">{error ?? 'PAC not found.'}</p>
+                <Link to="/donors" className="mt-3 inline-block text-sm text-accent hover:underline underline-offset-2">
                   Back to leaderboard
                 </Link>
               </Card>
@@ -257,21 +254,18 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
           ) : (
             <div className="max-w-4xl mx-auto">
               {/* Back link */}
-              <Link to="/donors" className="inline-flex items-center gap-1.5 text-sm text-[#1C1C1A]/50 hover:text-[#1C1C1A]/70 transition-colors mb-6">
+              <Link to="/donors" className="inline-flex items-center gap-1.5 text-sm text-fg/50 hover:text-fg/70 transition-colors mb-6">
                 <BackArrow /> Top Contributors
               </Link>
 
               {/* PAC Header */}
               <div className="mb-8">
-                <h1
-                  className="text-2xl sm:text-3xl text-[#1C1C1A] mb-2 leading-[1.15] tracking-[-0.01em]"
-                  style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-                >
+                <h1 className="text-2xl sm:text-3xl font-semibold text-fg mb-2 leading-[1.15] tracking-tight">
                   {pac.name}
                 </h1>
 
                 {pac.connectedOrg && (
-                  <p className="text-sm text-[#1C1C1A]/50">
+                  <p className="text-sm text-fg/50">
                     Affiliated with {pac.connectedOrg}
                   </p>
                 )}
@@ -281,12 +275,12 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
               {(summaryLoading || pac.summary) && (
                 <Card className="mb-6">
                   <div className="flex items-center gap-2 mb-3">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7B5E8A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="text-accent" aria-hidden="true">
                       <path d="M12 2L2 7l10 5 10-5-10-5z" />
                       <path d="M2 17l10 5 10-5" />
                       <path d="M2 12l10 5 10-5" />
                     </svg>
-                    <p className="text-[10px] text-[#7B5E8A] uppercase tracking-wider font-medium">AI Analysis</p>
+                    <p className="text-[10px] text-accent uppercase tracking-wider font-medium">AI Analysis</p>
                   </div>
                   {summaryLoading ? (
                     <div className="animate-pulse space-y-3">
@@ -299,12 +293,12 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                     </div>
                   ) : pac.summary ? (
                     <>
-                      <div className="text-sm text-[#1C1C1A]/70 leading-relaxed space-y-3">
+                      <div className="text-sm text-fg/70 leading-relaxed space-y-3">
                         {pac.summary.split('\n\n').map((paragraph: string, i: number) => (
                           <p key={i}>{paragraph}</p>
                         ))}
                       </div>
-                      <p className="text-[10px] text-[#1C1C1A]/50 mt-3">
+                      <p className="text-[10px] text-fg/50 mt-3">
                         AI-generated from FEC data and general knowledge. Not an official analysis.
                       </p>
                     </>
@@ -331,15 +325,12 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
               {/* All Recipients */}
               <div className="mb-10">
                 <div className="flex items-baseline justify-between mb-4">
-                  <h2
-                    className="text-lg text-[#1C1C1A]"
-                    style={{ fontFamily: 'var(--font-serif)', fontWeight: 600 }}
-                  >
+                  <h2 className="text-lg font-semibold text-fg tracking-tight">
                     All Recipients
                   </h2>
-                  <span className="inline-flex items-center gap-2 text-xs text-[#1C1C1A]/38">
+                  <span className="inline-flex items-center gap-2 text-xs text-fg/38">
                     {pac.recipients.length} candidate{pac.recipients.length !== 1 ? 's' : ''}
-                    <span className="text-[#1C1C1A]/20">·</span>
+                    <span className="text-fg/20">·</span>
                     <span className="inline-flex items-center gap-0.5">
                       FEC {FEC_DISPLAY_CYCLES}
                       <InfoTooltip term="fecCycle" />
@@ -349,7 +340,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
 
                 {pac.recipients.length === 0 ? (
                   <Card padding="none" className="px-6 py-10 text-center">
-                    <p className="text-sm text-[#1C1C1A]/45">
+                    <p className="text-sm text-fg/45">
                       No candidate recipients in this cycle range.
                     </p>
                   </Card>
@@ -365,8 +356,8 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                             onClick={() => setPartyFilter(f.key)}
                             className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
                               partyFilter === f.key
-                                ? 'bg-[#7B5E8A]/10 text-[#7B5E8A]'
-                                : 'text-[#1C1C1A]/45 hover:text-[#1C1C1A]/70'
+                                ? 'bg-accent-deep/10 text-accent'
+                                : 'text-fg/45 hover:text-fg/70'
                             }`}
                           >
                             {f.label}
@@ -377,7 +368,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                       <button
                         type="button"
                         onClick={() => setSortKey(k => (k === 'amount' ? 'name' : 'amount'))}
-                        className="inline-flex items-center gap-1.5 text-xs text-[#1C1C1A]/55 hover:text-[#1C1C1A]/80 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs text-fg/55 hover:text-fg/80 transition-colors"
                         aria-label={`Change sort. Currently sorted by ${sortKey === 'amount' ? 'amount' : 'name'}`}
                       >
                         <ArrowUpDown size={12} strokeWidth={1.8} aria-hidden="true" />
@@ -386,19 +377,19 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                     </div>
 
                     <Card padding="none" className="overflow-hidden">
-                      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2 border-b border-[rgba(28,28,26,0.06)]">
-                        <span className="text-[10px] text-[#1C1C1A]/50 uppercase tracking-wider">Recipient</span>
-                        <span className="text-[10px] text-[#1C1C1A]/50 uppercase tracking-wider min-w-[64px] text-right">Total Support</span>
+                      <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2 border-b border-edge">
+                        <span className="text-[10px] text-fg/50 uppercase tracking-wider">Recipient</span>
+                        <span className="text-[10px] text-fg/50 uppercase tracking-wider min-w-[64px] text-right">Total Support</span>
                         <span className="w-[14px]" aria-hidden="true" />
                       </div>
                       {filteredRecipients.length === 0 ? (
                         <div className="px-6 py-10 text-center">
-                          <p className="text-sm text-[#1C1C1A]/45">
+                          <p className="text-sm text-fg/45">
                             No recipients match this filter.
                           </p>
                         </div>
                       ) : (
-                        <div className="divide-y divide-[rgba(28,28,26,0.05)]">
+                        <div className="divide-y divide-edge-soft">
                           {visibleRecipients.map((r) => (
                             <RecipientRow key={r.bioguideId} recipient={r} />
                           ))}
@@ -411,7 +402,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                         <button
                           type="button"
                           onClick={() => setShowAll(s => !s)}
-                          className="text-xs text-[#7B5E8A] hover:underline underline-offset-2"
+                          className="text-xs text-accent hover:underline underline-offset-2"
                         >
                           {showAll
                             ? 'Show fewer'
@@ -429,17 +420,17 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`View ${pac.name} on the FEC website (opens in new tab)`}
-                  className="inline-flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#7B5E8A] transition-colors"
+                  className="inline-flex items-center gap-1 text-xs text-fg/45 hover:text-accent transition-colors"
                 >
                   View on FEC <ExternalLink size={11} strokeWidth={1.8} aria-hidden="true" />
                 </a>
-                <span className="text-[#1C1C1A]/20">·</span>
+                <span className="text-fg/20">·</span>
                 <a
                   href={getOpenSecretsUrl(cmteId)}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`View ${pac.name} on OpenSecrets (opens in new tab)`}
-                  className="inline-flex items-center gap-1 text-xs text-[#1C1C1A]/45 hover:text-[#7B5E8A] transition-colors"
+                  className="inline-flex items-center gap-1 text-xs text-fg/45 hover:text-accent transition-colors"
                 >
                   View on OpenSecrets <ExternalLink size={11} strokeWidth={1.8} aria-hidden="true" />
                 </a>
