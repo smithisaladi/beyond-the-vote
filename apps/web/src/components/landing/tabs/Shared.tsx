@@ -43,7 +43,7 @@ export function Feature({ icon, title, description }: { icon: React.ReactNode; t
         <span className="text-accent">{icon}</span>
       </div>
       <div>
-        <h3 className="text-[13px] font-semibold text-fg mb-1 tracking-tight">{title}</h3>
+        <h3 className="text-[13px] font-serif font-semibold text-fg mb-1">{title}</h3>
         <p className="text-[13px] text-fg/55 leading-[1.7]">{description}</p>
       </div>
     </div>
@@ -79,7 +79,7 @@ export function MockRepCard({ name, title, party, state, vote }: {
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium text-fg truncate tracking-tight">
+          <p className="text-[13px] font-serif font-medium text-fg truncate">
             {name}
           </p>
           <p className="text-xs text-fg/50 mt-0.5 truncate">{title}</p>
@@ -116,7 +116,7 @@ export function MockBillCard({ number, title, status, category }: {
           {status}
         </span>
       </div>
-      <p className="text-[13px] text-fg leading-snug mb-2.5 tracking-tight">
+      <p className="text-[13px] font-serif text-fg leading-snug mb-2.5">
         {title}
       </p>
       <span className="inline-block text-[10px] text-fg/40 bg-fg/[0.06] border border-edge px-1.5 py-px rounded-full">
@@ -140,7 +140,7 @@ export function MockDonorCard({ rank, name, total, lean, recipients }: {
           {lean === 'Mixed' ? 'Mixed' : `Leans ${lean}`}
         </span>
       </div>
-      <p className="text-[13px] text-fg mb-1 tracking-tight">{name}</p>
+      <p className="text-[13px] font-serif text-fg mb-1">{name}</p>
       <p className="text-base font-semibold text-fg mb-1.5 font-mono tabular-nums">{total}</p>
       <p className="text-xs text-fg/38">{recipients} candidates supported</p>
     </Card>

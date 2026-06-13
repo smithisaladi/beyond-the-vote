@@ -20,7 +20,7 @@ export function LandingPage() {
         <div className="max-w-6xl mx-auto px-6 flex items-center h-16 gap-6">
 
           {/* Logo */}
-          <span className="text-base text-fg tracking-tight font-semibold flex-shrink-0">
+          <span className="text-base text-fg font-serif font-semibold flex-shrink-0">
             Beyond the Vote
           </span>
 
@@ -80,7 +80,7 @@ export function LandingPage() {
       {/* ── Footer ── */}
       <footer className="border-t border-edge py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="text-sm text-fg/60 font-semibold tracking-tight">
+          <span className="text-sm text-fg/60 font-serif font-semibold">
             Beyond the Vote
           </span>
           <p className="text-xs text-fg/38">

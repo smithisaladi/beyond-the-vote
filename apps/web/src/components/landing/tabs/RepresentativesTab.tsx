@@ -13,7 +13,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
               <span className="inline-block text-xs font-medium text-accent bg-accent-deep/[0.12] border border-accent-deep/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Know Your Representative
               </span>
-              <h1 className="text-4xl sm:text-5xl text-fg mb-6 leading-[1.08] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl text-fg mb-6 leading-[1.08] font-serif font-semibold">
                 Know exactly who represents you, and what they stand for
               </h1>
               <p className="text-lg text-fg/55 mb-8 leading-relaxed max-w-lg">
@@ -62,7 +62,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-5xl mx-auto">
           <h2
             id="rep-features-heading"
-            className="text-2xl text-fg mb-2 text-center tracking-tight"
+            className="text-2xl text-fg mb-2 text-center font-serif font-semibold"
           >
             Everything you need to stay informed
           </h2>
@@ -102,7 +102,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
               <p className="text-3xl font-semibold text-accent mb-1.5 font-mono tabular-nums">
                 {stat}
               </p>
-              <p className="text-[10px] text-fg/50 leading-snug uppercase tracking-[0.07em]">{label}</p>
+              <p className="text-[10px] text-accent leading-snug uppercase tracking-[0.07em]">{label}</p>
             </div>
           ))}
         </div>
@@ -113,7 +113,7 @@ export function RepresentativesTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="rep-cta-heading"
-            className="text-2xl text-fg mb-3 tracking-tight"
+            className="text-2xl text-fg mb-3 font-serif font-semibold"
           >
             Democracy works when voters are informed
           </h2>

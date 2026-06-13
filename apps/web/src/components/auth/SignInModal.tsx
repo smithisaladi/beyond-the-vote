@@ -60,7 +60,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
 
         {view === 'sign-in' && (
           <>
-            <h2 className="text-2xl text-fg mb-2 tracking-tight">Welcome Back</h2>
+            <h2 className="text-2xl text-fg mb-2 font-serif font-semibold">Welcome Back</h2>
             <p className="text-xs text-fg/60 mb-6">Sign in to track your representatives</p>
 
             <button
@@ -151,7 +151,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
               Back to sign in
             </button>
 
-            <h2 className="text-2xl text-fg mb-2 tracking-tight">Reset Password</h2>
+            <h2 className="text-2xl text-fg mb-2 font-serif font-semibold">Reset Password</h2>
             <p className="text-xs text-fg/60 mb-6">
               Enter your email and we&apos;ll send you a link to reset your password.
             </p>
@@ -188,7 +188,7 @@ export function SignInModal({ isOpen, onClose, onSwitchToSignUp }: SignInModalPr
             <div className="w-14 h-14 bg-accent-deep/[0.12] rounded-full flex items-center justify-center mx-auto mb-5">
               <Mail size={24} strokeWidth={1.8} className="text-accent" />
             </div>
-            <h2 className="text-2xl text-fg mb-2 tracking-tight">Check your email</h2>
+            <h2 className="text-2xl text-fg mb-2 font-serif font-semibold">Check your email</h2>
             <p className="text-xs text-fg/60 mb-6">
               We sent a password reset link to <span className="text-fg font-medium">{email}</span>
             </p>

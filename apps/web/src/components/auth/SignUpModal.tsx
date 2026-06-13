@@ -59,7 +59,7 @@ export function SignUpModal({ isOpen, onClose, onSwitchToSignIn }: SignUpModalPr
           <X size={20} strokeWidth={1.8} />
         </button>
 
-        <h2 className="text-2xl text-fg mb-2 tracking-tight">Join Beyond the Vote</h2>
+        <h2 className="text-2xl text-fg mb-2 font-serif font-semibold">Join Beyond the Vote</h2>
         <p className="text-xs text-fg/60 mb-6">Start tracking your representatives today</p>
 
         <button

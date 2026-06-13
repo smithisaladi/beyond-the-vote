@@ -18,7 +18,7 @@ function DeleteModal({ onConfirm, onCancel, loading }: {
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
       <div className="relative w-full max-w-md bg-surface border border-edge rounded-lg p-4">
-        <h3 className="text-[15px] font-semibold text-fg mb-2 tracking-tight">
+        <h3 className="text-base font-serif font-semibold text-fg mb-2">
           Delete account?
         </h3>
         <p className="text-[13px] text-fg/60 mb-5 leading-relaxed">
@@ -125,7 +125,7 @@ export default function SettingsPage() {
 
               {/* Display name */}
               <div className="bg-surface rounded-lg border border-edge p-4">
-                <h2 className="text-[15px] font-semibold text-fg mb-4 tracking-tight">
+                <h2 className="text-base font-serif font-semibold text-fg mb-4">
                   Profile
                 </h2>
                 <form onSubmit={updateName} className="flex flex-col gap-3">
@@ -164,7 +164,7 @@ export default function SettingsPage() {
 
               {/* Change password */}
               <div className="bg-surface rounded-lg border border-edge p-4">
-                <h2 className="text-[15px] font-semibold text-fg mb-4 tracking-tight">
+                <h2 className="text-base font-serif font-semibold text-fg mb-4">
                   Change password
                 </h2>
                 <form onSubmit={handleChangePassword} className="flex flex-col gap-3">
@@ -216,7 +216,7 @@ export default function SettingsPage() {
 
               {/* Danger zone */}
               <div className="bg-surface rounded-lg border border-edge p-4">
-                <h2 className="text-[15px] font-semibold text-fg mb-1 tracking-tight">
+                <h2 className="text-base font-serif font-semibold text-fg mb-1">
                   Danger zone
                 </h2>
                 <p className="text-[13px] text-fg/55 mb-4">

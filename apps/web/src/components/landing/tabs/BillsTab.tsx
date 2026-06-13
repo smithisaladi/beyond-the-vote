@@ -14,7 +14,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
               <span className="inline-block text-xs font-medium text-accent bg-accent-deep/[0.12] border border-accent-deep/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Bills Tracker
               </span>
-              <h1 className="text-4xl sm:text-5xl text-fg mb-6 leading-[1.08] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl text-fg mb-6 leading-[1.08] font-serif font-semibold">
                 Follow legislation from introduction to law
               </h1>
               <p className="text-lg text-fg/55 mb-8 leading-relaxed max-w-lg">
@@ -67,7 +67,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-5xl mx-auto">
           <h2
             id="bills-features-heading"
-            className="text-2xl text-fg mb-2 text-center tracking-tight"
+            className="text-2xl text-fg mb-2 text-center font-serif font-semibold"
           >
             Track legislation like a professional
           </h2>
@@ -100,7 +100,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-5xl mx-auto">
           <h2
             id="topics-heading"
-            className="text-[15px] font-semibold tracking-tight text-fg mb-5 text-center"
+            className="text-base font-serif font-semibold text-fg mb-5 text-center"
           >
             Explore by topic
           </h2>
@@ -124,7 +124,7 @@ export function BillsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="bills-cta-heading"
-            className="text-2xl text-fg mb-3 tracking-tight"
+            className="text-2xl text-fg mb-3 font-serif font-semibold"
           >
             Legislation shapes everyday life
           </h2>

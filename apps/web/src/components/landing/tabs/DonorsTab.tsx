@@ -13,7 +13,7 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
               <span className="inline-block text-xs font-medium text-accent bg-accent-deep/[0.12] border border-accent-deep/20 px-3 py-1 rounded-full mb-6 tracking-[0.08em] uppercase">
                 Follow the Money
               </span>
-              <h1 className="text-4xl sm:text-5xl text-fg mb-6 leading-[1.08] tracking-tight">
+              <h1 className="text-4xl sm:text-5xl text-fg mb-6 leading-[1.08] font-serif font-semibold">
                 See who funds your representatives, and where the money goes
               </h1>
               <p className="text-lg text-fg/55 mb-8 leading-relaxed max-w-lg">
@@ -70,7 +70,7 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-5xl mx-auto">
           <h2
             id="donors-features-heading"
-            className="text-2xl text-fg mb-2 text-center tracking-tight"
+            className="text-2xl text-fg mb-2 text-center font-serif font-semibold"
           >
             Follow every dollar in politics
           </h2>
@@ -103,7 +103,7 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-3xl mx-auto">
           <h2
             id="donors-how-heading"
-            className="text-[15px] font-semibold tracking-tight text-fg mb-7 text-center"
+            className="text-base font-serif font-semibold text-fg mb-7 text-center"
           >
             How it works
           </h2>
@@ -117,7 +117,7 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
                 <div className="w-7 h-7 rounded-full bg-accent-deep/[0.12] border border-accent-deep/15 flex items-center justify-center mx-auto mb-3">
                   <span className="text-[13px] font-medium text-accent">{step}</span>
                 </div>
-                <h3 className="text-[13px] font-semibold text-fg mb-1.5 tracking-tight">
+                <h3 className="text-[13px] font-semibold text-fg mb-1.5">
                   {title}
                 </h3>
                 <p className="text-[13px] text-fg/55 leading-[1.7]">{description}</p>
@@ -132,7 +132,7 @@ export function DonorsTab({ onSignUp }: { onSignUp: () => void }) {
         <div className="max-w-xl mx-auto text-center">
           <h2
             id="donors-cta-heading"
-            className="text-2xl text-fg mb-3 tracking-tight"
+            className="text-2xl text-fg mb-3 font-serif font-semibold"
           >
             Money in politics shouldn&apos;t be a mystery
           </h2>
