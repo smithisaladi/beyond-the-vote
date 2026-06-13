@@ -62,7 +62,7 @@ export function RepresentativeCard({
         }
 
         <div className="flex flex-col items-center gap-0.5">
-          <h3 className="text-sm font-semibold text-fg leading-snug group-hover:text-accent transition-colors tracking-tight">
+          <h3 className="text-[15px] font-serif font-semibold text-fg leading-snug group-hover:text-accent transition-colors">
             {name}
           </h3>
           <p className="text-xs text-fg/60">{title}</p>

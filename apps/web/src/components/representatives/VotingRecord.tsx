@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { CheckCircle, XCircle, MinusCircle } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { parseLocalDate } from '@/lib/format'
-import { STATUS_STYLES } from '@/lib/ui'
+import { STATUS_STYLES, STAT_POSITIVE_CLASS } from '@/lib/ui'
 
 interface BillVote {
   billId:    string
@@ -47,7 +47,7 @@ export default function VotingRecord({ votes, memberName }: VotingRecordProps) {
       {/* Summary bar */}
       <div className="flex items-center gap-4 text-[13px]">
         <span className="text-fg/55">
-          Voted with party <span className="text-fg font-semibold font-mono">{withPartyPercent}%</span>
+          Voted with party <span className={`font-semibold font-mono ${STAT_POSITIVE_CLASS}`}>{withPartyPercent}%</span>
           {' '}of the time (<span className="font-mono">{withPartyCount}/{votes.length}</span> votes)
         </span>
       </div>

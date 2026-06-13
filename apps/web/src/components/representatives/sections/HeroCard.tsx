@@ -35,7 +35,7 @@ export function HeroCard({
         }
 
         <div className="flex-1 text-center sm:text-left">
-          <h1 className="text-xl sm:text-2xl text-fg mb-0.5 leading-[1.15] tracking-tight font-semibold">
+          <h1 className="text-2xl font-serif font-semibold text-fg mb-0.5 leading-[1.15]">
             {politician.name}
           </h1>
           <p className="text-[13px] text-fg/60 mb-3">{politician.title}</p>

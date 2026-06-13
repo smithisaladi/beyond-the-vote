@@ -4,7 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import type { FecTermKey } from '@/lib/fec'
 import { formatTotal, toTitleCase } from '@/lib/format'
-import { STATUS_STYLES } from '@/lib/ui'
+import { STATUS_STYLES, STAT_MONEY_CLASS } from '@/lib/ui'
 
 interface Donor {
   rank?: number
@@ -200,10 +200,10 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
           </SectionLabel>
 
           {/* Hero total */}
-          <p className="text-2xl text-fg tabular-nums leading-none mb-1 font-mono font-semibold">
+          <p className={`text-2xl tabular-nums leading-none mb-1 font-mono font-semibold ${STAT_MONEY_CLASS}`}>
             {formatTotal(bd.total)}
           </p>
-          <p className="text-fg/35 uppercase tracking-[0.10em] mb-5" style={{ fontSize: '0.5625rem' }}>
+          <p className="text-accent uppercase tracking-[0.10em] mb-5" style={{ fontSize: '0.5625rem' }}>
             Total receipts
           </p>
 
@@ -313,7 +313,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
                   >
                     {toTitleCase(c.orgName)}
                   </span>
-                  <span className="flex-shrink-0 text-[13px] font-medium text-fg tabular-nums font-mono">
+                  <span className={`flex-shrink-0 text-[13px] font-medium tabular-nums font-mono ${STAT_MONEY_CLASS}`}>
                     {c.total}
                   </span>
                 </div>
@@ -351,7 +351,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
                   <span className="text-[13px] text-fg leading-snug truncate flex-1 group-hover:text-accent transition-colors">
                     {label}
                   </span>
-                  <span className="flex-shrink-0 text-[13px] font-medium text-fg tabular-nums font-mono">
+                  <span className={`flex-shrink-0 text-[13px] font-medium tabular-nums font-mono ${STAT_MONEY_CLASS}`}>
                     {amt}
                   </span>
                 </div>
@@ -376,7 +376,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
             {bd.pacDirectTotal > 0 && (
               <div className="flex justify-between text-[13px]">
                 <span className="text-fg/60">PAC Direct</span>
-                <span className="text-fg tabular-nums font-mono">{formatTotal(bd.pacDirectTotal)}</span>
+                <span className={`tabular-nums font-mono ${STAT_MONEY_CLASS}`}>{formatTotal(bd.pacDirectTotal)}</span>
               </div>
             )}
             {(bd.superpacIeFor ?? 0) > 0 && (
