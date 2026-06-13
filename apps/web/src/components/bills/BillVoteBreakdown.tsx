@@ -104,9 +104,9 @@ function VoteCard({ vote }: { vote: VoteSummary }) {
       <VoteBar yeas={vote.yeas} nays={vote.nays} partyBreakdown={vote.partyBreakdown} />
 
       <div className="flex justify-between text-[15px]">
-        <span className={`font-medium tabular-nums ${STATUS_STYLES.Passed.text}`}>{vote.yeas} Yea</span>
+        <span className={`font-mono font-medium tabular-nums ${STATUS_STYLES.Passed.text}`}>{vote.yeas} Yea</span>
         {total > 0 && <span className="text-fg/38 text-xs tabular-nums">{total} total</span>}
-        <span className={`font-medium tabular-nums ${STATUS_STYLES.Failed.text}`}>{vote.nays} Nay</span>
+        <span className={`font-mono font-medium tabular-nums ${STATUS_STYLES.Failed.text}`}>{vote.nays} Nay</span>
       </div>
 
       {vote.memberPositions.length > 0 && (
