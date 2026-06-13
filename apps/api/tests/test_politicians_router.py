@@ -1,5 +1,6 @@
 """Tests for /api/politicians endpoints."""
 import pytest
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
 from datetime import date
 
@@ -161,20 +162,21 @@ async def test_search_empty_results(client, mock_db):
 # GET /api/politicians/{bioguide_id} — detail
 # ---------------------------------------------------------------------------
 
+def _mock_factory(mock_db):
+    """Create a session factory that yields the shared mock_db."""
+    @asynccontextmanager
+    async def _session():
+        yield mock_db
+    return _session
+
+
 async def test_politician_detail_found(client, mock_db):
     """Detail endpoint returns profile with all sub-fields."""
-    # The detail endpoint makes many sequential db.execute calls.
-    # We set up side_effect to return results for each query in order:
-    # 1. _get_profile
-    # 2. _get_ideology
-    # 3. _get_committees
-    # 4. _get_recent_votes
-    # 5. _get_sponsored_bills
-    # 6. _get_funding
-    # 7. _get_top_pacs
-    # 8. _get_top_contributors
+    # Profile uses the DI-injected db; the 7 gathered subqueries each
+    # get their own session from _get_session_factory, so we patch it
+    # to return the same mock_db.
     mock_db.execute.side_effect = [
-        make_mock_result([PROFILE_ROW]),     # profile
+        make_mock_result([PROFILE_ROW]),     # profile (DI session)
         make_mock_result([IDEOLOGY_ROW]),     # ideology
         make_mock_result([COMMITTEE_ROW]),    # committees
         make_mock_result([VOTE_ROW]),         # votes
@@ -184,7 +186,8 @@ async def test_politician_detail_found(client, mock_db):
         make_mock_result([CONTRIBUTOR_ROW]),  # top_contributors
     ]
 
-    resp = await client.get("/api/politicians/P000197")
+    with patch("app.routers.politicians._get_session_factory", return_value=_mock_factory(mock_db)):
+        resp = await client.get("/api/politicians/P000197")
     assert resp.status_code == 200
     body = resp.json()
     pol = body["politician"]
@@ -228,7 +231,8 @@ async def test_politician_detail_no_ideology(client, mock_db):
         make_mock_result([]),                # top_contributors
     ]
 
-    resp = await client.get("/api/politicians/P000197")
+    with patch("app.routers.politicians._get_session_factory", return_value=_mock_factory(mock_db)):
+        resp = await client.get("/api/politicians/P000197")
     assert resp.status_code == 200
     stats = resp.json()["politician"]["stats"]
     assert stats["ideologyScore"] is None
@@ -248,7 +252,8 @@ async def test_politician_detail_funding_breakdown(client, mock_db):
         make_mock_result([]),
     ]
 
-    resp = await client.get("/api/politicians/P000197")
+    with patch("app.routers.politicians._get_session_factory", return_value=_mock_factory(mock_db)):
+        resp = await client.get("/api/politicians/P000197")
     funding = resp.json()["politician"]["fundingBreakdown"]
     assert funding["pac"] == 500000
     assert funding["total"] == 1000000  # 500k + 300k + 200k
