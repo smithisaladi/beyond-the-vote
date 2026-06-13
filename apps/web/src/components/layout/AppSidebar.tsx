@@ -32,14 +32,14 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       >
         {collapsed ? (
           <Link to="/home" aria-label="Beyond the Vote — home" className="flex items-center justify-center w-full">
-            <span className="text-xl font-semibold tracking-tight select-none leading-none">
+            <span className="text-xl font-serif font-semibold select-none leading-none">
               <span className="text-fg">B</span>
               <span className="text-accent">V</span>
             </span>
           </Link>
         ) : (
           <Link to="/home" className="flex items-center justify-center w-full">
-            <span className="text-lg font-semibold text-fg tracking-tight whitespace-nowrap">
+            <span className="text-lg font-serif font-semibold text-fg whitespace-nowrap">
               Beyond the <span className="text-accent">Vote</span>
             </span>
           </Link>

@@ -7,7 +7,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
   return (
     <div className="mb-5">
-      <h1 className="text-xl font-semibold tracking-tight text-fg">
+      <h1 className="text-[26px] leading-tight font-serif font-semibold text-fg">
         {title}
       </h1>
       {subtitle && <p className="text-xs text-fg/50 mt-1">{subtitle}</p>}
