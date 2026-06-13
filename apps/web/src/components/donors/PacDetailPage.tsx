@@ -19,7 +19,7 @@ interface PacDetailRecipient {
 import DataSourceDisclosure from '@/components/shared/DataSourceDisclosure'
 import { PageTransition } from '@/components/ui/motion'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
-import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
+import { PARTY_STYLES, STATUS_STYLES, STAT_MONEY_CLASS } from '@/lib/ui'
 import { FEC_DISPLAY_CYCLES, getFecCommitteeUrl, getOpenSecretsUrl } from '@/lib/fec'
 import { formatTotal } from '@/lib/format'
 import { partyAbbrev, toParty } from '@/lib/party'
@@ -98,7 +98,7 @@ function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
           <p className="text-[10px] text-fg/38 mt-0.5 font-mono tabular-nums">{breakdown}</p>
         )}
       </div>
-      <span className="text-[13px] text-fg/60 font-mono tabular-nums flex-shrink-0 min-w-[64px] text-right">
+      <span className={`text-[13px] font-mono tabular-nums flex-shrink-0 min-w-[64px] text-right ${STAT_MONEY_CLASS}`}>
         {formatTotal(recipient.amount)}
       </span>
       <ChevronRight
@@ -130,11 +130,11 @@ function FundingCard({
 }) {
   return (
     <Card padding="none" className="p-4 text-center">
-      <p className="text-[10px] text-fg/50 uppercase tracking-wider mb-2 inline-flex items-center gap-1">
+      <p className="text-[10px] text-accent uppercase tracking-wider mb-2 inline-flex items-center gap-1">
         {label}
         <InfoTooltip term={tooltip} />
       </p>
-      <p className={`text-lg sm:text-xl font-medium font-mono tabular-nums ${valueClassName}`}>
+      <p className={`text-xl sm:text-2xl font-medium font-mono tabular-nums ${valueClassName}`}>
         {formatTotal(amount)}
       </p>
       {sublabel && (
@@ -254,7 +254,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
 
               {/* PAC Header */}
               <div className="mb-8">
-                <h1 className="text-xl sm:text-2xl font-semibold text-fg mb-2 leading-[1.15] tracking-tight">
+                <h1 className="text-2xl font-serif font-semibold text-fg mb-2 leading-[1.15]">
                   {pac.name}
                 </h1>
 
@@ -319,7 +319,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
               {/* All Recipients */}
               <div className="mb-10">
                 <div className="flex items-baseline justify-between mb-3">
-                  <h2 className="text-[15px] font-semibold text-fg tracking-tight">
+                  <h2 className="text-base font-serif font-semibold text-fg">
                     All Recipients
                   </h2>
                   <span className="inline-flex items-center gap-2 text-xs text-fg/38">

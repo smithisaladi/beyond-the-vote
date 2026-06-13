@@ -71,7 +71,7 @@ export default function DashboardPage() {
           <header className="sticky top-0 bg-bg/90 backdrop-blur-sm border-b border-edge px-6 py-3 flex items-center justify-between">
             <div>
               <p className="text-[10px] tracking-[0.07em] uppercase text-fg/40 mb-0.5">{formatToday()}</p>
-              <h1 className="text-[17px] text-fg tracking-tight">
+              <h1 className="text-[26px] leading-tight font-serif font-semibold text-fg">
                 {user ? `${getGreeting()}, ${getFirstName(user)}` : 'Dashboard'}
               </h1>
             </div>
@@ -104,7 +104,7 @@ export default function DashboardPage() {
                 <section>
                   <div className="flex items-center justify-between mb-3 min-h-[30px]">
                     <div className="flex items-baseline gap-2">
-                      <h2 className="text-[15px] font-semibold text-fg tracking-tight">Following</h2>
+                      <h2 className="text-base font-serif font-semibold text-fg">Following</h2>
                       {!loading && <span className="text-xs font-mono tabular-nums text-fg/38">{visiblePoliticians.length}</span>}
                     </div>
                     <Link to="/representatives" className="text-xs text-accent hover:underline underline-offset-2">Find reps</Link>
@@ -181,7 +181,7 @@ export default function DashboardPage() {
                 <section className="min-w-0">
                   <div className="flex items-baseline justify-between mb-3">
                     <div className="flex items-baseline gap-2">
-                      <h2 className="text-[15px] font-semibold text-fg tracking-tight">Tracked Bills</h2>
+                      <h2 className="text-base font-serif font-semibold text-fg">Tracked Bills</h2>
                       {!loading && <span className="text-xs font-mono tabular-nums text-fg/38">{trackedBills.length}</span>}
                     </div>
                     <Link to={"/bills?tracked=true" as any} className="text-xs text-accent hover:underline underline-offset-2">View all</Link>

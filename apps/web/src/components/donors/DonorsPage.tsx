@@ -101,7 +101,7 @@ function ContributorCard({ contributor, rank }: { contributor: ContributorEntry;
             {/* Rank + Name */}
             <div className="flex items-baseline gap-2.5 mb-1">
               <span className="text-xs font-mono text-fg/30 flex-shrink-0">#{rank}</span>
-              <h2 className="text-sm font-semibold text-fg leading-snug group-hover:text-accent transition-colors tracking-tight">
+              <h2 className="text-[15px] font-serif font-semibold text-fg leading-snug group-hover:text-accent transition-colors">
                 {contributor.cmteName}
               </h2>
             </div>
@@ -172,7 +172,7 @@ function DonorsContent() {
 
             {/* Page heading */}
             <div className="mb-5 text-center">
-              <h1 className="text-xl sm:text-2xl text-fg mb-1.5 tracking-tight font-semibold">
+              <h1 className="text-[26px] leading-tight font-serif font-semibold text-fg mb-1.5">
                 Top Contributors
               </h1>
               <p className="text-[13px] text-fg/50">

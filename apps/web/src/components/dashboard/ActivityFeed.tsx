@@ -36,7 +36,7 @@ export function ActivityFeed({ activityFeed, loading, isNew }: ActivityFeedProps
     <section>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-baseline gap-2">
-          <h2 className="text-[15px] font-semibold text-fg tracking-tight">Activity</h2>
+          <h2 className="text-base font-serif font-semibold text-fg">Activity</h2>
           <span className="text-xs text-fg/38">Recent updates</span>
         </div>
         <div className="flex items-center gap-1">

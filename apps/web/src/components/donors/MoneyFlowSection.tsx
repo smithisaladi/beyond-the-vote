@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useMoneyFlow } from "@/hooks/queries/useDonors";
 import { formatTotal, toTitleCase } from "@/lib/format";
 import { toParty, partyAbbrev } from "@/lib/party";
-import { PARTY_STYLES, STATUS_STYLES } from "@/lib/ui";
+import { PARTY_STYLES, STATUS_STYLES, STAT_MONEY_CLASS } from "@/lib/ui";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -74,7 +74,7 @@ export function MoneyFlowSection({ cmteId, cmteName }: MoneyFlowSectionProps) {
   return (
     <Card padding="lg">
       <div className="mb-4">
-        <h2 className="text-[15px] font-semibold text-fg tracking-tight">
+        <h2 className="text-base font-serif font-semibold text-fg">
           Follow the Money
         </h2>
         <p className="text-[13px] text-fg/50">
@@ -239,7 +239,7 @@ function HorizontalFlow({
                         .join(" · ")
                     : "PAC"}
                 </span>
-                <span className="text-[13px] font-semibold font-mono text-fg/70 tabular-nums shrink-0">
+                <span className={`text-[13px] font-semibold font-mono tabular-nums shrink-0 ${STAT_MONEY_CLASS}`}>
                   {formatTotal(f.totalAmount)}
                 </span>
               </div>
@@ -264,7 +264,7 @@ function HorizontalFlow({
         <div className="text-[10px] uppercase tracking-wider opacity-60 mb-0.5">
           PAC
         </div>
-        <div className="font-semibold text-sm leading-tight max-w-[140px] tracking-tight">
+        <div className="text-[15px] font-serif font-semibold leading-tight max-w-[140px]">
           {toTitleCase(cmteName)}
         </div>
         <div className="text-[13px] opacity-80 mt-1 font-mono tabular-nums">
@@ -314,7 +314,7 @@ function HorizontalFlow({
                 <span className="text-[10px] text-fg/45 truncate">
                   {spendingLabel(r)}
                 </span>
-                <span className="text-[13px] font-semibold font-mono text-fg/70 tabular-nums shrink-0">
+                <span className={`text-[13px] font-semibold font-mono tabular-nums shrink-0 ${STAT_MONEY_CLASS}`}>
                   {formatTotal(r.amount)}
                 </span>
               </div>
@@ -450,7 +450,7 @@ function VerticalFlow({
                     : "PAC"}
                 </div>
               </div>
-              <span className="text-[13px] font-semibold font-mono text-fg/70 tabular-nums shrink-0 ml-3">
+              <span className={`text-[13px] font-semibold font-mono tabular-nums shrink-0 ml-3 ${STAT_MONEY_CLASS}`}>
                 {formatTotal(f.totalAmount)}
               </span>
             </div>
@@ -464,7 +464,7 @@ function VerticalFlow({
           <div className="text-[10px] uppercase tracking-wider opacity-60">
             PAC
           </div>
-          <div className="font-semibold text-sm tracking-tight">
+          <div className="text-[15px] font-serif font-semibold leading-tight">
             {toTitleCase(cmteName)}
           </div>
           <div className="text-[13px] opacity-80 mt-0.5 font-mono tabular-nums">
@@ -510,7 +510,7 @@ function VerticalFlow({
                       </span>
                     )}
                   </div>
-                  <span className="text-[13px] font-semibold font-mono text-fg/70 tabular-nums shrink-0 ml-3">
+                  <span className={`text-[13px] font-semibold font-mono tabular-nums shrink-0 ml-3 ${STAT_MONEY_CLASS}`}>
                     {formatTotal(r.amount)}
                   </span>
                 </div>
