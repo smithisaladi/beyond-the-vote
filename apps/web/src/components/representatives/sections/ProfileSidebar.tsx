@@ -62,7 +62,7 @@ export function ProfileSidebar({ stats, nextElectionYear, committees }: ProfileS
 
       {committees.length > 0 && (
         <Card>
-          <p className="text-[10px] text-accent uppercase tracking-[0.07em] mb-3">Committees</p>
+          <p className="text-[10px] text-fg/40 uppercase tracking-[0.07em] mb-3">Committees</p>
           <ul className="space-y-2">
             {committees.map((c, i) => (
               <li key={i} className="flex flex-col gap-0.5">

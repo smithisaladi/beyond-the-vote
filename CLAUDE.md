@@ -177,7 +177,7 @@ All animations are gated by `prefers-reduced-motion` via CSS. Library: `motion` 
 - **Card**: `<Card>` from `@/components/ui/Card`. Defaults: `padding="lg"` (p-4), `rounded-lg`, standard border, no shadow. Padding map: `none` → `''`, `sm` → `p-2.5`, `md` → `p-3`, `lg` → `p-4`, `xl` → `p-8`. Override via `border` (`standard`/`light`/`none`), `hoverable` (bool, must be inside a `group` wrapper). Raw class constants `CARD_CLASS`, `CARD_LIGHT_BORDER_CLASS`, `CARD_HOVER_CLASS` are also exported from `@/lib/ui`.
 - **Input**: `<Input>` from `@/components/ui/Input`. Sizing: `px-3 py-1.5 text-[13px]`. Dark-surfaced text field with focus ring.
 - **Badge**: `text-[10px] font-medium px-1.5 py-px rounded-full` + party/status style from `@/lib/ui` (tinted bg + 1px border). `PartyBadge` has no size prop.
-- **Section header**: `text-[15px] font-semibold tracking-tight text-fg` + `text-xs text-fg/38` count/subtitle.
+- **Section header**: `text-base font-serif font-semibold text-fg` + `text-xs text-fg/38` count/subtitle.
 - **Skeleton**: `<Skeleton className="h-4 w-24 rounded-full" />` from `@/components/ui/Skeleton`. Pair with an ancestor `animate-pulse`. Uses `SKELETON_BG` from `@/lib/ui`.
 - **List dividers**: `divide-y divide-edge-soft` or `border-b border-edge-soft`.
 - **Icons**: Lucide React with `strokeWidth={1.8}`. Nav icons: 16px. Content icons: 14–18px. Brand marks and data-viz SVGs may remain inline.
@@ -193,7 +193,7 @@ All animations are gated by `prefers-reduced-motion` via CSS. Library: `motion` 
 - Never apply `tracking-tight` to serif (`font-serif`) elements
 - Never bypass tokens with raw cream (`#F5F0E8`) or old ink (`#1C1C1A`) values — the only allowed exception is the sidebar's `bg-[#1C1C1A]` ink surface
 - Use `.hex` from party/status styles only for SVG `fill`/`stroke` inline attributes, not for Tailwind classes
-- Micro-labels directly above stat numbers use `text-accent` — never `text-fg/40` for that role
+- Micro-labels directly adjacent to a stat number (above or below) use `text-accent`; all other micro-labels (section labels, legend labels, panel headers) use `text-fg/40`
 
 ## Environment Variables
 

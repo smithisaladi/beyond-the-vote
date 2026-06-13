@@ -57,7 +57,7 @@ export function ErrorState({
           </div>
         )}
 
-        <h2 className="text-xl font-semibold tracking-tight text-fg mb-2">
+        <h2 className="text-xl font-serif font-semibold text-fg mb-2">
           {title}
         </h2>
 
