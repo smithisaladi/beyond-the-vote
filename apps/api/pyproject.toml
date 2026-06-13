@@ -21,7 +21,6 @@ dependencies = [
     "sentence-transformers>=3.4.0",
     "pyjwt[crypto]>=2.12.1",
     "anthropic>=0.40.0",
-    "psycopg2-binary>=2.9.12",
 ]
 
 [project.optional-dependencies]

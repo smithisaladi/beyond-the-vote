@@ -1,13 +1,15 @@
 # apps/api/app/routers/politicians.py
 """Politician endpoints: search + detail."""
 
+import asyncio
+
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from cachetools import TTLCache
 
-from app.deps import get_db
+from app.deps import get_db, _get_session_factory
 
 log = structlog.get_logger()
 
@@ -69,42 +71,28 @@ async def politician_detail(bioguide_id: str, db: AsyncSession = Depends(get_db)
     if not profile:
         raise HTTPException(status_code=404, detail="Politician not found")
 
-    ideology = None
-    committees = []
-    votes = []
-    bills = []
-    funding = {}
-    top_pacs = []
-    top_contributors = []
+    factory = _get_session_factory()
 
-    try:
-        ideology = await _get_ideology(db, bioguide_id)
-    except Exception as e:
-        log.warning("politician_subquery_failed", query="ideology", bioguide_id=bioguide_id, error=str(e))
-    try:
-        committees = await _get_committees(db, bioguide_id)
-    except Exception as e:
-        log.warning("politician_subquery_failed", query="committees", bioguide_id=bioguide_id, error=str(e))
-    try:
-        votes = await _get_recent_votes(db, bioguide_id)
-    except Exception as e:
-        log.warning("politician_subquery_failed", query="votes", bioguide_id=bioguide_id, error=str(e))
-    try:
-        bills = await _get_sponsored_bills(db, bioguide_id)
-    except Exception as e:
-        log.warning("politician_subquery_failed", query="bills", bioguide_id=bioguide_id, error=str(e))
-    try:
-        funding = await _get_funding(db, bioguide_id)
-    except Exception as e:
-        log.warning("politician_subquery_failed", query="funding", bioguide_id=bioguide_id, error=str(e))
-    try:
-        top_pacs = await _get_top_pacs(db, bioguide_id)
-    except Exception as e:
-        log.warning("politician_subquery_failed", query="top_pacs", bioguide_id=bioguide_id, error=str(e))
-    try:
-        top_contributors = await _get_top_contributors(db, bioguide_id)
-    except Exception as e:
-        log.warning("politician_subquery_failed", query="top_contributors", bioguide_id=bioguide_id, error=str(e))
+    async def _safe(name: str, coro, default=None):
+        """Run a subquery in its own session; return default on failure."""
+        try:
+            async with factory() as session:
+                return await coro(session, bioguide_id)
+        except Exception as e:
+            log.warning("politician_subquery_failed", query=name, bioguide_id=bioguide_id, error=str(e))
+            return default
+
+    ideology, committees, votes, bills, funding, top_pacs, top_contributors = (
+        await asyncio.gather(
+            _safe("ideology", _get_ideology),
+            _safe("committees", _get_committees, []),
+            _safe("votes", _get_recent_votes, []),
+            _safe("bills", _get_sponsored_bills, []),
+            _safe("funding", _get_funding, {}),
+            _safe("top_pacs", _get_top_pacs, []),
+            _safe("top_contributors", _get_top_contributors, []),
+        )
+    )
 
     district_str = f"{profile['district']}th District" if profile.get("district") else None
     years_in_office = None

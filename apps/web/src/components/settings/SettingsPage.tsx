@@ -3,51 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/components/auth/AuthContext'
 import { authClient } from '@/lib/auth/neon'
-import { DANGER_BUTTON_CLASS, STATUS_STYLES } from '@/lib/ui'
+import { STATUS_STYLES } from '@/lib/ui'
 import { Input } from '@/components/ui/Input'
 import { PageTransition } from '@/components/ui/motion'
 
-// ── Delete confirmation modal ─────────────────────────────────────────────────
-
-function DeleteModal({ onConfirm, onCancel, loading }: {
-  onConfirm: () => void
-  onCancel: () => void
-  loading: boolean
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative w-full max-w-md bg-surface border border-edge rounded-lg p-4">
-        <h3 className="text-base font-serif font-semibold text-fg mb-2">
-          Delete account?
-        </h3>
-        <p className="text-[13px] text-fg/60 mb-5 leading-relaxed">
-          This action is permanent and cannot be undone. All your data — followed politicians, tracked bills, and topic preferences — will be erased.
-        </p>
-        <div className="flex gap-3 justify-end">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded-lg border border-edge text-[13px] text-fg/70 hover:border-fg/40 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={loading}
-            className={`px-4 py-2 rounded-lg text-[13px] disabled:opacity-60 ${DANGER_BUTTON_CLASS}`}
-          >
-            {loading ? 'Deleting…' : 'Yes, delete my account'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Main component ─────────────────────────────────────────────────────────────
-
 export default function SettingsPage() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const [displayName, setDisplayName] = useState(user?.name ?? '')
   const [nameState, setNameState] = useState({ loading: false, error: '', success: false })
   const [passwordState, setPasswordState] = useState({ loading: false, error: '', success: false })
@@ -71,9 +32,6 @@ export default function SettingsPage() {
     }
   }, [passwordState.success])
 
-  // Delete
-  const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const updateName = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -98,15 +56,6 @@ export default function SettingsPage() {
       setPasswordState({ loading: false, error: '', success: true })
     } catch (err: any) {
       setPasswordState({ loading: false, error: err?.message ?? 'Failed to update password', success: false })
-    }
-  }
-
-  const handleDeleteAccount = async () => {
-    setDeleteLoading(true)
-    try {
-      await signOut()
-    } finally {
-      setDeleteLoading(false)
     }
   }
 
@@ -214,21 +163,6 @@ export default function SettingsPage() {
                 </form>
               </div>
 
-              {/* Danger zone */}
-              <div className="bg-surface rounded-lg border border-edge p-4">
-                <h2 className="text-base font-serif font-semibold text-fg mb-1">
-                  Danger zone
-                </h2>
-                <p className="text-[13px] text-fg/55 mb-4">
-                  Permanently delete your account and all associated data.
-                </p>
-                <button
-                  onClick={() => setShowDeleteModal(true)}
-                  className={`px-4 py-2 rounded-lg text-[13px] ${DANGER_BUTTON_CLASS}`}
-                >
-                  Delete account
-                </button>
-              </div>
             </div>
 
           </div>
@@ -236,14 +170,6 @@ export default function SettingsPage() {
       </div>
     </div>
     </PageTransition>
-
-      {showDeleteModal && (
-        <DeleteModal
-          onConfirm={handleDeleteAccount}
-          onCancel={() => setShowDeleteModal(false)}
-          loading={deleteLoading}
-        />
-      )}
     </>
   )
 }
