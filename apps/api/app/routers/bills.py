@@ -32,6 +32,10 @@ async def list_bills(
         bills = [_format_bill_summary(r) for r in results]
         return {"bills": bills, "pagination": {"total": total, "limit": limit, "offset": offset}}
 
+    _ORDER_MAP = {
+        "newest": "introduced_date DESC NULLS LAST",
+        "oldest": "introduced_date ASC NULLS LAST",
+    }
     params: dict = {"limit": limit, "offset": offset}
     where_parts = []
     if status:
@@ -42,7 +46,7 @@ async def list_bills(
         params["topics"] = topics.split(",")
 
     where = " AND ".join(where_parts) if where_parts else "TRUE"
-    order = "introduced_date DESC NULLS LAST" if sort == "newest" else "introduced_date ASC NULLS LAST"
+    order = _ORDER_MAP[sort]
 
     sql = f"""
     SELECT *, COUNT(*) OVER() AS total_count

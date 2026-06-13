@@ -53,20 +53,27 @@ def _rate_limited_get(url: str, params: dict, timeout: int = 30) -> dict | None:
 
     params["api_key"] = _get_api_key()
 
-    try:
-        resp = httpx.get(url, params=params, timeout=timeout, follow_redirects=True)
-        _request_count += 1
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            resp = httpx.get(url, params=params, timeout=timeout, follow_redirects=True)
+            _request_count += 1
 
-        if resp.status_code == 429:
-            log.warning("rate_limited", retry_after=resp.headers.get("Retry-After", "60"))
-            time.sleep(int(resp.headers.get("Retry-After", 60)))
-            return _rate_limited_get(url, params, timeout)
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get("Retry-After", 60))
+                log.warning("rate_limited", retry_after=retry_after, attempt=attempt + 1)
+                if attempt < max_retries - 1:
+                    time.sleep(retry_after)
+                    continue
+                log.error("rate_limit_exceeded", max_retries=max_retries)
+                return None
 
-        resp.raise_for_status()
-        return resp.json()
-    except httpx.HTTPError as e:
-        log.error("fec_api_error", url=url, error=str(e))
-        return None
+            resp.raise_for_status()
+            return resp.json()
+        except httpx.HTTPError as e:
+            log.error("fec_api_error", url=url, error=str(e))
+            return None
+    return None
 
 
 def fetch_pac_contributions(

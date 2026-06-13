@@ -2,6 +2,7 @@
 
 Validates JWTs issued by Neon Auth using JWKS (EdDSA/Ed25519).
 """
+import asyncio
 import time
 from typing import Any
 
@@ -17,6 +18,7 @@ log = structlog.get_logger()
 _jwks_cache: dict[str, Any] = {}
 _jwks_cache_ttl: float = 0
 _JWKS_CACHE_DURATION = 3600
+_jwks_lock = asyncio.Lock()
 
 
 async def _fetch_jwks() -> dict | None:
@@ -26,20 +28,24 @@ async def _fetch_jwks() -> dict | None:
     if _jwks_cache and time.time() < _jwks_cache_ttl:
         return _jwks_cache
 
-    if not settings.neon_auth_url:
-        return None
+    async with _jwks_lock:
+        if _jwks_cache and time.time() < _jwks_cache_ttl:
+            return _jwks_cache
 
-    jwks_url = f"{settings.neon_auth_url}/.well-known/jwks.json"
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.get(jwks_url, timeout=10)
-            if resp.status_code == 200:
-                _jwks_cache = resp.json()
-                _jwks_cache_ttl = time.time() + _JWKS_CACHE_DURATION
-                log.info("jwks_refreshed", url=jwks_url, keys=len(_jwks_cache.get("keys", [])))
-                return _jwks_cache
-    except httpx.HTTPError as e:
-        log.error("jwks_fetch_failed", url=jwks_url, error=str(e))
+        if not settings.neon_auth_url:
+            return None
+
+        jwks_url = f"{settings.neon_auth_url}/.well-known/jwks.json"
+        try:
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(jwks_url, timeout=10)
+                if resp.status_code == 200:
+                    _jwks_cache = resp.json()
+                    _jwks_cache_ttl = time.time() + _JWKS_CACHE_DURATION
+                    log.info("jwks_refreshed", url=jwks_url, keys=len(_jwks_cache.get("keys", [])))
+                    return _jwks_cache
+        except httpx.HTTPError as e:
+            log.error("jwks_fetch_failed", url=jwks_url, error=str(e))
 
     return None
 

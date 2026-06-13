@@ -23,8 +23,9 @@ _leaderboard_cache: TTLCache = TTLCache(maxsize=100, ttl=600)
 # In-memory cache for AI summaries — 30-day TTL, avoid repeated DB reads
 _summary_cache: TTLCache = TTLCache(maxsize=500, ttl=60 * 60 * 24 * 30)
 
-# Per-cmte_id locks to prevent duplicate Anthropic API calls for the same PAC
-_summary_locks: dict[str, asyncio.Lock] = {}
+# Per-cmte_id locks to prevent duplicate Anthropic API calls for the same PAC.
+# TTLCache bounds memory — locks expire after 1 hour of inactivity.
+_summary_locks: TTLCache = TTLCache(maxsize=1000, ttl=3600)
 
 # Lazy-initialized Anthropic client singleton
 _anthropic_client = None
@@ -256,7 +257,8 @@ async def generate_pac_summary(
 
     if cmte_id not in _summary_locks:
         _summary_locks[cmte_id] = asyncio.Lock()
-    async with _summary_locks[cmte_id]:
+    lock = _summary_locks[cmte_id]
+    async with lock:
         cached = await _get_cached_summary(db, cmte_id)
         if cached:
             return {"summary": cached}
@@ -331,6 +333,7 @@ Cover what the PAC represents, its partisan lean, and spending pattern. Be factu
             model=_AI_SUMMARY_MODEL,
             max_tokens=200,
             messages=[{"role": "user", "content": prompt}],
+            timeout=30.0,
         )
         return message.content[0].text
     except Exception as e:

@@ -33,7 +33,8 @@ def _embed_batch(
         chunk = bills[i : i + batch_size]
         batch_num = i // batch_size + 1
         log.info(
-            f"{event_prefix}_batch_start",
+            "embed_batch_start",
+            phase=event_prefix,
             batch=batch_num,
             first_bill_id=chunk[0][0],
             last_bill_id=chunk[-1][0],
@@ -53,11 +54,11 @@ def _embed_batch(
             ]
             upsert("bill_embeddings", rows, on_conflict="bill_id", schema="enrichment")
             total += len(rows)
-            log.info(f"{event_prefix}_batch_done", count=len(rows), total=total)
+            log.info("embed_batch_done", phase=event_prefix, count=len(rows), total=total)
         except Exception:
             batch_ids = [b[0] for b in chunk]
             failed_ids.extend(batch_ids)
-            log.error(f"{event_prefix}_batch_failed", batch=batch_num, bill_ids=batch_ids, exc_info=True)
+            log.error("embed_batch_failed", phase=event_prefix, batch=batch_num, bill_ids=batch_ids, exc_info=True)
 
     return total, failed_ids
 

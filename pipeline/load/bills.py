@@ -3,58 +3,15 @@ import re
 
 import structlog
 
+from config import TOPIC_SLUG_MAP, BILL_STATUS_RULES
 from shared.db import upsert
 
 log = structlog.get_logger()
-
-_TOPIC_SLUG_MAP = {
-    "Agriculture and Food": "agriculture",
-    "Armed Forces and National Security": "defense",
-    "Civil Rights and Liberties, Minority Issues": "civil-rights",
-    "Commerce": "economy",
-    "Congress": "government",
-    "Crime and Law Enforcement": "criminal-justice",
-    "Economics and Public Finance": "economy",
-    "Education": "education",
-    "Emergency Management": "defense",
-    "Energy": "climate-environment",
-    "Environmental Protection": "climate-environment",
-    "Families": "healthcare",
-    "Finance and Financial Sector": "economy",
-    "Foreign Trade and International Finance": "foreign-policy",
-    "Government Operations and Politics": "government",
-    "Health": "healthcare",
-    "Housing and Community Development": "economy",
-    "Immigration": "immigration",
-    "International Affairs": "foreign-policy",
-    "Labor and Employment": "economy",
-    "Law": "criminal-justice",
-    "Native Americans": "civil-rights",
-    "Public Lands and Natural Resources": "climate-environment",
-    "Science, Technology, Communications": "technology",
-    "Social Welfare": "healthcare",
-    "Sports and Recreation": "education",
-    "Taxation": "economy",
-    "Transportation and Public Works": "infrastructure",
-    "Water Resources Development": "infrastructure",
-}
 
 _BILL_TYPE_DISPLAY = {
     "hr": "H.R.", "s": "S.", "hjres": "H.J.Res.", "sjres": "S.J.Res.",
     "hconres": "H.Con.Res.", "sconres": "S.Con.Res.", "hres": "H.Res.", "sres": "S.Res.",
 }
-
-_STATUS_RULES = [
-    ("became public law", "Passed"),
-    ("signed by president", "Passed"),
-    ("passed the house", "Passed"),
-    ("passed the senate", "Passed"),
-    ("passed senate", "Passed"),
-    ("failed", "Failed"),
-    ("vetoed", "Failed"),
-    ("referred to", "Committee"),
-    ("tabled", "Stalled"),
-]
 
 
 def make_bill_id(congress: int, bill_type: str, number: int | str) -> str:
@@ -100,7 +57,7 @@ def transform_bill(data: dict) -> dict | None:
     if top_term and top_term not in subjects:
         subjects.insert(0, top_term)
     topics = list(dict.fromkeys(
-        _TOPIC_SLUG_MAP[s] for s in subjects if s in _TOPIC_SLUG_MAP
+        TOPIC_SLUG_MAP[s.lower()] for s in subjects if s.lower() in TOPIC_SLUG_MAP
     ))
 
     return {
@@ -136,7 +93,7 @@ def _derive_status(action_text: str, data: dict) -> str:
     if history.get("vetoed"):
         return "Failed"
 
-    for pattern, status in _STATUS_RULES:
+    for pattern, status in BILL_STATUS_RULES:
         if pattern in text_lower:
             if status == "Committee":
                 introduced = data.get("introduced_at", "")

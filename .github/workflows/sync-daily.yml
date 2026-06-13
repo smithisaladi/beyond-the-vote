@@ -26,6 +26,15 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Restore usc-run cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            pipeline/data/congress-scraper
+          key: usc-run-data-${{ github.run_id }}
+          restore-keys: |
+            usc-run-data-
+
       - name: Run daily sync
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

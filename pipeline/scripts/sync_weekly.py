@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from shared.observability import configure_logging
-from shared.db import upsert, log_run_start, log_run_end, get_watermark
+from shared.db import upsert, log_run_start, log_run_end, get_watermark, reset_conn
 
 import structlog
 configure_logging(service="pipeline", debug=True)
@@ -98,12 +98,14 @@ def sync_funding_summaries():
     from ingest.fec_api import fetch_candidate_totals
     from shared.db import get_conn
 
+    # Read legislators first, close cursor before long FEC API calls.
+    # Neon drops idle connections after ~5 min; re-acquire after the API calls.
     conn = get_conn()
     cur = conn.cursor()
-
-    # Get all fec_ids for current legislators
     cur.execute("SELECT bioguide_id, unnest(fec_ids) as cand_id, state FROM congress.legislators")
     leg_rows = cur.fetchall()
+    cur.close()
+
     bioguide_map = {}  # cand_id -> (bioguide_id, state)
     all_cand_ids = []
     for bioguide_id, cand_id, state in leg_rows:
@@ -129,7 +131,6 @@ def sync_funding_summaries():
                 }
             r = results[bioguide_id]
 
-            # FEC API fields
             indiv_itemized = float(rec.get("individual_itemized_contributions") or 0)
             indiv_unitemized = float(rec.get("individual_unitemized_contributions") or 0)
             pac_contrib = float(rec.get("other_political_committee_contributions") or 0)
@@ -137,6 +138,10 @@ def sync_funding_summaries():
             r["large_donor_total"] += indiv_itemized
             r["small_donor_total"] += indiv_unitemized
             r["pac_direct_total"] += pac_contrib
+
+    # Re-acquire connection after long FEC API calls — auto-reconnects if dropped.
+    conn = get_conn()
+    cur = conn.cursor()
 
     # IE data comes from our DB (already synced separately)
     for cycle in FEC_CYCLES:
@@ -153,6 +158,7 @@ def sync_funding_summaries():
             if bioguide_id in results:
                 results[bioguide_id]["superpac_ie_for"] += float(ie_for or 0)
                 results[bioguide_id]["superpac_ie_against"] += float(ie_against or 0)
+    cur.close()
 
     rows = [
         {"bioguide_id": bid, "cycle": max(FEC_CYCLES), **{k: round(v, 2) for k, v in r.items()}}
@@ -161,7 +167,7 @@ def sync_funding_summaries():
 
     count = upsert("legislator_funding_summary", rows, on_conflict="bioguide_id,cycle", schema="derived")
     log.info("funding_summaries_synced", count=count)
-    conn.close()
+    reset_conn()
     return count
 
 

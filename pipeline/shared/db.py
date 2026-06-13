@@ -26,7 +26,9 @@ def get_conn():
     needs_new = _conn is None or _conn.closed
     if not needs_new:
         try:
-            _conn.cursor().execute("SELECT 1")
+            cur = _conn.cursor()
+            cur.execute("SELECT 1")
+            cur.close()
         except Exception:
             needs_new = True
     if needs_new:
@@ -90,8 +92,13 @@ def upsert(
         for row in chunk:
             clean = {}
             for k, v in row.items():
-                if isinstance(v, (list, dict)):
-                    clean[k] = json.dumps(v) if not isinstance(v, list) or (v and not isinstance(v[0], str)) else v
+                if isinstance(v, dict):
+                    # dicts → JSON string (for jsonb columns)
+                    clean[k] = json.dumps(v)
+                elif isinstance(v, list) and v and not isinstance(v[0], str):
+                    # Non-string lists (ints, floats) → JSON string for jsonb columns.
+                    # String lists (text[]) pass through as Python lists for psycopg2.
+                    clean[k] = json.dumps(v)
                 else:
                     clean[k] = v
             sanitized.append(clean)

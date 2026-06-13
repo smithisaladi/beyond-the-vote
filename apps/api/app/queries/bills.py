@@ -149,6 +149,7 @@ async def get_bill_votes(session: AsyncSession, bill_id: str) -> list[dict]:
     WHERE vs.bill_id = :bill_id
     GROUP BY vs.id
     ORDER BY vs.date DESC
+    LIMIT 20
     """
     result = await session.execute(text(sql), {"bill_id": bill_id})
     return [dict(r) for r in result.mappings().all()]

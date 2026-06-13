@@ -1,5 +1,6 @@
 # pipeline/enrich/money_flow.py
 """Tier 2d: Money flow tracing through PAC chains."""
+from collections import deque
 from pathlib import Path
 import networkx as nx
 import structlog
@@ -31,9 +32,9 @@ def trace_money_flow(graph: nx.DiGraph, entity_id: str, direction: str = "inboun
 
     if direction == "inbound":
         visited = set()
-        queue = [(entity_id, [], 0)]
+        queue = deque([(entity_id, [], 0)])
         while queue:
-            current, path, depth = queue.pop(0)
+            current, path, depth = queue.popleft()
             if depth > 0:
                 # path is destination-first: [entity_id, intermediate..., current]
                 # Reverse to get origin-first path for _compute_attribution: [current, ..., last_hop]
@@ -55,9 +56,9 @@ def trace_money_flow(graph: nx.DiGraph, entity_id: str, direction: str = "inboun
 
     elif direction == "outbound":
         visited = set()
-        queue = [(entity_id, [], 0)]
+        queue = deque([(entity_id, [], 0)])
         while queue:
-            current, path, depth = queue.pop(0)
+            current, path, depth = queue.popleft()
             if depth > 0:
                 amount = graph[path[-1]][current]["weight"] if path else 0
                 flows.append({
@@ -160,8 +161,6 @@ def add_individual_edges(top_funders: list[dict], cycle: int) -> list[dict]:
 
 def run_money_flow(parquet_path: Path, cycle: int, max_depth: int = 3) -> int:
     conn = get_conn()
-    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cur.execute("DELETE FROM analytics.money_flow_attribution WHERE cycle = %s", (cycle,))
 
     transfers = extract_pac_transfers(parquet_path)
     if not transfers:
@@ -179,18 +178,32 @@ def run_money_flow(parquet_path: Path, cycle: int, max_depth: int = 3) -> int:
             flow["cycle"] = cycle
         all_flows.extend(flows)
 
-    # Individual→PAC edges from pac_top_funders
+    # Individual→PAC edges from pac_top_funders (read before the transaction)
+    cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
     cur.execute(
         "SELECT cmte_id, canonical_donor_id, display_name, total_amount "
         "FROM derived.pac_top_funders WHERE cycle = %s",
         (cycle,),
     )
     individual_flows = add_individual_edges([dict(row) for row in cur.fetchall()], cycle)
+    cur.close()
     all_flows.extend(individual_flows)
     log.info("individual_edges_added", count=len(individual_flows))
 
-    if all_flows:
-        upsert("money_flow_attribution", all_flows, schema="analytics")
+    # Wrap DELETE + INSERT in a transaction so a failure doesn't leave an empty table.
+    conn.autocommit = False
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM analytics.money_flow_attribution WHERE cycle = %s", (cycle,))
+        cur.close()
+        if all_flows:
+            upsert("money_flow_attribution", all_flows, schema="analytics")
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.autocommit = True
 
     log.info("money_flow_complete", flows=len(all_flows), committees_traced=len(top_nodes), individual_edges=len(individual_flows))
     return len(all_flows)
