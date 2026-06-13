@@ -10,28 +10,7 @@ import { PageTransition } from '@/components/ui/motion'
 import { Card } from '@/components/ui/Card'
 import { Skeleton as SkeletonBox } from '@/components/ui/Skeleton'
 import { useBillDetail } from '@/hooks/queries/useBills'
-interface MemberPosition {
-  bioguideId: string
-  name: string
-  party: string
-  state: string
-  position: string
-}
-
-interface Vote {
-  id: string
-  date: string
-  chamber: string
-  question: string | null
-  result: string
-  yeas: number
-  nays: number
-  present: number
-  notVoting: number
-  partyBreakdown: Record<string, { yea: number; nay: number }>
-  memberPositions?: MemberPosition[]
-  sourceUrl: string | null
-}
+import type { BillVote, BillVoteMemberPosition } from '@/lib/types/bills'
 import type { Party } from '@/lib/types'
 
 const FILTERS = ['All', 'Yea', 'Nay', 'Not Voting'] as const
@@ -66,7 +45,7 @@ function VoteBreakdownSkeleton() {
   )
 }
 
-function MemberRow({ m }: { m: MemberPosition }) {
+function MemberRow({ m }: { m: BillVoteMemberPosition }) {
   const ps = getPartyStyle(m.party)
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-edge-soft last:border-0">
@@ -87,7 +66,7 @@ function MemberRow({ m }: { m: MemberPosition }) {
 
 type DropdownId = 'position' | 'party' | null
 
-function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote: Vote; billId: string; billNumber: string; billTitle: string; fromParam: string | null }) {
+function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote: BillVote; billId: string; billNumber: string; billTitle: string; fromParam: string | null }) {
   const [filter, setFilter] = useState<Filter>('All')
   const [partyFilter, setPartyFilter] = useState<Party | 'All'>('All')
   const [openDropdown, setOpenDropdown] = useState<DropdownId>(null)

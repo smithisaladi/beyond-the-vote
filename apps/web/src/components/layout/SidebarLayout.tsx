@@ -3,19 +3,14 @@ import { AppSidebar } from './AppSidebar'
 import { SIDEBAR_EXPANDED_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '@/lib/constants'
 
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false)
-  const [hydrated, setHydrated] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebar-collapsed') === 'true' } catch { return false }
+  })
   const sidebarWidth = collapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_EXPANDED_WIDTH
 
   useEffect(() => {
-    const stored = localStorage.getItem('sidebar-collapsed') === 'true'
-    setCollapsed(stored)
-    setHydrated(true)
-  }, [])
-
-  useEffect(() => {
-    if (hydrated) localStorage.setItem('sidebar-collapsed', String(collapsed))
-  }, [collapsed, hydrated])
+    localStorage.setItem('sidebar-collapsed', String(collapsed))
+  }, [collapsed])
 
   return (
     <div className="flex min-h-screen bg-bg">

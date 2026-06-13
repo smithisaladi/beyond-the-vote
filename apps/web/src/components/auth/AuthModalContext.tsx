@@ -3,8 +3,6 @@ import { SignInModal } from "./SignInModal";
 import { SignUpModal } from "./SignUpModal";
 
 interface AuthModalContextType {
-  showSignIn: () => void;
-  showSignUp: () => void;
   closeModal: () => void;
   openSignIn: () => void;
   openSignUp: () => void;
@@ -13,7 +11,7 @@ interface AuthModalContextType {
 }
 
 const AuthModalContext = createContext<AuthModalContextType>({
-  showSignIn: () => {}, showSignUp: () => {}, closeModal: () => {},
+  closeModal: () => {},
   openSignIn: () => {}, openSignUp: () => {},
   isSignInOpen: false, isSignUpOpen: false,
 });
@@ -22,19 +20,19 @@ export function AuthModalProvider({ children }: { children: ReactNode }) {
   const [isSignInOpen, setSignInOpen] = useState(false);
   const [isSignUpOpen, setSignUpOpen] = useState(false);
 
-  const showSignIn = () => { setSignUpOpen(false); setSignInOpen(true); };
-  const showSignUp = () => { setSignInOpen(false); setSignUpOpen(true); };
+  const openSignIn = () => { setSignUpOpen(false); setSignInOpen(true); };
+  const openSignUp = () => { setSignInOpen(false); setSignUpOpen(true); };
   const closeModal = () => { setSignInOpen(false); setSignUpOpen(false); };
 
   return (
     <AuthModalContext.Provider value={{
-      showSignIn, showSignUp, closeModal,
-      openSignIn: showSignIn, openSignUp: showSignUp,
+      closeModal,
+      openSignIn, openSignUp,
       isSignInOpen, isSignUpOpen,
     }}>
       {children}
-      <SignInModal isOpen={isSignInOpen} onClose={closeModal} onSwitchToSignUp={showSignUp} />
-      <SignUpModal isOpen={isSignUpOpen} onClose={closeModal} onSwitchToSignIn={showSignIn} />
+      <SignInModal isOpen={isSignInOpen} onClose={closeModal} onSwitchToSignUp={openSignUp} />
+      <SignUpModal isOpen={isSignUpOpen} onClose={closeModal} onSwitchToSignIn={openSignIn} />
     </AuthModalContext.Provider>
   );
 }

@@ -33,11 +33,16 @@ export interface PoliticianBill {
 }
 
 export interface Donor {
-  rank: number
-  name: string
-  amount: string
-  category: string
+  rank?: number
+  name?: string
+  amount?: string
+  category?: string
   summary?: string
+  cmteId?: string
+  cmteName?: string | null
+  directContribution?: number
+  ieFor?: number
+  totalSupport?: number
 }
 
 export interface TopContributor {
@@ -75,6 +80,9 @@ export interface FundingBreakdown {
   outOfStatePct: number
   cycle: number
   minCycle?: number
+  pacDirectTotal?: number
+  superpacIeFor?: number
+  superpacIeAgainst?: number
 }
 
 export interface PoliticianStats {

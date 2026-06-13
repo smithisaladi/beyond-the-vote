@@ -16,24 +16,27 @@ export interface BillSummary {
 }
 
 export interface BillSponsor {
-  name: string
-  bioguideId: string
-  party: string
-  state: string
-  district: string | null
+  name: string | null
+  bioguideId: string | null
+  party: string | null
+  state?: string
+  district?: string | null
 }
 
 export interface BillCosponsor {
-  name: string
+  name: string | null
   bioguideId: string
-  party: string
-  state: string
+  party: string | null
+  state: string | null
+  photoUrl?: string | null
+  sponsoredAt?: string
+  originalCosponsor?: boolean
 }
 
 export interface BillAction {
   date: string
   text: string
-  type: string
+  type: string | null
 }
 
 export interface PartyBreakdown {
@@ -54,34 +57,36 @@ export interface BillVoteMemberPosition {
 export interface BillVote {
   id:              string | null
   date:            string
-  chamber:         'House' | 'Senate'
+  chamber:         string
   question:        string | null
   result:          string | null
-  required:        string | null
+  required?:       string | null
   yeas:            number | null
   nays:            number | null
   present:         number | null
   notVoting:       number | null
   partyBreakdown:  PartyBreakdown | null
-  memberPositions: BillVoteMemberPosition[]
+  memberPositions?: BillVoteMemberPosition[]
   sourceUrl:       string | null
 }
 
 export interface BillDetail {
   id: string
-  number: string
+  number: string | null
   title: string
   congress: number
   introducedDate: string
-  status: BillStatus
-  summary: string
+  status: string | null
+  summary: string | null
   sponsor: BillSponsor | null
   cosponsors: BillCosponsor[]
   policyArea: string | null
   topics: string[]
-  subjects: string[]
-  congressGovUrl: string
+  subjects?: string[]
+  congressGovUrl: string | null
   actions: BillAction[]
   votes: BillVote[]
-  _hasDetailedVotes: boolean
+  lastActionText?: string | null
+  lastActionDate?: string
+  _hasDetailedVotes?: boolean
 }

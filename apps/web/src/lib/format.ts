@@ -76,10 +76,6 @@ export function formatBillType(type: string): string {
 }
 
 /**
- * Parse a date-only string (YYYY-MM-DD) as local time instead of UTC.
- * Prevents the off-by-one-day bug where `new Date('2024-01-15')` shows Jan 14 in US timezones.
- */
-/**
  * Decode common HTML entities left over after stripping tags from Congress.gov summaries.
  */
 export function decodeHtmlEntities(html: string): string {

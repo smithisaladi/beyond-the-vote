@@ -54,7 +54,7 @@ export function useGeneratePacSummary(cmteId: string) {
       return resp.json();
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["pac", cmteId], (old: any) =>
+      queryClient.setQueryData(["pac", cmteId], (old: Record<string, unknown> | undefined) =>
         old ? { ...old, summary: data.summary } : old
       );
     },

@@ -5,9 +5,9 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_db
 
-router = APIRouter(tags=["money-flow"])
+router = APIRouter(prefix="/api/money-flow", tags=["money-flow"])
 
-@router.get("/api/money-flow/{entity_id}")
+@router.get("/{entity_id}")
 async def follow_the_money(
     entity_id: str,
     direction: str = Query(default="inbound"),

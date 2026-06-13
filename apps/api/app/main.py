@@ -66,7 +66,8 @@ app.add_middleware(SlowAPIMiddleware)
 
 @app.get("/healthz")
 async def healthz():
-    return {"status": "ok"}
+    from app.ml.embeddings import is_model_loaded
+    return {"status": "ok", "embedding_model": is_model_loaded()}
 
 
 from app.routers import bills

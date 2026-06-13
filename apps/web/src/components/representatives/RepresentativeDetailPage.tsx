@@ -24,9 +24,7 @@ type Tab = 'votes' | 'bills' | 'donors'
 
 export default function RepresentativeDetailPage({ id, initialPolitician }: { id: string; initialPolitician?: Politician | null }) {
   const { activeTab, setActiveTab } = useTabState<Tab>({
-    paramName: 'tab',
     defaultValue: 'votes',
-    validValues: ['votes', 'bills', 'donors'],
   })
 
   const [photoError, setPhotoError] = useState(false)
@@ -37,7 +35,7 @@ export default function RepresentativeDetailPage({ id, initialPolitician }: { id
   const { data: followedData } = useFollowedPoliticians()
   const followMutation = useFollowPolitician()
   const followedIds = new Set(
-    (followedData?.politicians ?? []).map((p: any) => p.id)
+    (followedData?.politicians ?? []).map((p: { id: string }) => p.id)
   )
   const following = followedIds.has(id)
   const followLoading = followMutation.isPending

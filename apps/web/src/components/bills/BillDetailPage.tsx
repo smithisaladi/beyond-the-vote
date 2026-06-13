@@ -10,69 +10,7 @@ import { useAuth } from '@/components/auth/AuthContext'
 import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
 import { useBillDetail } from '@/hooks/queries/useBills'
 import { TAP_SPRING, PageTransition } from '@/components/ui/motion'
-interface BillDetailSponsor {
-  name: string | null
-  bioguideId: string | null
-  party: string | null
-}
-
-interface BillDetailCosponsor {
-  bioguideId: string
-  name: string | null
-  party: string | null
-  state: string | null
-  photoUrl: string | null
-  sponsoredAt: string
-  originalCosponsor: boolean
-}
-
-interface BillAction {
-  date: string
-  text: string
-  type: string | null
-}
-
-interface VoteDetail {
-  id: string
-  date: string
-  chamber: string
-  question: string | null
-  result: string
-  yeas: number
-  nays: number
-  present: number
-  notVoting: number
-  partyBreakdown: Record<string, { yea: number; nay: number }>
-  memberPositions?: MemberPosition[]
-  sourceUrl: string | null
-}
-
-interface MemberPosition {
-  bioguideId: string
-  name: string
-  party: string
-  state: string
-  position: string
-}
-
-interface BillDetail {
-  id: string
-  number: string | null
-  title: string
-  congress: number
-  introducedDate: string
-  status: string | null
-  summary: string | null
-  sponsor: BillDetailSponsor | null
-  cosponsors: BillDetailCosponsor[]
-  policyArea: string | null
-  topics: string[]
-  congressGovUrl: string | null
-  actions: BillAction[]
-  lastActionText: string | null
-  lastActionDate: string
-  votes: VoteDetail[]
-}
+import type { BillDetail } from '@/lib/types/bills'
 import { PARTY_STYLES, STATUS_STYLES, getPartyStyle } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
 import { formatDate, formatShortDate } from '@/lib/format'
@@ -133,7 +71,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
   const error = _billError ? String(_billError) : null
   const { data: trackedData } = useTrackedBills()
   const trackMutation = useTrackBill()
-  const trackedBillIds = new Set((trackedData?.bills ?? []).map((b: any) => b.id))
+  const trackedBillIds = new Set((trackedData?.bills ?? []).map((b: { id: string }) => b.id))
   const tracked = trackedBillIds.has(id)
 
   const handleTrack = () => {

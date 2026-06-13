@@ -9,6 +9,7 @@ import type { Party } from '@/lib/types'
 import { PARTY_STYLES } from '@/lib/ui'
 import { Card } from '@/components/ui/Card'
 import { TAP_SPRING } from '@/components/ui/motion'
+import { Initials } from './sections/Initials'
 
 interface RepresentativeCardProps {
   id: string
@@ -23,28 +24,13 @@ interface RepresentativeCardProps {
   onSignInRequired: () => void
 }
 
-
-function Initials({ name }: { name: string }) {
-  const parts = name.trim().split(' ')
-  const initials = parts.length >= 2
-    ? `${parts[0][0]}${parts[parts.length - 1][0]}`
-    : parts[0][0]
-  return (
-    <div className="w-16 h-20 rounded-full bg-fg/[0.06] flex items-center justify-center flex-shrink-0">
-      <span className="text-base text-fg/50 font-medium tracking-tight">
-        {initials.toUpperCase()}
-      </span>
-    </div>
-  )
-}
-
 export function RepresentativeCard({
   id, name, title, party, state, district, since, photo, userId, onSignInRequired,
 }: RepresentativeCardProps) {
   const badge = PARTY_STYLES[party] || PARTY_STYLES.Independent
   const { data: followedData } = useFollowedPoliticians()
   const followMutation = useFollowPolitician()
-  const followedIds = new Set((followedData?.politicians ?? []).map((p: any) => p.id))
+  const followedIds = new Set((followedData?.politicians ?? []).map((p: { id: string }) => p.id))
   const following = followedIds.has(id)
   const followLoading = followMutation.isPending
   const toggleFollow = () => {

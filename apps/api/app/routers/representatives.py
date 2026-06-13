@@ -10,7 +10,7 @@ from app.deps import get_db
 router = APIRouter(prefix="/api/representatives", tags=["representatives"])
 
 @router.get("")
-async def lookup_representatives(address: str = Query(..., min_length=5), db: AsyncSession = Depends(get_db)):
+async def lookup_representatives(address: str = Query(..., min_length=5, max_length=500), db: AsyncSession = Depends(get_db)):
     if not settings.geocodio_api_key:
         raise HTTPException(status_code=503, detail="Geocoding not configured")
     try:

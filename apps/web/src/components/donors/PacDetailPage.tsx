@@ -1,6 +1,6 @@
 
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeft, ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react'
 import { usePacDetail, useGeneratePacSummary } from '@/hooks/queries/useDonors'
@@ -153,11 +153,14 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
   const error = _pacError ? String(_pacError) : null
 
   // Trigger AI summary generation on demand when PAC loads without one
+  const hasMutated = useRef(false)
+
   useEffect(() => {
-    if (pac && !pac.summary && !summaryMutation.isPending && !summaryMutation.isSuccess && !summaryMutation.isError) {
+    if (pac && !pac.summary && !hasMutated.current) {
+      hasMutated.current = true
       summaryMutation.mutate()
     }
-  }, [pac, summaryMutation.isPending, summaryMutation.isSuccess, summaryMutation.isError])
+  }, [pac])
 
   const summaryLoading = summaryMutation.isPending
 

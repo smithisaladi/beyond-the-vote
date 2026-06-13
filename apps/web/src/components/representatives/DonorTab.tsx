@@ -4,55 +4,8 @@ import { Link } from '@tanstack/react-router'
 import { InfoTooltip } from '@/components/shared/InfoTooltip'
 import type { FecTermKey } from '@/lib/fec'
 import { formatTotal, toTitleCase } from '@/lib/format'
+import type { Donor, FundingBreakdown, TopContributor } from '@/lib/types/politicians'
 import { STATUS_STYLES, STAT_MONEY_CLASS } from '@/lib/ui'
-
-interface Donor {
-  rank?: number
-  name?: string
-  cmteId?: string
-  cmteName?: string | null
-  amount?: string
-  category?: string
-  summary?: string
-  directContribution?: number
-  ieFor?: number
-  totalSupport?: number
-}
-
-interface FundingBreakdown {
-  pac: number
-  pacPct: number
-  individualLarge: number
-  individualLargePct: number
-  individualSmall: number
-  individualSmallPct: number
-  partyContributions: number
-  partyContributionsPct: number
-  selfFunded: number
-  selfFundedPct: number
-  other: number
-  otherPct: number
-  total: number
-  superPacFor: number
-  superPacAgainst: number
-  inStateTotal: number
-  outOfStateTotal: number
-  inStatePct: number
-  outOfStatePct: number
-  cycle: number
-  minCycle?: number
-  // Simple API shape
-  pacDirectTotal?: number
-  superpacIeFor?: number
-  superpacIeAgainst?: number
-}
-
-interface TopContributor {
-  rank: number
-  orgName: string
-  total: string
-  cmteId?: string | null
-}
 
 interface DonorTabProps {
   pacDonors: Donor[]
@@ -105,7 +58,7 @@ function SectionLabel({
         {tooltipTerm && <InfoTooltip term={tooltipTerm} />}
       </p>
       {meta && (
-        <span className="text-fg/30 uppercase tracking-[0.08em] flex-shrink-0" style={{ fontSize: '0.5625rem' }}>
+        <span className="text-[9px] text-fg/30 uppercase tracking-[0.08em] flex-shrink-0">
           {meta}
         </span>
       )}
@@ -203,7 +156,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
           <p className={`text-2xl tabular-nums leading-none mb-1 font-mono font-semibold ${STAT_MONEY_CLASS}`}>
             {formatTotal(bd.total)}
           </p>
-          <p className="text-accent uppercase tracking-[0.10em] mb-5" style={{ fontSize: '0.5625rem' }}>
+          <p className="text-[9px] text-accent uppercase tracking-[0.10em] mb-5">
             Total receipts
           </p>
 
@@ -293,7 +246,7 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
           <SectionLabel tooltipTerm="topContributors" meta="By organization">
             Top Contributors
           </SectionLabel>
-          <p className="text-fg/35 -mt-1 mb-3" style={{ fontSize: '0.6875rem' }}>
+          <p className="text-[11px] text-fg/35 -mt-1 mb-3">
             PAC contributions by parent organization
           </p>
 
@@ -399,20 +352,19 @@ export function DonorTab({ pacDonors, topContributors, fundingBreakdown, fecUrl 
       {fecUrl && (
         <div className="border-t border-edge pt-4">
           <div className="flex items-baseline justify-between gap-4">
-            <p className="text-fg/25 uppercase tracking-[0.10em]" style={{ fontSize: '0.5625rem' }}>
+            <p className="text-[9px] text-fg/25 uppercase tracking-[0.10em]">
               Source · FEC
             </p>
             <a
               href={fecUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-fg/40 hover:text-accent transition-colors uppercase tracking-[0.08em]"
-              style={{ fontSize: '0.5625rem' }}
+              className="text-[9px] text-fg/40 hover:text-accent transition-colors uppercase tracking-[0.08em]"
             >
               View filing →
             </a>
           </div>
-          <p className="text-fg/25 mt-1.5" style={{ fontSize: '0.625rem' }}>
+          <p className="text-[10px] text-fg/25 mt-1.5">
             FEC bulk filings. Combines employee donations &amp; PAC contributions by organization.
           </p>
         </div>

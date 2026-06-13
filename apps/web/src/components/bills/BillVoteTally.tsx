@@ -3,31 +3,10 @@
 import { Link } from '@tanstack/react-router'
 import { PARTY_STYLES, STATUS_STYLES, resultBadge } from '@/lib/ui'
 import { formatShortDate } from '@/lib/format'
-interface MemberPosition {
-  bioguideId: string
-  name: string
-  party: string
-  state: string
-  position: string
-}
-
-interface Vote {
-  id: string
-  date: string
-  chamber: string
-  question: string | null
-  result: string
-  yeas: number
-  nays: number
-  present: number
-  notVoting: number
-  partyBreakdown: Record<string, { yea: number; nay: number }>
-  memberPositions?: MemberPosition[]
-  sourceUrl: string | null
-}
+import type { BillVote } from '@/lib/types/bills'
 
 
-function VoteEntryContent({ vote }: { vote: Vote }) {
+function VoteEntryContent({ vote }: { vote: BillVote }) {
   const yeas = vote.yeas ?? 0
   const nays = vote.nays ?? 0
   const total = yeas + nays
@@ -90,7 +69,7 @@ function VoteEntryContent({ vote }: { vote: Vote }) {
   )
 }
 
-function VoteEntry({ vote, showBorder, billId, fromParam }: { vote: Vote; showBorder: boolean; billId: string; fromParam?: string | null }) {
+function VoteEntry({ vote, showBorder, billId, fromParam }: { vote: BillVote; showBorder: boolean; billId: string; fromParam?: string | null }) {
   const base = showBorder ? 'pt-5 border-t border-edge-soft' : ''
   const fromQs = fromParam ? `?from=${encodeURIComponent(fromParam)}` : ''
 
@@ -112,7 +91,7 @@ function VoteEntry({ vote, showBorder, billId, fromParam }: { vote: Vote; showBo
   )
 }
 
-export default function BillVoteTally({ votes, billId, fromParam }: { votes: Vote[]; billId: string; fromParam?: string | null }) {
+export default function BillVoteTally({ votes, billId, fromParam }: { votes: BillVote[]; billId: string; fromParam?: string | null }) {
   if (!votes || votes.length === 0) return null
 
   return (
