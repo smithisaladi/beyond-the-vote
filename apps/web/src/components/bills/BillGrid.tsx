@@ -75,7 +75,7 @@ function BillCard({
             </div>
 
             {/* Title */}
-            <h2 className="text-sm font-semibold text-fg leading-snug mb-2 group-hover:text-accent transition-colors tracking-tight">
+            <h2 className="text-[15px] font-serif font-semibold text-fg leading-snug mb-2 group-hover:text-accent transition-colors">
               {bill.title}
             </h2>
 

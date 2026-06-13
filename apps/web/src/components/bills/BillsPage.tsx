@@ -141,7 +141,7 @@ function BillsContent() {
 
             {/* Page heading */}
             <div className="mb-5 text-center">
-              <h1 className="text-xl sm:text-2xl text-fg mb-1.5 tracking-tight font-semibold">
+              <h1 className="text-[26px] leading-tight font-serif font-semibold text-fg mb-1.5">
                 Search Bills
               </h1>
               <p className="text-[13px] text-fg/50">

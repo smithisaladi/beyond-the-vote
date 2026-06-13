@@ -198,7 +198,7 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
                     </div>
 
                     {/* Title */}
-                    <h1 className="text-xl sm:text-2xl text-fg leading-[1.2] mb-2.5 tracking-tight font-semibold">
+                    <h1 className="text-2xl font-serif font-semibold text-fg leading-[1.2] mb-2.5">
                       {bill.title}
                     </h1>
 

@@ -156,7 +156,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
               )}
             </div>
 
-            <h1 className="text-xl text-fg leading-snug tracking-tight font-semibold">
+            <h1 className="text-2xl font-serif font-semibold text-fg leading-snug">
               {billTitle}
             </h1>
 
@@ -181,19 +181,19 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
 
         <div className="flex items-end gap-6">
           <div>
-            <div className={`text-xl font-semibold font-mono tabular-nums ${STATUS_STYLES.Passed.text}`}>{yeas}</div>
-            <div className="text-[10px] font-medium text-fg/38 uppercase tracking-[0.07em] mt-0.5">Yea</div>
+            <div className={`text-2xl font-medium tabular-nums ${STATUS_STYLES.Passed.text}`}>{yeas}</div>
+            <div className="text-[10px] font-medium text-accent uppercase tracking-[0.07em] mt-0.5">Yea</div>
           </div>
           <div className="w-px h-6 bg-edge" />
           <div>
-            <div className={`text-xl font-semibold font-mono tabular-nums ${STATUS_STYLES.Failed.text}`}>{nays}</div>
-            <div className="text-[10px] font-medium text-fg/38 uppercase tracking-[0.07em] mt-0.5">Nay</div>
+            <div className={`text-2xl font-medium tabular-nums ${STATUS_STYLES.Failed.text}`}>{nays}</div>
+            <div className="text-[10px] font-medium text-accent uppercase tracking-[0.07em] mt-0.5">Nay</div>
           </div>
           {(vote.notVoting ?? 0) > 0 && (
             <>
               <div className="w-px h-6 bg-edge" />
               <div>
-                <div className="text-xl font-semibold text-fg/20 font-mono tabular-nums">{vote.notVoting}</div>
+                <div className="text-2xl font-medium text-fg/20 tabular-nums">{vote.notVoting}</div>
                 <div className="text-[10px] font-medium text-fg/20 uppercase tracking-[0.07em] mt-0.5">Not Voting</div>
               </div>
             </>
