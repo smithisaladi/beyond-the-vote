@@ -135,7 +135,6 @@ function DonorsContent() {
   const [accumulated, setAccumulated] = useState<ContributorEntry[]>([])
   const limit = 20
 
-  // Reset offset and accumulated results when search or cycle changes
   useEffect(() => {
     setOffset(0)
     setAccumulated([])
@@ -146,7 +145,6 @@ function DonorsContent() {
   const total = data?.pagination?.total ?? 0
   const error = _donorError ? String(_donorError) : null
 
-  // Accumulate results when new data arrives
   useEffect(() => {
     if (freshContributors.length > 0) {
       if (offset === 0) {

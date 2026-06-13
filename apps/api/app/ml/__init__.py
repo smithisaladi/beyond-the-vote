@@ -1,4 +1,3 @@
-# apps/api/app/ml/__init__.py
 """ML model registry — load all models at startup."""
 import structlog
 

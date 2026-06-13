@@ -71,7 +71,6 @@ async def list_donors(
 @router.get("/{cmte_id}/money-flow")
 async def money_flow(cmte_id: str, db: AsyncSession = Depends(get_db)):
     """Money flow visualization: top individual funders + top recipients."""
-    # Get PAC name
     name_row = await db.execute(
         text("SELECT cmte_name FROM fec.cmte_names WHERE cmte_id = :id"),
         {"id": cmte_id},
@@ -80,7 +79,6 @@ async def money_flow(cmte_id: str, db: AsyncSession = Depends(get_db)):
     if not cmte_name:
         raise HTTPException(status_code=404, detail="Committee not found")
 
-    # Top individual funders from pre-computed table
     funder_rows = await db.execute(
         text("""
             SELECT canonical_donor_id, display_name, employer, state,
@@ -197,7 +195,6 @@ async def money_flow(cmte_id: str, db: AsyncSession = Depends(get_db)):
         for r in recipient_rows.mappings().all()
     ]
 
-    # Flow stats
     stats_row = await db.execute(
         text("""
             SELECT
@@ -239,7 +236,6 @@ async def donor_detail(cmte_id: str, cycle: int | None = None, db: AsyncSession 
     if not result:
         raise HTTPException(status_code=404, detail="Committee not found")
 
-    # Attach cached AI summary if available (don't block on generation)
     summary = await _get_cached_summary(db, cmte_id)
     result["summary"] = summary
     return result
@@ -254,16 +250,13 @@ async def generate_pac_summary(
     """Generate AI summary for a PAC on demand. Returns cached version if available."""
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
-    # Check cache first (before acquiring lock)
     cached = await _get_cached_summary(db, cmte_id)
     if cached:
         return {"summary": cached}
 
-    # Acquire per-PAC lock to prevent duplicate Anthropic calls
     if cmte_id not in _summary_locks:
         _summary_locks[cmte_id] = asyncio.Lock()
     async with _summary_locks[cmte_id]:
-        # Re-check cache after acquiring lock (another request may have populated it)
         cached = await _get_cached_summary(db, cmte_id)
         if cached:
             return {"summary": cached}

@@ -1,4 +1,3 @@
-# apps/api/app/routers/representatives.py
 """Representative lookup via address geocoding."""
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query

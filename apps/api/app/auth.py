@@ -2,11 +2,9 @@
 
 Validates JWTs issued by Neon Auth using JWKS (EdDSA/Ed25519).
 """
-import ssl
 import time
 from typing import Any
 
-import certifi
 import httpx
 import jwt
 from jwt import PyJWK

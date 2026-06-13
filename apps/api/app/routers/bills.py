@@ -1,4 +1,3 @@
-# apps/api/app/routers/bills.py
 """Bill endpoints: list, search, detail, by-topic."""
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -25,7 +24,6 @@ async def list_bills(
     if q:
         status_list = status.split(",") if status else None
         topic_list = topics.split(",") if topics else None
-        # Embed query for semantic search signal
         query_embedding = await embed_query(q) if is_model_loaded() else None
         results, total = await hybrid_bill_search(
             db, q, query_embedding=query_embedding,
@@ -78,7 +76,6 @@ async def bill_detail(bill_id: str, db: AsyncSession = Depends(get_db)):
 
     votes = await get_bill_votes(db, bill["bill_id"])
 
-    # Cosponsors
     cosponsor_result = await db.execute(
         text("""SELECT bc.bioguide_id, bc.sponsored_at, bc.withdrawn_at, bc.original_cosponsor,
                        l.full_name, l.party, l.state, l.photo_url
@@ -101,7 +98,6 @@ async def bill_detail(bill_id: str, db: AsyncSession = Depends(get_db)):
         for r in cosponsor_result.mappings().all()
     ]
 
-    # Actions timeline
     actions_result = await db.execute(
         text("""SELECT acted_at, text, action_code, action_type
                 FROM congress.bill_actions

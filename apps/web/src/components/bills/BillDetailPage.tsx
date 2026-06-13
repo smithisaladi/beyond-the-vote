@@ -11,15 +11,13 @@ import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
 import { useBillDetail } from '@/hooks/queries/useBills'
 import { TAP_SPRING, PageTransition } from '@/components/ui/motion'
 import type { BillDetail } from '@/lib/types/bills'
-import { PARTY_STYLES, STATUS_STYLES, getPartyStyle } from '@/lib/ui'
+import { STATUS_STYLES, getPartyStyle } from '@/lib/ui'
 import { slugToTopic } from '@/lib/topics'
 import { formatDate, formatShortDate } from '@/lib/format'
 import { PartyBadge } from '@/components/shared/PartyBadge'
 import BillVoteTally from '@/components/bills/BillVoteTally'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function DetailSkeleton() {
   return (
@@ -53,8 +51,6 @@ function PartyTag({ party }: { party: string }) {
     </span>
   )
 }
-
-// ─── Main component ────────────────────────────────────────────────────────────
 
 export default function BillDetailPage({ id, initialBill }: { id: string; initialBill?: BillDetail | null }) {
   const searchParams = useSearch({ strict: false }) as Record<string, string>

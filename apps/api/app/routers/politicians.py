@@ -1,4 +1,3 @@
-# apps/api/app/routers/politicians.py
 """Politician endpoints: search + detail."""
 
 import asyncio

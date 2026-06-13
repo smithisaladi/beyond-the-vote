@@ -22,24 +22,20 @@ function RepresentativesContent() {
   const modeParam = searchParams['mode']
 
   const [address, setAddress] = useState(addressParam)
-  const [inputFocused, setInputFocused] = useState(false)
   const [searchMode, setSearchMode] = useState<'address' | 'name'>(modeParam === 'address' ? 'address' : 'name')
   const [nameQuery, setNameQuery] = useState(nameParam)
   const { openSignIn } = useAuthModal()
   const hasResults = addressParam.length > 0
 
-  // Resolve display address (shortened form for the input after submission)
   const inputDisplayValue = address
 
   const { user } = useAuth()
   const userId = user?.id ?? null
 
-  // Sync input with URL param
   useEffect(() => {
     setAddress(addressParam)
   }, [addressParam])
 
-  // Sync search mode with URL
   useEffect(() => {
     if (modeParam === 'address' && searchMode !== 'address') setSearchMode('address')
     if (modeParam === 'name' && searchMode !== 'name') setSearchMode('name')
@@ -67,7 +63,6 @@ function RepresentativesContent() {
     navigate({ to: '/representatives', search: { address: suggestion, mode: 'address' } as any })
   }
 
-  // Displayed results depend on mode
   const displayRepresentatives = searchMode === 'name' ? nameResults : representatives
   const displayLoading = searchMode === 'name' ? nameLoading : loading
   const displayError = searchMode === 'name' ? '' : error
@@ -132,8 +127,8 @@ function RepresentativesContent() {
                         type="text"
                         value={inputDisplayValue}
                         onChange={(e) => { setAddress(e.target.value); setShowSuggestions(true) }}
-                        onFocus={() => { setInputFocused(true); suggestions.length > 0 && setShowSuggestions(true) }}
-                        onBlur={() => { setInputFocused(false); setTimeout(() => setShowSuggestions(false), 200) }}
+                        onFocus={() => { suggestions.length > 0 && setShowSuggestions(true) }}
+                        onBlur={() => { setTimeout(() => setShowSuggestions(false), 200) }}
                         placeholder="Enter your home address"
                         className="flex-1 bg-transparent outline-none text-[13px] text-fg placeholder:text-fg/35"
                         autoComplete="off"

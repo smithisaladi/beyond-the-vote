@@ -1,6 +1,5 @@
-# apps/api/app/routers/dashboard.py
 """Dashboard endpoints — all require authentication."""
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_db, get_current_user

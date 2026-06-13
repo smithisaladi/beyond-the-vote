@@ -1,4 +1,3 @@
-// apps/web/src/hooks/queries/useDonors.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 

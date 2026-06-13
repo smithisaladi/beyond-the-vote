@@ -13,17 +13,14 @@ export default function SettingsPage() {
   const [nameState, setNameState] = useState({ loading: false, error: '', success: false })
   const [passwordState, setPasswordState] = useState({ loading: false, error: '', success: false })
 
-  // Sync displayName when user changes
   useEffect(() => {
     if (user?.name) setDisplayName(user.name)
   }, [user?.name])
 
-  // Password fields (transient form state — not persisted)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  // Clear password fields on success
   useEffect(() => {
     if (passwordState.success) {
       setCurrentPassword('')
@@ -58,8 +55,6 @@ export default function SettingsPage() {
       setPasswordState({ loading: false, error: err?.message ?? 'Failed to update password', success: false })
     }
   }
-
-  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <>

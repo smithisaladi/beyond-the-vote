@@ -1,4 +1,3 @@
-# apps/api/app/main.py
 """FastAPI application with middleware, Sentry, and routers."""
 from contextlib import asynccontextmanager
 

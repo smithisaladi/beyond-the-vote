@@ -1,11 +1,7 @@
 import type { BillStatus } from './types/bills'
 export type { BillStatus }
 
-/**
- * Derives a display status from Congress.gov latestAction text and introducedDate.
- * Mirrors the logic in app/api/bills/route.ts — kept here so sync scripts can
- * import it without touching app/api/.
- */
+/** Derives a display status from Congress.gov latestAction text and introducedDate. */
 export function mapStatus(latestActionText?: string, introducedDate?: string): BillStatus {
   const action = (latestActionText ?? '').toLowerCase()
   if (
@@ -63,10 +59,3 @@ export function formatBillId(billId: string): string {
   return `${label} ${number}`
 }
 
-export interface SmartSearchResult {
-  bill_id: string
-  congress: number
-  title: string
-  summary: string | null
-  similarity: number | null
-}

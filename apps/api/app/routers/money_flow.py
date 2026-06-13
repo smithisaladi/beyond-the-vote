@@ -1,4 +1,3 @@
-# apps/api/app/routers/money_flow.py
 """Follow-the-money endpoint — trace PAC chain flows."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text

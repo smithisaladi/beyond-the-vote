@@ -6,7 +6,7 @@ import { LogOut, UserMinus } from 'lucide-react'
 
 import { PARTY_STYLES, STATUS_STYLES, DANGER_HOVER_CLASS } from '@/lib/ui'
 import { useAuth } from '@/components/auth/AuthContext'
-import { useFollowedPoliticians, useFollowPolitician, useTrackedBills, useTopicPreferences } from "@/hooks/queries/useDashboard"
+import { useFollowedPoliticians, useFollowPolitician, useTrackedBills } from "@/hooks/queries/useDashboard"
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -59,10 +59,6 @@ export default function DashboardPage() {
     unfollowMutation.mutate({ politicianId, follow: false })
   }
 
-  const visiblePoliticians = politicians
-
-  const isNew = (_timestamp: number) => false
-
   return (
     <div className="flex-1 flex flex-col min-h-screen">
       <PageTransition>
@@ -96,7 +92,7 @@ export default function DashboardPage() {
                 <ActivityFeed
                   activityFeed={activityFeed}
                   loading={loading}
-                  isNew={isNew}
+                  isNew={() => false}
                 />
 
                 {/* Right column: Following + Tracked Bills */}
@@ -105,7 +101,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between mb-3 min-h-[30px]">
                     <div className="flex items-baseline gap-2">
                       <h2 className="text-base font-serif font-semibold text-fg">Following</h2>
-                      {!loading && <span className="text-xs font-mono tabular-nums text-fg/38">{visiblePoliticians.length}</span>}
+                      {!loading && <span className="text-xs font-mono tabular-nums text-fg/38">{politicians.length}</span>}
                     </div>
                     <Link to="/representatives" className="text-xs text-accent hover:underline underline-offset-2">Find reps</Link>
                   </div>
@@ -122,7 +118,7 @@ export default function DashboardPage() {
                         </div>
                       ))}
                     </Card>
-                  ) : visiblePoliticians.length === 0 ? (
+                  ) : politicians.length === 0 ? (
                     <EmptyState
                       message="No politicians followed yet."
                       href="/representatives"
@@ -130,12 +126,12 @@ export default function DashboardPage() {
                     />
                   ) : (
                     <Card padding="none" className="overflow-hidden max-h-[300px] overflow-y-auto">
-                      {visiblePoliticians.map((pol: { id: string; name: string; party: string; state: string; photo?: string }, idx: number) => {
+                      {politicians.map((pol: { id: string; name: string; party: string; state: string; photo?: string }, idx: number) => {
                         const badge = PARTY_STYLES[pol.party as keyof typeof PARTY_STYLES] ?? PARTY_STYLES.Independent
                         return (
                           <div
                             key={pol.id}
-                            className={`flex items-center gap-2.5 px-4 py-2.5 ${idx < visiblePoliticians.length - 1 ? 'border-b border-edge-soft' : ''}`}
+                            className={`flex items-center gap-2.5 px-4 py-2.5 ${idx < politicians.length - 1 ? 'border-b border-edge-soft' : ''}`}
                           >
                             <Link to="/representatives/$id" params={{ id: pol.id }} className="flex items-center gap-2.5 flex-1 min-w-0 group">
                               <div className="relative w-8 h-8 flex-shrink-0">

@@ -1,4 +1,3 @@
-// apps/web/src/hooks/queries/useDashboard.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -56,14 +55,5 @@ export function useTrackBill() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard", "tracked-bills"] });
     },
-  });
-}
-
-export function useTopicPreferences() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ["dashboard", "topic-preferences"],
-    queryFn: () => authFetch("/api/dashboard/topic-preferences"),
-    enabled: !!user,
   });
 }

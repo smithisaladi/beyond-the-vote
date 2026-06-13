@@ -1,4 +1,3 @@
-# apps/api/app/ml/embeddings.py
 """Query-time text embedding using sentence-transformers."""
 import asyncio
 

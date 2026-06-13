@@ -1,7 +1,3 @@
-// Formatting helpers shared across representative/donor/bill surfaces.
-// Keep this file dependency-free so it can be imported from server & client
-// components alike.
-
 /**
  * Acronyms 4+ letters that should stay uppercase. Short (≤3 char) words are
  * auto-uppercased unless they appear in SHORT_WORD_EXCLUSIONS below.

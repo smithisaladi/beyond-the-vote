@@ -1,4 +1,3 @@
-# apps/api/app/queries/bills.py
 """Bill search and lookup queries using raw SQL."""
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession

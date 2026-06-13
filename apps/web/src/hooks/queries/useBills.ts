@@ -1,4 +1,3 @@
-// apps/web/src/hooks/queries/useBills.ts
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 
@@ -33,17 +32,5 @@ export function useBillDetail(billId: string) {
       return data.bill || data;
     },
     enabled: !!billId,
-  });
-}
-
-export function useBillsByTopic(slug: string, limit = 20) {
-  return useQuery({
-    queryKey: ["bills-by-topic", slug],
-    queryFn: async () => {
-      const resp = await apiFetch(`/api/bills/by-topic?slug=${slug}&limit=${limit}`);
-      if (!resp.ok) throw new Error("Failed to fetch bills by topic");
-      return resp.json();
-    },
-    enabled: !!slug,
   });
 }

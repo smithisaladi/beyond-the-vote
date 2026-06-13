@@ -1,4 +1,3 @@
-# apps/api/app/middleware/request_id.py
 """Request ID middleware — generates UUID per request, adds to logs and response header."""
 import uuid
 

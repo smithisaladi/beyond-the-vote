@@ -6,8 +6,6 @@ import { PARTY_STYLES, STATUS_STYLES } from '@/lib/ui'
 import type { BillStatus } from '@/lib/types'
 import { Card } from '@/components/ui/Card'
 
-// ── Decorative background ─────────────────────────────────────────────────────
-
 export function TopoBackground() {
   return (
     <svg
@@ -34,8 +32,6 @@ export function TopoBackground() {
   )
 }
 
-// ── Feature item ──────────────────────────────────────────────────────────────
-
 export function Feature({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
     <div className="flex gap-3">
@@ -50,8 +46,6 @@ export function Feature({ icon, title, description }: { icon: React.ReactNode; t
   )
 }
 
-// ── Icons ─────────────────────────────────────────────────────────────────────
-
 export function IconBell() { return <Bell size={17} strokeWidth={1.8} /> }
 export function IconUsers() { return <Users size={17} strokeWidth={1.8} /> }
 export function IconVote() { return <ClipboardCheck size={17} strokeWidth={1.8} /> }
@@ -61,8 +55,6 @@ export function IconTrending() { return <TrendingUp size={17} strokeWidth={1.8} 
 export function IconDollar() { return <DollarSign size={17} strokeWidth={1.8} /> }
 export function IconArrowsLeftRight() { return <ArrowLeftRight size={17} strokeWidth={1.8} /> }
 export function IconSparkles() { return <Sparkles size={17} strokeWidth={1.8} /> }
-
-// ── Mock preview cards ────────────────────────────────────────────────────────
 
 export function MockRepCard({ name, title, party, state, vote }: {
   name: string; title: string; party: string; state: string

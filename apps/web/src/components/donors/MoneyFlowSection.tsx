@@ -9,10 +9,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 
 function spendingLabel(r: FlowRecipient): string {
   const parts: string[] = [];
-  // Role first (e.g. "Senate" or "House candidate")
   const role = recipientRole(r);
   if (role) parts.push(role);
-  // Spending breakdown
   if (r.direct && r.direct > 0) parts.push(`Direct ${formatTotal(r.direct)}`);
   if (r.ieFor && r.ieFor > 0) parts.push(`IE for ${formatTotal(r.ieFor)}`);
   if (r.ieAgainst && r.ieAgainst > 0) parts.push(`IE against ${formatTotal(r.ieAgainst)}`);
@@ -52,11 +50,9 @@ const OFFICE_LABELS: Record<string, string> = { H: "House candidate", S: "Senate
 const stalledHex = STATUS_STYLES.Stalled.hex;
 
 function recipientRole(r: FlowRecipient): string {
-  // Current legislator — use chamber
   if (r.bioguideId && r.chamber) {
     return r.chamber.charAt(0).toUpperCase() + r.chamber.slice(1);
   }
-  // Non-legislator — use FEC office label
   if (r.candOffice) return OFFICE_LABELS[r.candOffice] || "Candidate";
   return "Candidate";
 }

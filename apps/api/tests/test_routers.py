@@ -1,4 +1,3 @@
-# apps/api/tests/test_routers.py
 """Smoke tests to verify all routers are registered."""
 import pytest
 from httpx import ASGITransport, AsyncClient

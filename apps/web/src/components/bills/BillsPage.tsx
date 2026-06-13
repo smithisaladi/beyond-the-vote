@@ -16,7 +16,6 @@ function BillsContent() {
   const { user } = useAuth()
   const { openSignIn } = useAuthModal()
 
-  // Filter state
   const [query, setQuery] = useState('')
   const debouncedQuery = useDebounce(query, 300)
   const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set())
@@ -27,7 +26,6 @@ function BillsContent() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -75,22 +73,18 @@ function BillsContent() {
     dropdownRef,
   }
 
-  // Tracked bills
   const { data: trackedData } = useTrackedBills()
   const trackMutation = useTrackBill()
   const trackedBills = new Set<string>((trackedData?.bills ?? []).map((b: { id: string }) => b.id))
 
-  // Build query params
   const statusParam = selectedStatuses.size > 0 ? [...selectedStatuses].join(',') : undefined
   const topicsParam = selectedTopics.size > 0 ? [...selectedTopics].map(t => topicToSlug(t as any)).join(',') : undefined
 
-  // Pagination — accumulate bills across pages
   const [allBills, setAllBills] = useState<{ id: string; number: string | null; title: string; sponsor: string | null; party: string | null; status: string | null; topics: string[]; lastAction: string | null; summary: string | null }[]>([])
   const [offset, setOffset] = useState(0)
   const [total, setTotal] = useState(0)
   const limit = 20
 
-  // Reset when filters change
   useEffect(() => {
     setOffset(0)
     setAllBills([])
@@ -106,7 +100,6 @@ function BillsContent() {
     offset,
   })
 
-  // Append new page results
   useEffect(() => {
     if (data?.bills) {
       setAllBills(prev => offset === 0 ? data.bills : [...prev, ...data.bills])
@@ -123,7 +116,6 @@ function BillsContent() {
     setOffset(prev => prev + limit)
   }
 
-  // Filter by tracked if showTrackedOnly
   const displayBills = showTrackedOnly ? bills.filter(b => trackedBills.has(b.id)) : bills
 
   const handleToggleTrack = (billId: string) => {
