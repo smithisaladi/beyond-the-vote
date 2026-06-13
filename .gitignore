@@ -57,3 +57,4 @@ blob-report/
 
 # Worktrees
 .worktrees/
+apps/api/.coverage
