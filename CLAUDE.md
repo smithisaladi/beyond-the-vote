@@ -99,7 +99,7 @@ All Tailwind classes reference CSS custom properties — never use raw hex value
 | Foreground | `text-fg` | `#F5F0E8` | All text — use opacity modifiers |
 | Border | `border-edge` | `rgba(245,240,232,0.07)` | Card/divider borders |
 | Soft border | `border-edge-soft` | `rgba(245,240,232,0.05)` | Subtle list dividers |
-| Accent | `text-accent` | `#9B7EAA` | Text links, icons, active indicators |
+| Accent | `text-accent` | `#B794D4` | Text links, icons, active indicators, stat micro-labels |
 | Accent fill | `bg-accent-deep` | `#7B5E8A` | Button fills, CTAs |
 | Accent hover | `bg-accent-deep-hover` | `#6A4F78` | Button hover state |
 
@@ -113,36 +113,37 @@ All text uses `text-fg` with Tailwind opacity modifiers — never use `text-gray
 
 **Always import from `@/lib/ui` — never hardcode palette hexes in component files.**
 
-| Style | Text color | Export |
-|-------|-----------|--------|
-| Democrat | `#7EA5C8` | `PARTY_STYLES.Democrat` |
-| Republican | `#C89B9B` | `PARTY_STYLES.Republican` |
-| Independent | `#A8A896` | `PARTY_STYLES.Independent` |
-| Active | `#9B7EAA` | `STATUS_STYLES.Active` |
-| Committee | `#A8A896` | `STATUS_STYLES.Committee` |
-| Stalled/Failed | `#C97A5A` | `STATUS_STYLES.Stalled` / `STATUS_STYLES.Failed` |
-| Passed | `#7FC29B` | `STATUS_STYLES.Passed` |
+| Style | Text hex | Export |
+|-------|----------|--------|
+| Democrat | `#8FBAE0` | `PARTY_STYLES.Democrat` |
+| Republican | `#DCA8A8` | `PARTY_STYLES.Republican` |
+| Independent | `#BBBBA6` | `PARTY_STYLES.Independent` |
+| Active | `#B794D4` | `STATUS_STYLES.Active` |
+| Committee | `#BBBBA6` | `STATUS_STYLES.Committee` |
+| Stalled/Failed | `#E08B66` | `STATUS_STYLES.Stalled` / `STATUS_STYLES.Failed` |
+| Passed | `#8FD9AC` | `STATUS_STYLES.Passed` |
 
-Each entry has `.bg` (tinted background + 1px border), `.text` (Tailwind text class), and `.hex` (raw hex for SVG `fill`/`stroke` inline styles). Also exported from `@/lib/ui`: `DANGER_HOVER_CLASS`, `DANGER_BUTTON_CLASS` (destructive action styling), `IDEOLOGY_GRADIENT` (left-right D→I→R gradient for ideology bars), `getPartyStyle()`, `resultBadge()`.
+Badge fills use `/[0.22]` opacity tint; badge borders use `/40` opacity. Each entry has `.bg` (tinted background + 1px border), `.text` (Tailwind text class), and `.hex` (raw hex for SVG `fill`/`stroke` inline styles). Also exported from `@/lib/ui`: `DANGER_HOVER_CLASS`, `DANGER_BUTTON_CLASS` (destructive action styling — uses `#E08B66`), `IDEOLOGY_GRADIENT` (left-right D→I→R gradient for ideology bars), `STAT_MONEY_CLASS` (`text-[#E8D9F0]`, for money stat tints), `STAT_POSITIVE_CLASS` (`text-[#C9ECD9]`, for positive/passed stat tints), `getPartyStyle()`, `resultBadge()`.
 
 ### Typography
 
-- **Geist Sans** (`--font-sans`, via `@fontsource-variable/geist`): all text including headings. Headings use `font-semibold tracking-tight`.
-- **Geist Mono** (`font-mono`, via `@fontsource-variable/geist-mono`): numbers, money amounts, percentages, bill IDs (e.g. `S. 1247`, `H.R. 4521`).
-- **Serif is retired** — never reintroduce `font-serif`, `var(--font-serif)`, or `style={{ fontFamily: ... }}` for serif.
+- **Fraunces Variable** (`--font-serif` / `font-serif`, via CSS `@font-face`): display elements — page titles (26px), section headings (16px), entity names, hero headings, wordmark. Always use `font-semibold` (weight 600). Never apply `tracking-tight` to serif elements.
+- **Geist Sans** (`--font-sans`, via `@fontsource-variable/geist`): all body text, labels, metadata, UI controls.
+- **Geist Mono** (`font-mono`, via `@fontsource-variable/geist-mono`): all numbers — money amounts, percentages, bill IDs, stat display numbers (pair with `tabular-nums`).
 - Weights: `font-semibold` or `font-medium` for headings — never `font-bold` on body text.
 
 ### Type Scale (Compact Density)
 
 | Role | Class | Notes |
 |------|-------|-------|
-| Page title | `text-xl font-semibold tracking-tight` | PageHeader `<h1>` |
-| Section heading | `text-[15px] font-semibold tracking-tight` | Card/section `<h2>` |
-| Card title / name | `text-sm font-semibold` | Politician name, bill title |
+| Page title | `text-[26px] leading-tight font-serif font-semibold` | PageHeader `<h1>` |
+| Section heading | `text-base font-serif font-semibold` | Card/section `<h2>` |
+| Entity name (card) | `text-[15px] font-serif font-semibold` | Politician/donor name in list cards |
+| Entity name (hero) | `text-2xl font-serif font-semibold` | Detail page hero |
 | Body | `text-[13px]` | Default readable text |
 | Meta / label | `text-xs` | Dates, counts, secondary info |
-| Micro-label | `text-[10px] uppercase tracking-[0.07em] text-fg/40` | Stat card labels |
-| Stat number | `font-mono tabular-nums` at 17–20px (`text-xl`/`text-2xl`/`text-3xl`) | Money, counts, scores |
+| Micro-label | `text-[10px] uppercase tracking-[0.07em] text-accent` | Stat card labels (directly above the number) |
+| Stat number | `font-mono font-medium tabular-nums` at 17–20px (`text-xl`/`text-2xl`/`text-3xl`) | Money, counts, scores |
 | PageHeader subtitle | `text-xs` | Below the page title |
 
 ### Elevation (No Shadows)
@@ -188,9 +189,11 @@ All animations are gated by `prefers-reduced-motion` via CSS. Library: `motion` 
 - Never hardcode palette hexes in component files — use Tailwind tokens (`bg-surface`, `text-fg/60`, etc.) or import from `@/lib/ui`
 - Never use `text-gray-*` or `bg-gray-*`
 - Never add any `shadow-*` Tailwind utilities — elevation is bg-step only
-- Never use serif fonts or `font-bold` on body text
+- Never use `font-bold` on body text
+- Never apply `tracking-tight` to serif (`font-serif`) elements
 - Never bypass tokens with raw cream (`#F5F0E8`) or old ink (`#1C1C1A`) values — the only allowed exception is the sidebar's `bg-[#1C1C1A]` ink surface
 - Use `.hex` from party/status styles only for SVG `fill`/`stroke` inline attributes, not for Tailwind classes
+- Micro-labels directly above stat numbers use `text-accent` — never `text-fg/40` for that role
 
 ## Environment Variables
 
