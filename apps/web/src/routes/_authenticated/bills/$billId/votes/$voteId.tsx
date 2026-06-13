@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import VoteBreakdownPage from "@/components/bills/VoteBreakdownPage";
+import { lazy } from "react";
+
+const VoteBreakdownPage = lazy(() => import("@/components/bills/VoteBreakdownPage"));
 
 export const Route = createFileRoute(
   "/_authenticated/bills/$billId/votes/$voteId"

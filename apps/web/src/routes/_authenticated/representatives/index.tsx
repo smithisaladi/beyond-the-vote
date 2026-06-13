@@ -1,3 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import RepresentativesPage from "@/components/representatives/RepresentativesPage";
+import { lazy } from "react";
+
+const RepresentativesPage = lazy(() => import("@/components/representatives/RepresentativesPage"));
+
 export const Route = createFileRoute("/_authenticated/representatives/")({ component: RepresentativesPage });

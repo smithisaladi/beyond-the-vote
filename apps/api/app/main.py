@@ -29,22 +29,9 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_lim
 
 def _load_models_sync() -> None:
     """Load ML models in a thread so the event loop stays free for port binding."""
-    import asyncio
     try:
         from app.ml import load_all_models
-        if settings.database_url:
-            from app.deps import _get_session_factory
-            factory = _get_session_factory()
-            loop = asyncio.new_event_loop()
-            async def _run():
-                async with factory() as session:
-                    await load_all_models(db_session=session)
-            loop.run_until_complete(_run())
-            loop.close()
-        else:
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(load_all_models())
-            loop.close()
+        load_all_models()
     except Exception:
         log.exception("background_model_load_failed")
 

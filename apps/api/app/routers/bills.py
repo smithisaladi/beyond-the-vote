@@ -26,7 +26,7 @@ async def list_bills(
         status_list = status.split(",") if status else None
         topic_list = topics.split(",") if topics else None
         # Embed query for semantic search signal
-        query_embedding = embed_query(q) if is_model_loaded() else None
+        query_embedding = await embed_query(q) if is_model_loaded() else None
         results, total = await hybrid_bill_search(
             db, q, query_embedding=query_embedding,
             status=status_list, topics=topic_list, limit=limit, offset=offset,

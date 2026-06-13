@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { SidebarLayout } from "@/components/layout/SidebarLayout";
 
@@ -23,7 +23,9 @@ function AuthenticatedLayout() {
 
   return (
     <SidebarLayout>
-      <Outlet />
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <Outlet />
+      </Suspense>
     </SidebarLayout>
   );
 }

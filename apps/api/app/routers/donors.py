@@ -1,4 +1,6 @@
 """Donor endpoints: PAC leaderboard + detail — live queries with in-memory cache."""
+import asyncio
+
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
@@ -20,6 +22,20 @@ _leaderboard_cache: TTLCache = TTLCache(maxsize=100, ttl=600)
 
 # In-memory cache for AI summaries — 30-day TTL, avoid repeated DB reads
 _summary_cache: TTLCache = TTLCache(maxsize=500, ttl=60 * 60 * 24 * 30)
+
+# Per-cmte_id locks to prevent duplicate Anthropic API calls for the same PAC
+_summary_locks: dict[str, asyncio.Lock] = {}
+
+# Lazy-initialized Anthropic client singleton
+_anthropic_client = None
+
+
+def _get_anthropic_client():
+    global _anthropic_client
+    if _anthropic_client is None:
+        import anthropic
+        _anthropic_client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+    return _anthropic_client
 
 
 @router.get("")
@@ -238,23 +254,31 @@ async def generate_pac_summary(
     """Generate AI summary for a PAC on demand. Returns cached version if available."""
     if user is None:
         raise HTTPException(status_code=401, detail="Authentication required")
-    # Check cache first
+    # Check cache first (before acquiring lock)
     cached = await _get_cached_summary(db, cmte_id)
     if cached:
         return {"summary": cached}
 
-    # Need PAC data to generate summary
-    result = await pac_detail(db, cmte_id)
-    if not result:
-        raise HTTPException(status_code=404, detail="Committee not found")
+    # Acquire per-PAC lock to prevent duplicate Anthropic calls
+    if cmte_id not in _summary_locks:
+        _summary_locks[cmte_id] = asyncio.Lock()
+    async with _summary_locks[cmte_id]:
+        # Re-check cache after acquiring lock (another request may have populated it)
+        cached = await _get_cached_summary(db, cmte_id)
+        if cached:
+            return {"summary": cached}
 
-    if not settings.anthropic_api_key:
-        raise HTTPException(status_code=503, detail="AI summaries unavailable")
+        result = await pac_detail(db, cmte_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Committee not found")
 
-    summary = await _generate_summary(result)
-    if summary:
-        await _store_summary(db, cmte_id, summary)
-    return {"summary": summary}
+        if not settings.anthropic_api_key:
+            raise HTTPException(status_code=503, detail="AI summaries unavailable")
+
+        summary = await _generate_summary(result)
+        if summary:
+            await _store_summary(db, cmte_id, summary)
+        return {"summary": summary}
 
 
 async def _get_cached_summary(db: AsyncSession, cmte_id: str) -> str | None:
@@ -285,8 +309,6 @@ async def _store_summary(db: AsyncSession, cmte_id: str, summary: str):
 
 
 async def _generate_summary(pac_data: dict) -> str | None:
-    import anthropic
-
     recipients = pac_data.get("recipients", [])
     top_recipients = sorted(recipients, key=lambda r: r.get("amount", 0), reverse=True)[:10]
 
@@ -312,8 +334,7 @@ Top recipients: {recipient_lines}
 Cover what the PAC represents, its partisan lean, and spending pattern. Be factual, no speculation."""
 
     try:
-        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
-        message = await client.messages.create(
+        message = await _get_anthropic_client().messages.create(
             model=_AI_SUMMARY_MODEL,
             max_tokens=200,
             messages=[{"role": "user", "content": prompt}],
