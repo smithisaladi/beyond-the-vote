@@ -58,7 +58,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Middleware runs outermost-last: add_middleware prepends, so the last one added
+# wraps everything. CORS must be outermost so rate-limit (429) and error responses
+# still carry Access-Control-Allow-Origin — otherwise the browser reports them as
+# CORS failures instead of the real status.
+app.state.limiter = limiter
 app.add_middleware(RequestIDMiddleware)
+app.add_middleware(SlowAPIMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in settings.cors_origins.split(",")],
@@ -66,8 +72,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.state.limiter = limiter
-app.add_middleware(SlowAPIMiddleware)
 
 
 from app.routers import health
