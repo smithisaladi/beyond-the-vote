@@ -22,7 +22,7 @@ if settings.sentry_dsn:
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
         environment=settings.environment,
-        traces_sample_rate=0.1,
+        traces_sample_rate=0.3,
     )
 
 def _rate_limit_key(request: Request) -> str:
