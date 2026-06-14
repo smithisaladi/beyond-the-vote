@@ -61,7 +61,7 @@ class TestComputeForCycle:
         mock_duckdb.execute.return_value.fetchdf.return_value = contrib_df
 
         with patch("scripts.compute_pac_top_funders.DATA_DIR", tmp_path / "data"), \
-             patch("shared.db.upsert") as mock_upsert:
+             patch("scripts.compute_pac_top_funders.upsert") as mock_upsert:
             result = compute_for_cycle(2024, top_n=10)
 
         # d_100 gave $5000 to C001 and $1000 to C002; d_200 gave $3000 to C001
@@ -84,7 +84,7 @@ class TestComputeForCycle:
         mock_duckdb.execute.return_value.fetchdf.return_value = contrib_df
 
         with patch("scripts.compute_pac_top_funders.DATA_DIR", tmp_path / "data"), \
-             patch("shared.db.upsert") as mock_upsert:
+             patch("scripts.compute_pac_top_funders.upsert") as mock_upsert:
             result = compute_for_cycle(2024, top_n=10)
 
         assert result == 0
@@ -115,7 +115,7 @@ class TestComputeForCycle:
         mock_duckdb.execute.return_value.fetchdf.return_value = contrib_df
 
         with patch("scripts.compute_pac_top_funders.DATA_DIR", tmp_path / "data"), \
-             patch("shared.db.upsert") as mock_upsert:
+             patch("scripts.compute_pac_top_funders.upsert") as mock_upsert:
             result = compute_for_cycle(2024, top_n=2)
 
         # Only top 2 per PAC
