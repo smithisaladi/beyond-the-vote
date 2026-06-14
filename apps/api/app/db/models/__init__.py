@@ -15,6 +15,7 @@ from app.db.models.app_schema import FollowedPolitician, Profile, TopicPreferenc
 from app.db.models.derived import (
     LegislatorFundingSummary,
     LegislatorTopContributors,
+    PacAiSummaries,
     PacDetailCache,
     PacLeaderboard,
     PacTopFunders,

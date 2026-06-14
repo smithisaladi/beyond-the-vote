@@ -22,8 +22,8 @@ class BillEmbedding(Base):
         ForeignKey("congress.bills.bill_id", ondelete="CASCADE"),
         primary_key=True,
     )
-    embedding: Mapped[Optional[object]] = mapped_column(Vector(384), nullable=True)
-    model_version: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    embedding: Mapped[object] = mapped_column(Vector(384), nullable=False)
+    model_version: Mapped[str] = mapped_column(Text, nullable=False)
     has_summary: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 

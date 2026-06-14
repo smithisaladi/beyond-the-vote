@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import List, Optional
 
 from sqlalchemy import ARRAY, BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, SmallInteger, Text
-from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
+from sqlalchemy.dialects.postgresql import JSONB, REAL, TSVECTOR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -23,15 +23,15 @@ class Legislator(Base):
     govtrack_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     thomas_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     fec_ids: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text), nullable=True)
-    first_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    last_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    full_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    party: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    chamber: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    state: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    state_full: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    first_name: Mapped[str] = mapped_column(Text, nullable=False)
+    last_name: Mapped[str] = mapped_column(Text, nullable=False)
+    full_name: Mapped[str] = mapped_column(Text, nullable=False)
+    party: Mapped[str] = mapped_column(Text, nullable=False)
+    chamber: Mapped[str] = mapped_column(Text, nullable=False)
+    state: Mapped[str] = mapped_column(Text, nullable=False)
+    state_full: Mapped[str] = mapped_column(Text, nullable=False)
     district: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
     in_office: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     birthday: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     gender: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -65,16 +65,16 @@ class Bill(Base):
     __table_args__ = {"schema": "congress"}
 
     bill_id: Mapped[str] = mapped_column(Text, primary_key=True)
-    congress: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    bill_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    congress: Mapped[int] = mapped_column(Integer, nullable=False)
+    bill_type: Mapped[str] = mapped_column(Text, nullable=False)
     bill_number: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    title: Mapped[str] = mapped_column(Text, nullable=False)
     summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     combined_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     policy_area: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    topics: Mapped[Optional[List[str]]] = mapped_column(
-        ARRAY(Text), nullable=True, server_default="{}"
+    topics: Mapped[List[str]] = mapped_column(
+        ARRAY(Text), nullable=False, server_default="{}"
     )
     sponsor_bioguide_id: Mapped[Optional[str]] = mapped_column(
         Text, ForeignKey("congress.legislators.bioguide_id"), nullable=True
@@ -105,11 +105,11 @@ class BillVoteSummary(Base):
     bill_id: Mapped[Optional[str]] = mapped_column(
         Text, ForeignKey("congress.bills.bill_id"), nullable=True
     )
-    congress: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    chamber: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    congress: Mapped[int] = mapped_column(Integer, nullable=False)
+    chamber: Mapped[str] = mapped_column(Text, nullable=False)
+    date: Mapped[date] = mapped_column(Date, nullable=False)
     question: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    result: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    result: Mapped[str] = mapped_column(Text, nullable=False)
     title: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     required: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     yea_total: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, server_default="0")
@@ -155,7 +155,7 @@ class BillVotePosition(Base):
         ForeignKey("congress.legislators.bioguide_id", ondelete="CASCADE"),
         primary_key=True,
     )
-    position: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    position: Mapped[str] = mapped_column(Text, nullable=False)
 
     vote_summary: Mapped["BillVoteSummary"] = relationship(
         "BillVoteSummary", back_populates="positions"
@@ -170,8 +170,8 @@ class Committee(Base):
     __table_args__ = {"schema": "congress"}
 
     thomas_id: Mapped[str] = mapped_column(Text, primary_key=True)
-    name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    chamber: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    chamber: Mapped[str] = mapped_column(Text, nullable=False)
     committee_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     parent_id: Mapped[Optional[str]] = mapped_column(
         Text, ForeignKey("congress.committees.thomas_id"), nullable=True
@@ -223,8 +223,8 @@ class MemberScore(Base):
         primary_key=True,
     )
     congress: Mapped[int] = mapped_column(Integer, primary_key=True)
-    nominate_dim1: Mapped[Optional[float]] = mapped_column(nullable=True)
-    nominate_dim2: Mapped[Optional[float]] = mapped_column(nullable=True)
+    nominate_dim1: Mapped[Optional[float]] = mapped_column(REAL, nullable=True)
+    nominate_dim2: Mapped[Optional[float]] = mapped_column(REAL, nullable=True)
     synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     legislator: Mapped["Legislator"] = relationship("Legislator", back_populates="scores")

@@ -4,7 +4,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, Text, text
+from sqlalchemy.dialects.postgresql import REAL
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.models.congress import Base
@@ -56,9 +57,20 @@ class PacTopFunders(Base):
     state: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     total_amount: Mapped[float] = mapped_column(Numeric(12, 2))
     contribution_count: Mapped[int] = mapped_column(Integer)
-    confidence: Mapped[float] = mapped_column(Numeric(5, 3))
+    confidence: Mapped[float] = mapped_column(REAL)
     rank: Mapped[int] = mapped_column(Integer)
     computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PacAiSummaries(Base):
+    __tablename__ = "pac_ai_summaries"
+    __table_args__ = {"schema": "derived"}
+
+    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
 
 
 class PacDetailCache(Base):
