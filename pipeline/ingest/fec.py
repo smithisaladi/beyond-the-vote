@@ -57,9 +57,17 @@ def download_and_convert_cycle(cycle: int, data_dir: Path) -> dict[str, Path]:
     fec_dir.mkdir(parents=True, exist_ok=True)
     results = {}
     for file_type, cols in [("pas2", PAS2_COLS), ("indiv", INDIV_COLS), ("cm", CM_COLS), ("cn", CN_COLS)]:
-        txt_path = download_fec_file(cycle, file_type, fec_dir)
         parquet_path = fec_dir / f"{file_type}.parquet"
-        convert_to_parquet(txt_path, parquet_path, cols)
+        # Parquet is the only artifact read downstream and the only thing cached.
+        # If it's already present (restored from the Actions cache) skip the
+        # multi-GB download+convert entirely — download_fec_file otherwise checks
+        # for the .txt, which isn't cached, and re-downloads on every run.
+        if not parquet_path.exists():
+            txt_path = download_fec_file(cycle, file_type, fec_dir)
+            convert_to_parquet(txt_path, parquet_path, cols)
+            # Drop the raw .txt — it's a regenerable intermediate (~GB each) that
+            # nothing reads, keeping the run under runner-disk and cache limits.
+            txt_path.unlink(missing_ok=True)
         results[file_type] = parquet_path
     return results
 

@@ -28,9 +28,9 @@ jobs:
         run: uv sync
       - name: Restore FEC parquet cache
         id: parquet-cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
-          path: pipeline/data/processed/fec
+          path: pipeline/data/fec
           key: fec-parquet-${{ github.run_id }}
           restore-keys: fec-parquet-
       - name: Download FEC bulk files
@@ -40,7 +40,7 @@ jobs:
       - name: Save FEC parquet cache
         uses: actions/cache/save@v4
         with:
-          path: pipeline/data/processed/fec
+          path: pipeline/data/fec
           key: fec-parquet-${{ github.run_id }}
       - name: Enrich donors (full)
         run: uv run python -m scripts.enrich_donors

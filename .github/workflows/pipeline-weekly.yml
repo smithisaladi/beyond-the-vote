@@ -48,9 +48,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Restore FEC parquet cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
-          path: pipeline/data/processed/fec
+          path: pipeline/data/fec
           key: fec-parquet-${{ github.run_id }}
           restore-keys: fec-parquet-
       - name: Run weekly sync
@@ -94,9 +94,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Restore FEC parquet cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
-          path: pipeline/data/processed/fec
+          path: pipeline/data/fec
           key: fec-parquet-${{ github.run_id }}
           restore-keys: fec-parquet-
       - name: Enrich donors (light)
@@ -120,9 +120,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Restore FEC parquet cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
-          path: pipeline/data/processed/fec
+          path: pipeline/data/fec
           key: fec-parquet-${{ github.run_id }}
           restore-keys: fec-parquet-
       - name: Compute PAC top funders
@@ -146,9 +146,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Restore FEC parquet cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
-          path: pipeline/data/processed/fec
+          path: pipeline/data/fec
           key: fec-parquet-${{ github.run_id }}
           restore-keys: fec-parquet-
       - name: Enrich money flow
@@ -172,9 +172,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
       - name: Restore FEC parquet cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
-          path: pipeline/data/processed/fec
+          path: pipeline/data/fec
           key: fec-parquet-${{ github.run_id }}
           restore-keys: fec-parquet-
       - name: Compute funding summaries
