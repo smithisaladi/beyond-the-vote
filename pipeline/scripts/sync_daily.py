@@ -5,6 +5,7 @@ usc-run handles incremental fetching (only downloads new/changed files).
 
 Usage: cd pipeline && uv run python -m scripts.sync_daily
 """
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -57,12 +58,23 @@ def main():
         total += bill_count
         log.info("bills_synced", count=bill_count, elapsed_s=round(time.time() - start, 1))
 
-        # Votes: incremental fetch
+        # Votes: incremental fetch.
+        # usc-run discovers which roll calls exist from cached index/listing
+        # pages (clerk.house.gov index + ROLL_* pages, senate.gov vote_menu XML)
+        # and — unlike govinfo BILLSTATUS — applies no lastmod check, so a warm
+        # index is read wholesale and newly-published votes are never seen.
+        # Delete just the cached index pages (not the per-vote XML caches) so the
+        # listing is rediscovered fresh; then --fast downloads only votes whose
+        # JSON isn't already on disk, plus any from the last ~3 days (for
+        # corrections). New votes are picked up without re-pulling them all.
         log.info("syncing_votes")
         start = time.time()
+        votes_cache = repo / "cache" / str(CONGRESS) / "votes"
+        for pages_dir in votes_cache.glob("*/pages"):
+            shutil.rmtree(pages_dir, ignore_errors=True)
         subprocess.run(
             [str(repo / "env" / "bin" / "usc-run"), "votes",
-             f"--congress={CONGRESS}", "--log=info"],
+             f"--congress={CONGRESS}", "--fast", "--log=info"],
             cwd=str(repo), check=True, timeout=1800,
         )
 
