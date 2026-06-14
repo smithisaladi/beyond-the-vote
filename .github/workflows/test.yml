@@ -60,6 +60,11 @@ jobs:
           python-version: "3.11"
       - run: uv sync
       - run: uv run pytest tests/ -v --ignore=tests/test_integration.py
+      - name: Check Alembic migration drift
+        if: github.event_name == 'push'
+        run: uv run alembic -c migrations/alembic.ini check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
   typecheck:
     name: TypeScript Type Check
