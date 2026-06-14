@@ -8,7 +8,10 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    # Must exceed the sum of sync_daily's subprocess timeouts (govinfo 90m +
+    # bills 10m + votes 30m = 130m) plus checkout/uv-sync overhead, so a cold
+    # cache seed can complete in one pass rather than being killed mid-run.
+    timeout-minutes: 150
     defaults:
       run:
         working-directory: pipeline
@@ -26,8 +29,12 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      # Restore + save are split (instead of the combined actions/cache) so the
+      # cache is written even when the job fails. The govinfo download can time
+      # out on a cold cache; saving its partial progress lets the next run resume
+      # and converge, instead of re-downloading everything from scratch forever.
       - name: Restore usc-run cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: |
             pipeline/data/congress-scraper
@@ -39,3 +46,11 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: uv run python -m scripts.sync_daily
+
+      - name: Save usc-run cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            pipeline/data/congress-scraper
+          key: usc-run-data-${{ github.run_id }}

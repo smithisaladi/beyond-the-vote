@@ -35,10 +35,14 @@ def main():
         # Bills: govinfo incremental + convert
         log.info("syncing_bills")
         start = time.time()
+        # 5400s (90 min): a cold cache must download every BILLSTATUS file for the
+        # congress in one pass. Incremental runs finish in minutes; this ceiling
+        # only matters when seeding/rebuilding the cache. Keep the sum of all
+        # subprocess timeouts (govinfo + bills + votes) under the job timeout-minutes.
         subprocess.run(
             [str(repo / "env" / "bin" / "usc-run"), "govinfo",
              "--bulkdata=BILLSTATUS", f"--congress={CONGRESS}", "--log=info"],
-            cwd=str(repo), check=True, timeout=3600,
+            cwd=str(repo), check=True, timeout=5400,
         )
         subprocess.run(
             [str(repo / "env" / "bin" / "usc-run"), "bills",
