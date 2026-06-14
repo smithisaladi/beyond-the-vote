@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     # Neon Auth
     neon_auth_url: str = ""  # e.g. https://ep-xxx.neonauth.us-east-1.aws.neon.tech/neondb/auth
 
+    # External query-embedding endpoint (serves all-MiniLM-L6-v2, 384-dim).
+    # Leave token blank to disable semantic search (falls back to FTS + trigram).
+    embedding_api_url: str = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
+    embedding_api_token: str = ""
+
     model_config = {"env_prefix": "", "env_file": ".env", "extra": "ignore"}
 
     @property

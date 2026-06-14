@@ -216,6 +216,8 @@ All animations are gated by `prefers-reduced-motion` via CSS. Library: `motion` 
 | `GEOCODIO_API_KEY` | Yes | Address → district lookup |
 | `CONGRESS_API_KEY` | Pipeline | congress.gov API |
 | `OPENFEC_API_KEY` | Pipeline | OpenFEC API |
+| `EMBEDDING_API_TOKEN` | No | Token for external `all-MiniLM-L6-v2` query-embedding endpoint. Blank → bill search falls back to FTS + trigram (no semantic). |
+| `EMBEDDING_API_URL` | No | Override the embedding endpoint (default: HF Inference `sentence-transformers/all-MiniLM-L6-v2`). |
 | `SENTRY_DSN` | No | Sentry error tracking |
 
 ## Testing
@@ -225,7 +227,7 @@ All animations are gated by `prefers-reduced-motion` via CSS. Library: `motion` 
 
 ## Gotchas
 
-- Bill search uses **hybrid FTS + trigram + semantic** with Reciprocal Rank Fusion — see `apps/api/app/queries/bills.py`
+- Bill search uses **hybrid FTS + trigram + semantic** with Reciprocal Rank Fusion — see `apps/api/app/queries/bills.py`. The semantic leg is **best-effort**: query embeddings come from an external `all-MiniLM-L6-v2` endpoint (no torch in the API process — keeps it under 512MB). If `EMBEDDING_API_TOKEN` is unset or the endpoint fails, search degrades to FTS + trigram. Bill embeddings are precomputed by the pipeline.
 - Topic mapping lives in `apps/web/src/lib/topics.ts` — maps Congress.gov policyArea → 12 app topic slugs
 - `toTitleCase()` in `apps/web/src/lib/format.ts` handles FEC ALLCAPS names
 - Neon Auth signs JWTs with **EdDSA (Ed25519)** — backend validates via JWKS using PyJWT

@@ -1,10 +1,6 @@
-"""ML model registry — load all models at startup."""
-import structlog
+"""Query-time ML helpers.
 
-log = structlog.get_logger()
-
-
-def load_all_models() -> None:
-    from app.ml.embeddings import load_embedding_model
-    load_embedding_model()
-    log.info("all_ml_models_loaded")
+Embeddings are served by an external endpoint (see `app.ml.embeddings`) so the
+API process never loads torch / sentence-transformers and stays within a small
+memory footprint.
+"""

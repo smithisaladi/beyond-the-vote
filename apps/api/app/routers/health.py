@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_db
-from app.ml.embeddings import is_model_loaded
+from app.ml.embeddings import embeddings_enabled
 
 log = structlog.get_logger()
 router = APIRouter(tags=["health"])
@@ -48,7 +48,7 @@ async def healthz(db: AsyncSession = Depends(get_db)):
         content={
             "status": status,
             "db": db_ok,
-            "embedding_model": is_model_loaded(),
+            "embedding_model": embeddings_enabled(),
             "data_freshness": freshness_status,
             "latency_ms": latency,
         },

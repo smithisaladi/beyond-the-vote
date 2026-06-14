@@ -1,13 +1,15 @@
 """Bill endpoints: list, search, detail, by-topic."""
 from typing import Literal
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_db
-from app.ml.embeddings import embed_query, is_model_loaded
+from app.ml.embeddings import embed_query, embeddings_enabled
 from app.queries.bills import hybrid_bill_search, lookup_bill, get_bills_by_topic, get_bill_votes
 
+log = structlog.get_logger()
 router = APIRouter(prefix="/api/bills", tags=["bills"])
 
 
@@ -28,7 +30,14 @@ async def list_bills(
     if q:
         status_list = status.split(",") if status else None
         topic_list = topics.split(",") if topics else None
-        query_embedding = await embed_query(q) if is_model_loaded() else None
+        # Semantic ranking is best-effort: if the external embedding endpoint is
+        # unconfigured or fails, fall back to FTS + trigram so search still works.
+        query_embedding = None
+        if embeddings_enabled():
+            try:
+                query_embedding = await embed_query(q)
+            except Exception as exc:
+                log.warning("query_embedding_failed", error=str(exc))
         results, total = await hybrid_bill_search(
             db, q, query_embedding=query_embedding,
             status=status_list, topics=topic_list, congress=congress, limit=limit, offset=offset,

@@ -41,24 +41,12 @@ limiter = Limiter(
 )
 
 
-def _load_models_sync() -> None:
-    """Load ML models in a thread so the event loop stays free for port binding."""
-    try:
-        from app.ml import load_all_models
-        load_all_models()
-    except Exception:
-        log.exception("background_model_load_failed")
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("app_starting", environment=settings.environment)
     engine = get_engine(settings.async_database_url)
     app.state.db_engine = engine
     app.state.session_factory = async_session_factory(engine)
-    import threading
-    thread = threading.Thread(target=_load_models_sync, daemon=True)
-    thread.start()
     yield
     log.info("app_shutting_down")
     await engine.dispose()

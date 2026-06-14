@@ -132,7 +132,7 @@ async def test_list_bills_sort_invalid(client, mock_db):
 # ---------------------------------------------------------------------------
 
 @patch("app.routers.bills.hybrid_bill_search")
-@patch("app.routers.bills.is_model_loaded", return_value=False)
+@patch("app.routers.bills.embeddings_enabled", return_value=False)
 async def test_list_bills_search(mock_model, mock_search, client, mock_db):
     mock_search.return_value = ([BILL_ROW], 1)
 
