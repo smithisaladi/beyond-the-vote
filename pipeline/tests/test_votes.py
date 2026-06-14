@@ -27,7 +27,7 @@ SAMPLE_VOTE_JSON = {
 def test_transform_vote_summary():
     summary = transform_vote(SAMPLE_VOTE_JSON)
     assert summary is not None
-    assert summary["id"] == "house-119-123"
+    assert summary["id"] == "house-119-2025-123"
     assert summary["bill_id"] == "119-hr-4521"
     assert summary["congress"] == 119
     assert summary["chamber"] == "House"
@@ -36,7 +36,7 @@ def test_transform_vote_summary():
     assert summary["nay_total"] == 1
 
 def test_transform_positions():
-    positions = transform_positions(SAMPLE_VOTE_JSON, "house-119-123")
+    positions = transform_positions(SAMPLE_VOTE_JSON, "house-119-2025-123")
     assert len(positions) == 3
     yeas = [p for p in positions if p["position"] == "Yea"]
     nays = [p for p in positions if p["position"] == "Nay"]
