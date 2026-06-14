@@ -19,7 +19,8 @@ from app.db.models.derived import (
     PacLeaderboard,
     PacTopFunders,
 )
-from app.db.models.ops import DataFreshness, DeadLetter, PipelineMetric
+from app.db.models.analytics import MoneyFlowAttribution
+from app.db.models.ops import DataFreshness, DeadLetter, PipelineMetric, PipelineRun
 from app.db.models.enrichment import (
     BillEmbedding,
     DonorCanonical,

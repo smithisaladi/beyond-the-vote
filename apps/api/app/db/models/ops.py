@@ -42,3 +42,20 @@ class PipelineMetric(Base):
     metric_name: Mapped[str] = mapped_column(Text)
     metric_value: Mapped[float] = mapped_column(Numeric)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class PipelineRun(Base):
+    __tablename__ = "pipeline_runs"
+    __table_args__ = {"schema": "ops"}
+
+    id: Mapped[object] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    script_name: Mapped[str] = mapped_column(Text, nullable=False)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default="running")
+    rows_processed: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, server_default="0")
+    rows_skipped: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, server_default="0")
+    errors: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, server_default="0")
+    watermark: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
+    error_detail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
