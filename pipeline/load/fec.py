@@ -2,6 +2,7 @@
 from pathlib import Path
 import structlog
 from shared.db import upsert
+from shared.dead_letter import record_dead_letter
 from shared.parquet import duckdb_connect
 
 log = structlog.get_logger()
@@ -49,43 +50,86 @@ def transform_ie_contribution(record: dict, cycle: int) -> dict | None:
     transaction_dt = _safe_str(record.get("transaction_dt")) or None
     return {"sub_id": sub_id, "cmte_id": cmte_id, "cand_id": cand_id, "sup_opp": sup_opp, "transaction_tp": tp, "transaction_amt": amt, "transaction_dt": transaction_dt, "cycle": cycle}
 
-def load_pac_contributions(parquet_path: Path, cycle: int) -> int:
+def load_pac_contributions(parquet_path: Path, cycle: int, *, run_id: str | None = None) -> int:
     from shared.parquet import read_parquet_batched
     total = 0
-    for batch in read_parquet_batched(parquet_path):
-        rows = [r for r in (transform_pac_contribution(rec, cycle) for rec in batch) if r]
-        if rows:
-            upsert("pac_to_candidate", rows, on_conflict="sub_id", schema="fec")
-            total += len(rows)
-    log.info("pac_contributions_loaded", cycle=cycle, rows=total)
-    return total
-
-def load_ie_contributions(parquet_path: Path, cycle: int) -> int:
-    from shared.parquet import read_parquet_batched
-    total = 0
-    for batch in read_parquet_batched(parquet_path):
-        rows = [r for r in (transform_ie_contribution(rec, cycle) for rec in batch) if r]
-        if rows:
-            upsert("independent_expenditures", rows, on_conflict="sub_id", schema="fec")
-            total += len(rows)
-    log.info("ie_contributions_loaded", cycle=cycle, rows=total)
-    return total
-
-def load_committee_names(parquet_path: Path) -> int:
-    from shared.parquet import read_parquet_batched
-    total = 0
+    dead = 0
     for batch in read_parquet_batched(parquet_path):
         rows = []
         for rec in batch:
-            cmte_id = _safe_str(rec.get("cmte_id"))
-            cmte_nm = _safe_str(rec.get("cmte_nm"))
-            if not cmte_id or not cmte_nm:
-                continue
-            rows.append({"cmte_id": cmte_id, "cmte_name": cmte_nm, "connected_org": _safe_str(rec.get("connected_org_nm")) or None})
+            try:
+                row = transform_pac_contribution(rec, cycle)
+                if row:
+                    rows.append(row)
+            except Exception as e:
+                dead += 1
+                if run_id:
+                    record_dead_letter(
+                        run_id=run_id,
+                        source_table="fec.pac_to_candidate",
+                        source_key={"sub_id": rec.get("sub_id")},
+                        raw_data=rec,
+                        error=str(e),
+                    )
         if rows:
-            upsert("cmte_names", rows, on_conflict="cmte_id", schema="fec")
-            total += len(rows)
-    log.info("committee_names_loaded", rows=total)
+            total += upsert("pac_to_candidate", rows, on_conflict="sub_id", schema="fec")
+    log.info("pac_contributions_loaded", cycle=cycle, rows=total, dead_lettered=dead)
+    return total
+
+
+def load_ie_contributions(parquet_path: Path, cycle: int, *, run_id: str | None = None) -> int:
+    from shared.parquet import read_parquet_batched
+    total = 0
+    dead = 0
+    for batch in read_parquet_batched(parquet_path):
+        rows = []
+        for rec in batch:
+            try:
+                row = transform_ie_contribution(rec, cycle)
+                if row:
+                    rows.append(row)
+            except Exception as e:
+                dead += 1
+                if run_id:
+                    record_dead_letter(
+                        run_id=run_id,
+                        source_table="fec.independent_expenditures",
+                        source_key={"sub_id": rec.get("sub_id")},
+                        raw_data=rec,
+                        error=str(e),
+                    )
+        if rows:
+            total += upsert("independent_expenditures", rows, on_conflict="sub_id", schema="fec")
+    log.info("ie_contributions_loaded", cycle=cycle, rows=total, dead_lettered=dead)
+    return total
+
+
+def load_committee_names(parquet_path: Path, *, run_id: str | None = None) -> int:
+    from shared.parquet import read_parquet_batched
+    total = 0
+    dead = 0
+    for batch in read_parquet_batched(parquet_path):
+        rows = []
+        for rec in batch:
+            try:
+                cmte_id = _safe_str(rec.get("cmte_id"))
+                cmte_nm = _safe_str(rec.get("cmte_nm"))
+                if not cmte_id or not cmte_nm:
+                    continue
+                rows.append({"cmte_id": cmte_id, "cmte_name": cmte_nm, "connected_org": _safe_str(rec.get("connected_org_nm")) or None})
+            except Exception as e:
+                dead += 1
+                if run_id:
+                    record_dead_letter(
+                        run_id=run_id,
+                        source_table="fec.cmte_names",
+                        source_key={"cmte_id": rec.get("cmte_id")},
+                        raw_data=rec,
+                        error=str(e),
+                    )
+        if rows:
+            total += upsert("cmte_names", rows, on_conflict="cmte_id", schema="fec")
+    log.info("committee_names_loaded", rows=total, dead_lettered=dead)
     return total
 
 def _safe_int(val) -> int | None:

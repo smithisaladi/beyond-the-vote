@@ -1,5 +1,5 @@
 """Dashboard endpoints — all require authentication."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_db, get_current_user
@@ -8,9 +8,11 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 @router.get("/followed")
 async def get_followed(
+    response: Response,
     db: AsyncSession = Depends(get_db),
     user: dict = Depends(get_current_user),
 ):
+    response.headers["Cache-Control"] = "private, no-cache"
     user_id = str(user["user_id"])
 
     sql = """
@@ -128,7 +130,8 @@ async def untrack_bill(
 
 
 @router.get("/tracked-bills")
-async def get_tracked_bills(db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+async def get_tracked_bills(response: Response, db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+    response.headers["Cache-Control"] = "private, no-cache"
     user_id = str(user["user_id"])
     sql = """SELECT b.bill_id, b.bill_number, b.title, b.status, b.last_action_date, b.last_action_text, b.policy_area
     FROM app.tracked_bills tb JOIN congress.bills b ON b.bill_id = tb.bill_id
@@ -141,7 +144,8 @@ async def get_tracked_bills(db: AsyncSession = Depends(get_db), user: dict = Dep
     return {"bills": bills}
 
 @router.get("/topic-preferences")
-async def get_topic_preferences(db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+async def get_topic_preferences(response: Response, db: AsyncSession = Depends(get_db), user: dict = Depends(get_current_user)):
+    response.headers["Cache-Control"] = "private, no-cache"
     user_id = str(user["user_id"])
     result = await db.execute(text("SELECT topic FROM app.topic_preferences WHERE user_id = :user_id"), {"user_id": user_id})
     topics = [r["topic"] for r in result.mappings().all()]

@@ -1,6 +1,6 @@
 """Bill endpoints: list, search, detail, by-topic."""
 from typing import Literal
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,8 +20,11 @@ async def list_bills(
     congress: int | None = None,
     limit: int = Query(default=20, le=250),
     offset: int = Query(default=0, ge=0),
+    response: Response = None,
     db: AsyncSession = Depends(get_db),
 ):
+    if response is not None:
+        response.headers["Cache-Control"] = "public, max-age=300"
     if q:
         status_list = status.split(",") if status else None
         topic_list = topics.split(",") if topics else None

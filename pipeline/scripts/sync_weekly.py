@@ -16,6 +16,8 @@ load_dotenv()
 
 from shared.observability import configure_logging
 from shared.db import upsert, log_run_start, log_run_end, get_watermark, reset_conn
+from shared.freshness import record_freshness
+from shared.metrics import record_step_metrics
 
 import structlog
 configure_logging(service="pipeline", debug=True)
@@ -173,8 +175,10 @@ def sync_funding_summaries():
 
 def main():
     run_id = log_run_start(SCRIPT)
+    start_time = time.monotonic()
     total = 0
     failed = []
+    fec_count = 0
 
     steps = [
         ("legislators", sync_legislators),
@@ -189,11 +193,21 @@ def main():
         try:
             count = fn()
             total += count
+            if name == "fec_api":
+                fec_count = count
+                record_freshness("fec", "pac_to_candidate", rows_affected=fec_count, run_id=run_id)
+                record_freshness("fec", "independent_expenditures", rows_affected=fec_count, run_id=run_id)
             log.info("step_completed", step=name, rows=count, elapsed_s=round(time.time() - start, 1))
         except Exception as e:
             log.error("step_failed", step=name, error=str(e))
             failed.append(name)
 
+    duration = time.monotonic() - start_time
+    record_step_metrics(
+        run_id=run_id, script_name=SCRIPT,
+        rows_ingested=total, rows_upserted=total,
+        rows_dead_lettered=0, duration_seconds=round(duration, 1),
+    )
     status = "success" if not failed else "partial"
     log_run_end(run_id, status, rows_processed=total, metadata={"failed": failed})
     log.info("weekly_sync_complete", status=status, total=total, failed=failed)

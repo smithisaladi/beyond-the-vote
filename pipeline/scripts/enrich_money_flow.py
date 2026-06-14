@@ -4,12 +4,15 @@ Usage: cd pipeline && uv run python -m scripts.enrich_money_flow [--cycles 2024,
 """
 import argparse
 import sys
+import time
 from pathlib import Path
 
 import structlog
 
 from shared.observability import configure_logging, configure_sentry
 from shared.db import log_run_start, log_run_end
+from shared.freshness import record_freshness
+from shared.metrics import record_step_metrics
 from enrich.money_flow import run_money_flow
 
 SCRIPT = "enrich_money_flow"
@@ -27,6 +30,7 @@ def main() -> None:
     configure_sentry(service="pipeline")
 
     run_id = log_run_start(SCRIPT)
+    start_time = time.monotonic()
     total = 0
 
     try:
@@ -38,6 +42,13 @@ def main() -> None:
             else:
                 log.warning("pas2_parquet_missing", cycle=cycle, path=str(pas2_parquet))
 
+        record_freshness("analytics", "money_flow_attribution", rows_affected=total, run_id=run_id)
+        duration = time.monotonic() - start_time
+        record_step_metrics(
+            run_id=run_id, script_name=SCRIPT,
+            rows_ingested=total, rows_upserted=total,
+            rows_dead_lettered=0, duration_seconds=round(duration, 1),
+        )
         log_run_end(run_id, "success", rows_processed=total)
         log.info("enrich_money_flow_complete", total=total)
 

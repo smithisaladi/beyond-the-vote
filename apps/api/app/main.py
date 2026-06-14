@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.requests import Request
 
 from app.config import settings
 from app.db.session import get_engine, async_session_factory
@@ -21,10 +22,23 @@ if settings.sentry_dsn:
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
         environment=settings.environment,
-        traces_sample_rate=0.1,
+        traces_sample_rate=0.3,
     )
 
-limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])
+def _rate_limit_key(request: Request) -> str:
+    """Per-user rate limiting: authenticated users get their own bucket (120/min),
+    unauthenticated users share IP-based buckets (30/min via default_limits)."""
+    auth = request.headers.get("authorization", "")
+    if auth.startswith("Bearer ") and len(auth) > 7:
+        import hashlib
+        return f"user:{hashlib.sha256(auth[7:].encode()).hexdigest()[:16]}"
+    return get_remote_address(request)
+
+limiter = Limiter(
+    key_func=_rate_limit_key,
+    default_limits=["30/minute"],
+    application_limits=["120/minute"],
+)
 
 
 def _load_models_sync() -> None:
@@ -68,11 +82,8 @@ app.state.limiter = limiter
 app.add_middleware(SlowAPIMiddleware)
 
 
-@app.get("/healthz")
-async def healthz():
-    from app.ml.embeddings import is_model_loaded
-    return {"status": "ok", "embedding_model": is_model_loaded()}
-
+from app.routers import health
+app.include_router(health.router)
 
 from app.routers import bills
 app.include_router(bills.router)

@@ -1,0 +1,91 @@
+name: Donor Resolution — Full FEC Bulk Enrichment
+
+on:
+  schedule:
+    - cron: "0 10 * * 0"  # Sundays at 10:00 UTC
+  workflow_dispatch:
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest-8-core
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Restore FEC parquet cache
+        id: parquet-cache
+        uses: actions/cache@v4
+        with:
+          path: pipeline/data/processed/fec
+          key: fec-parquet-${{ github.run_id }}
+          restore-keys: fec-parquet-
+      - name: Download FEC bulk files
+        if: steps.parquet-cache.outputs.cache-hit != 'true'
+        run: |
+          uv run python -c "from ingest.fec import download_and_convert_all; download_and_convert_all()"
+      - name: Save FEC parquet cache
+        uses: actions/cache/save@v4
+        with:
+          path: pipeline/data/processed/fec
+          key: fec-parquet-${{ github.run_id }}
+      - name: Enrich donors (full)
+        run: uv run python -m scripts.enrich_donors
+      - name: Compute PAC top funders
+        run: uv run python -m scripts.compute_pac_top_funders
+      - name: Enrich money flow
+        run: uv run python -m scripts.enrich_money_flow
+      - name: Compute funding summaries
+        run: uv run python -m scripts.compute_funding_summaries
+      - name: Compute PAC detail cache
+        run: uv run python -m scripts.compute_pac_detail_cache
+      - name: Compute PAC leaderboard
+        run: uv run python -m scripts.compute_pac_leaderboard
+      - name: Compute legislator top contributors
+        run: uv run python -m scripts.compute_legislator_top_contributors
+
+  alert:
+    needs: resolve
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Determine pipeline status
+        id: status
+        run: |
+          if [[ "${{ needs.resolve.result }}" == "failure" ]]; then
+            echo "result=failure" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ needs.resolve.result }}" == "cancelled" ]]; then
+            echo "result=cancelled" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Send alert
+        run: uv run python -m scripts.alert --status "$PIPELINE_STATUS"
+        env:
+          PIPELINE_STATUS: ${{ steps.status.outputs.result }}

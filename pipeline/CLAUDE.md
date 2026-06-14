@@ -13,10 +13,18 @@ Python data pipeline: FEC campaign finance, Congress.gov legislation, VoteView i
 | `uv run python -m scripts.sync.sync_legislators` | Sync: incremental legislator update |
 | `uv run python -m scripts.sync.sync_bills` | Sync: incremental bill update |
 | `uv run python -m scripts.embed_bills` | Generate bill embeddings for semantic search |
-| `uv run python -m scripts.enrich_donors --cycles 2024,2026` | Donor entity resolution |
+| `uv run python -m scripts.enrich_donors --cycles 2024,2026` | Donor entity resolution (full — requires large runner) |
+| `uv run python -m scripts.enrich_donors_light` | Light donor dedup (exact-match, standard runner) |
 | `uv run python -m scripts.compute_pac_top_funders` | Top funders per PAC (requires donor_canonical) |
 | `uv run python -m scripts.enrich_money_flow --cycles 2024,2026` | Money flow tracing (requires pac_top_funders) |
+| `uv run python -m scripts.compute_pac_detail_cache` | Pre-compute PAC detail for API |
+| `uv run python -m scripts.compute_pac_leaderboard` | Pre-compute PAC leaderboard |
+| `uv run python -m scripts.compute_legislator_top_contributors` | Pre-compute top contributors per legislator |
+| `uv run python -m scripts.alert --status success` | Send pipeline alert to Slack |
 | `uv run python -m scripts.create_schema` | Create database schema |
+| `uv run python -m scripts.create_ops_tables` | Create ops infrastructure tables |
+| `uv run python -m scripts.create_derived_tables` | Create derived cache tables |
+| `uv run alembic -c migrations/alembic.ini upgrade head` | Run database migrations |
 | `uv run pytest` | Run tests |
 
 ## Architecture
@@ -28,7 +36,10 @@ Python data pipeline: FEC campaign finance, Congress.gov legislation, VoteView i
 - **Enrich** (`enrich/`): donor entity resolution (`donor_resolution.py`) + money flow tracing (`money_flow.py`)
 - **Sync scripts** (`scripts/sync/`): incremental updates via watermarks, run by GitHub Actions
 - **DuckDB**: in-memory engine for local FEC CSV/Parquet aggregation (never writes to DB directly)
-- **`ops.pipeline_runs`** table: tracks every execution with watermark timestamps for incremental fetches
+- **Ops tables**: `ops.pipeline_runs` (run tracking + watermarks), `ops.data_freshness` (per-table staleness thresholds), `ops.dead_letter` (failed row capture for retry), `ops.pipeline_metrics` (per-step ingestion/duration metrics)
+- **Derived tables**: `derived.pac_detail_cache`, `derived.pac_leaderboard`, `derived.legislator_top_contributors` (pre-computed API queries)
+- **Shared helpers**: `shared/freshness.py` (staleness tracking), `shared/dead_letter.py` (failed row recording), `shared/metrics.py` (step metrics)
+- **Alembic migrations**: `migrations/` directory, run via `alembic -c migrations/alembic.ini upgrade head`
 - **`bioguide_id`** is the universal legislator key — everything FKs to it
 - **`fec_ids`** is an array on legislators — use `ANY()` for joins (GIN index exists)
 
@@ -57,6 +68,10 @@ Initial import must follow this sequence:
 | 7 | `enrich_donors` | enrichment.donor_canonical |
 | 8 | `compute_pac_top_funders` | derived.pac_top_funders |
 | 9 | `enrich_money_flow` | analytics.money_flow_attribution |
+| 10 | `compute_funding_summaries` | derived.legislator_funding_summary |
+| 11 | `compute_pac_detail_cache` | derived.pac_detail_cache |
+| 12 | `compute_pac_leaderboard` | derived.pac_leaderboard |
+| 13 | `compute_legislator_top_contributors` | derived.legislator_top_contributors |
 
 ## Key Modules
 
@@ -67,6 +82,9 @@ Initial import must follow this sequence:
 - **`transform/`** — one module per data type (bills.py, legislators.py, votes_house.py, votes_senate.py, etc.)
 - **`load/`** — DB writers (bills.py, legislators.py, votes.py, scores.py, fec.py, embeddings.py)
 - **`enrich/`** — donor resolution (`donor_resolution.py`), money flow tracing (`money_flow.py`)
+- **`shared/freshness.py`** — record/check data freshness per table (staleness thresholds)
+- **`shared/dead_letter.py`** — record/retry failed pipeline rows
+- **`shared/metrics.py`** — record per-step metrics (rows ingested/upserted, duration)
 
 ## Environment Variables
 
@@ -75,6 +93,7 @@ Initial import must follow this sequence:
 | `DATABASE_URL` | Neon PostgreSQL connection string |
 | `CONGRESS_API_KEY` | congress.gov API (1000 req/hr limit) |
 | `FEC_API_KEY` | OpenFEC API |
+| `SLACK_WEBHOOK_URL` | Slack incoming webhook for pipeline alerts |
 
 Loaded via `python-dotenv` from `.env` in pipeline root.
 
@@ -82,9 +101,10 @@ Loaded via `python-dotenv` from `.env` in pipeline root.
 
 | Workflow | Schedule | What |
 |----------|----------|------|
-| `sync-daily.yml` | 06:00 UTC daily | Legislators + VoteView scores + bills + votes |
-| `sync-bills.yml` | Hourly Mon–Fri :30 | Incremental bills |
-| `sync-weekly.yml` | 07:00 UTC Sundays | FEC API + legislators + VoteView |
+| `sync-daily.yml` | 06:00 UTC weekdays | Bills + votes + embeddings |
+| `pipeline-weekly.yml` | 07:00 UTC Sundays | Full DAG: ingest → enrich → derived tables → alert |
+| `pipeline-donor-resolution.yml` | 10:00 UTC Sundays | Full donor resolution on large runner (8-core) |
+| `pipeline-ci.yml` | On push/PR | Tests + Alembic migration drift check |
 
 ## FEC Gotchas
 

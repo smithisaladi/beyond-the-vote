@@ -8,6 +8,7 @@ Usage:
 """
 import argparse
 import sys
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -15,6 +16,8 @@ import pandas as pd
 import structlog
 
 from shared.db import get_conn, log_run_start, log_run_end, reset_conn, upsert
+from shared.freshness import record_freshness
+from shared.metrics import record_step_metrics
 from shared.observability import configure_logging, configure_sentry
 from shared.parquet import duckdb_connect
 
@@ -168,12 +171,20 @@ def main() -> None:
     configure_sentry(service="pipeline")
 
     run_id = log_run_start(SCRIPT)
+    start_time = time.monotonic()
     total = 0
 
     try:
         for cycle in cycles:
             log.info("processing_cycle", cycle=cycle)
             total += compute_for_cycle(cycle, top_n=args.top_n)
+        record_freshness("derived", "pac_top_funders", rows_affected=total, run_id=run_id)
+        duration = time.monotonic() - start_time
+        record_step_metrics(
+            run_id=run_id, script_name=SCRIPT,
+            rows_ingested=total, rows_upserted=total,
+            rows_dead_lettered=0, duration_seconds=round(duration, 1),
+        )
         log_run_end(run_id, "success", rows_processed=total)
         log.info("compute_complete", total_rows=total)
     except Exception as e:

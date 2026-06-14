@@ -1,0 +1,246 @@
+name: Weekly Pipeline — Ingest + Enrich + Embed
+
+on:
+  schedule:
+    - cron: "0 7 * * 0"  # Sundays at 07:00 UTC
+  workflow_dispatch:
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  FEC_API_KEY: ${{ secrets.FEC_API_KEY }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Run Alembic migrations
+        run: uv run alembic -c migrations/alembic.ini upgrade head
+
+  ingest:
+    needs: migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Restore FEC parquet cache
+        uses: actions/cache@v4
+        with:
+          path: pipeline/data/processed/fec
+          key: fec-parquet-${{ github.run_id }}
+          restore-keys: fec-parquet-
+      - name: Run weekly sync
+        run: uv run python -m scripts.sync_weekly
+
+  embed_bills:
+    needs: ingest
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Embed bills
+        run: uv run python -m scripts.embed_bills
+
+  enrich_donors_light:
+    needs: ingest
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Restore FEC parquet cache
+        uses: actions/cache@v4
+        with:
+          path: pipeline/data/processed/fec
+          key: fec-parquet-${{ github.run_id }}
+          restore-keys: fec-parquet-
+      - name: Enrich donors (light)
+        run: uv run python -m scripts.enrich_donors_light
+
+  compute_pac_top_funders:
+    needs: enrich_donors_light
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Restore FEC parquet cache
+        uses: actions/cache@v4
+        with:
+          path: pipeline/data/processed/fec
+          key: fec-parquet-${{ github.run_id }}
+          restore-keys: fec-parquet-
+      - name: Compute PAC top funders
+        run: uv run python -m scripts.compute_pac_top_funders
+
+  enrich_money_flow:
+    needs: compute_pac_top_funders
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Restore FEC parquet cache
+        uses: actions/cache@v4
+        with:
+          path: pipeline/data/processed/fec
+          key: fec-parquet-${{ github.run_id }}
+          restore-keys: fec-parquet-
+      - name: Enrich money flow
+        run: uv run python -m scripts.enrich_money_flow
+
+  compute_funding_summaries:
+    needs: enrich_money_flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Restore FEC parquet cache
+        uses: actions/cache@v4
+        with:
+          path: pipeline/data/processed/fec
+          key: fec-parquet-${{ github.run_id }}
+          restore-keys: fec-parquet-
+      - name: Compute funding summaries
+        run: uv run python -m scripts.compute_funding_summaries
+
+  compute_derived_tables:
+    needs: ingest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Compute PAC detail cache
+        run: uv run python -m scripts.compute_pac_detail_cache
+      - name: Compute PAC leaderboard
+        run: uv run python -m scripts.compute_pac_leaderboard
+      - name: Compute legislator top contributors
+        run: uv run python -m scripts.compute_legislator_top_contributors
+
+  alert:
+    needs:
+      - migrate
+      - ingest
+      - embed_bills
+      - enrich_donors_light
+      - compute_pac_top_funders
+      - enrich_money_flow
+      - compute_funding_summaries
+      - compute_derived_tables
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: uv sync
+      - name: Determine pipeline status
+        id: status
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "result=failure" >> "$GITHUB_OUTPUT"
+          elif [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "result=cancelled" >> "$GITHUB_OUTPUT"
+          else
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Send alert
+        run: uv run python -m scripts.alert --status "$PIPELINE_STATUS"
+        env:
+          PIPELINE_STATUS: ${{ steps.status.outputs.result }}

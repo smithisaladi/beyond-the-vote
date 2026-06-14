@@ -3,7 +3,7 @@
 import asyncio
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from cachetools import TTLCache
@@ -69,7 +69,8 @@ async def search_politicians(
 
 
 @router.get("/{bioguide_id}")
-async def politician_detail(bioguide_id: str, request: Request, db: AsyncSession = Depends(get_db)):
+async def politician_detail(bioguide_id: str, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    response.headers["Cache-Control"] = "public, max-age=900"
     profile = await _get_profile(db, bioguide_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Politician not found")
@@ -295,6 +296,25 @@ async def _get_top_contributors(db: AsyncSession, bioguide_id: str) -> list[dict
     """Top employers/orgs: group PAC contributions + IE support by connected_org."""
     if bioguide_id in _contributors_cache:
         return _contributors_cache[bioguide_id]
+    try:
+        derived = await db.execute(
+            text("""SELECT org_name, cmte_id, direct, ie_for, total, rank
+                    FROM derived.legislator_top_contributors
+                    WHERE bioguide_id = :id ORDER BY rank LIMIT 10"""),
+            {"id": bioguide_id},
+        )
+        derived_rows = derived.mappings().all()
+        if derived_rows:
+            rows = [{"rank": int(r["rank"]), "orgName": r["org_name"],
+                     "total": f"${float(r['total']):,.0f}",
+                     "direct": float(r.get("direct") or 0),
+                     "ieFor": float(r.get("ie_for") or 0),
+                     "cmteId": r.get("cmte_id")}
+                    for r in derived_rows]
+            _contributors_cache[bioguide_id] = rows
+            return rows
+    except Exception:
+        pass
     if bioguide_id not in _contributors_locks:
         _contributors_locks[bioguide_id] = asyncio.Lock()
     async with _contributors_locks[bioguide_id]:
