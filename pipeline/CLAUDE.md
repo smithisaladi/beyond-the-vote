@@ -39,7 +39,7 @@ Python data pipeline: FEC campaign finance, Congress.gov legislation, VoteView i
 - **Ops tables**: `ops.pipeline_runs` (run tracking + watermarks), `ops.data_freshness` (per-table staleness thresholds), `ops.dead_letter` (failed row capture for retry), `ops.pipeline_metrics` (per-step ingestion/duration metrics)
 - **Derived tables**: `derived.pac_detail_cache`, `derived.pac_leaderboard`, `derived.legislator_top_contributors` (pre-computed API queries)
 - **Shared helpers**: `shared/freshness.py` (staleness tracking), `shared/dead_letter.py` (failed row recording), `shared/metrics.py` (step metrics)
-- **Alembic migrations**: `migrations/` directory, run via `alembic -c migrations/alembic.ini upgrade head`
+- **Alembic migrations**: `migrations/` is the **single source of truth** (the API has no separate Alembic setup). Run via `alembic -c migrations/alembic.ini upgrade head`. The version table is `ops.alembic_version` (env.py sets `version_table_schema="ops"`); `env.py` imports the API models from `apps/api` for metadata. **Write migrations by hand** — do NOT use `--autogenerate`: the ORM models (`apps/api/app/db/models`) describe only the subset of tables the API reads, so autogenerate would propose dropping the many pipeline-created tables (`analytics.*`, `anomalies.*`, `ops.pipeline_runs`, `enrichment.donor_canonical`, etc.). Schema is otherwise created by `create_schema.py` / `create_ops_tables.py` / `create_derived_tables.py`.
 - **`bioguide_id`** is the universal legislator key — everything FKs to it
 - **`fec_ids`** is an array on legislators — use `ANY()` for joins (GIN index exists)
 
