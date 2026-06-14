@@ -1,4 +1,4 @@
-"""PAC detail and leaderboard queries — computed live from FEC tables."""
+"""PAC detail and leaderboard queries — derived table first, live fallback."""
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -80,28 +80,10 @@ ORDER BY total_support DESC
 """)
 
 
-async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle: int | None = None, limit: int = 20, offset: int = 0) -> tuple[list[dict], int]:
-    """Live leaderboard from fec.pac_to_candidate + fec.independent_expenditures."""
-    params: dict = {
-        "limit": limit,
-        "offset": offset,
-        "cycle": cycle,
-        "pattern": f"%{q}%" if q else None,
-    }
-    result = await session.execute(_PAC_LEADERBOARD_SQL, params)
-    rows = result.mappings().all()
-    total = rows[0]["total_count"] if rows else 0
-    return [dict(r) for r in rows], total
-
-
-async def pac_detail(session: AsyncSession, cmte_id: str, cycle: int | None = None) -> dict | None:
-    """Get PAC detail with aggregated contributions and top recipients (all candidates)."""
-    params: dict = {"cmte_id": cmte_id, "cycle": cycle}
-    result = await session.execute(_PAC_DETAIL_SQL, params)
-    rows = result.mappings().all()
+def _format_live_pac_detail(cmte_id: str, rows) -> dict | None:
+    """Format response from live _PAC_DETAIL_SQL rows."""
     if not rows:
         return None
-
     first = rows[0]
     recipients = []
     total_direct = total_ie_for = total_ie_against = 0.0
@@ -117,10 +99,108 @@ async def pac_detail(session: AsyncSession, cmte_id: str, cycle: int | None = No
             "party": r.get("party"), "state": r.get("state"), "chamber": r.get("chamber"),
             "direct": direct, "ieFor": ie_for, "ieAgainst": ie_against, "amount": direct + ie_for,
         })
-
     return {
         "cmteId": cmte_id, "name": first["cmte_name"], "connectedOrg": first.get("connected_org"),
         "directTotal": total_direct, "ieForTotal": total_ie_for, "ieAgainstTotal": total_ie_against,
         "totalContributions": total_direct + total_ie_for + total_ie_against,
         "recipientCount": len(recipients), "recipients": recipients,
     }
+
+
+def _format_derived_pac_detail(cmte_id: str, rows) -> dict | None:
+    """Format response from derived.pac_detail_cache rows."""
+    if not rows:
+        return None
+    first = rows[0]
+    recipients = []
+    total_direct = total_ie_for = total_ie_against = 0.0
+    for r in rows:
+        direct = float(r.get("direct") or 0)
+        ie_for = float(r.get("ie_for") or 0)
+        ie_against = float(r.get("ie_against") or 0)
+        total_direct += direct
+        total_ie_for += ie_for
+        total_ie_against += ie_against
+        recipients.append({
+            "bioguideId": r.get("bioguide_id"), "name": r.get("full_name"),
+            "party": r.get("party"), "state": r.get("state"), "chamber": r.get("chamber"),
+            "direct": direct, "ieFor": ie_for, "ieAgainst": ie_against, "amount": direct + ie_for,
+        })
+    return {
+        "cmteId": cmte_id, "name": first["cmte_name"], "connectedOrg": first.get("connected_org"),
+        "directTotal": total_direct, "ieForTotal": total_ie_for, "ieAgainstTotal": total_ie_against,
+        "totalContributions": total_direct + total_ie_for + total_ie_against,
+        "recipientCount": len(recipients), "recipients": recipients,
+    }
+
+
+async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle: int | None = None, limit: int = 20, offset: int = 0) -> tuple[list[dict], int]:
+    """Leaderboard: derived table when no cycle filter, otherwise live query."""
+    if cycle is None:
+        try:
+            exists_result = await session.execute(
+                text("SELECT EXISTS(SELECT 1 FROM derived.pac_leaderboard LIMIT 1)")
+            )
+            has_data = exists_result.scalar_one_or_none()
+            if has_data:
+                derived_result = await session.execute(
+                    text("""
+                        SELECT cmte_id, cmte_name, direct_total, ie_for_total, ie_against_total,
+                               total_contributions, global_rank,
+                               COUNT(*) OVER() AS total_count
+                        FROM derived.pac_leaderboard
+                        WHERE (:pattern IS NULL OR cmte_name ILIKE :pattern)
+                        ORDER BY total_contributions DESC
+                        LIMIT :limit OFFSET :offset
+                    """),
+                    {"pattern": f"%{q}%" if q else None, "limit": limit, "offset": offset},
+                )
+                rows = derived_result.mappings().all()
+                total = rows[0]["total_count"] if rows else 0
+                return [dict(r) for r in rows], total
+        except Exception:
+            pass
+
+    params: dict = {
+        "limit": limit,
+        "offset": offset,
+        "cycle": cycle,
+        "pattern": f"%{q}%" if q else None,
+    }
+    result = await session.execute(_PAC_LEADERBOARD_SQL, params)
+    rows = result.mappings().all()
+    total = rows[0]["total_count"] if rows else 0
+    return [dict(r) for r in rows], total
+
+
+async def pac_detail(session: AsyncSession, cmte_id: str, cycle: int | None = None) -> dict | None:
+    """Get PAC detail: derived table when no cycle filter, otherwise live query."""
+    if cycle is None:
+        try:
+            exists_result = await session.execute(
+                text("SELECT EXISTS(SELECT 1 FROM derived.pac_detail_cache WHERE cmte_id = :cmte_id LIMIT 1)"),
+                {"cmte_id": cmte_id},
+            )
+            has_data = exists_result.scalar_one_or_none()
+            if has_data:
+                derived_result = await session.execute(
+                    text("""
+                        SELECT cmte_id, cmte_name, connected_org, cand_id, full_name, party, state,
+                               chamber, bioguide_id, direct, ie_for, ie_against
+                        FROM derived.pac_detail_cache
+                        WHERE cmte_id = :cmte_id
+                        ORDER BY direct + ie_for DESC
+                    """),
+                    {"cmte_id": cmte_id},
+                )
+                rows = derived_result.mappings().all()
+                result = _format_derived_pac_detail(cmte_id, rows)
+                if result:
+                    return result
+        except Exception:
+            pass
+
+    params: dict = {"cmte_id": cmte_id, "cycle": cycle}
+    result = await session.execute(_PAC_DETAIL_SQL, params)
+    rows = result.mappings().all()
+    return _format_live_pac_detail(cmte_id, rows)

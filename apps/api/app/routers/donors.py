@@ -2,7 +2,7 @@
 import asyncio
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from cachetools import TTLCache
@@ -45,8 +45,11 @@ async def list_donors(
     cycle: int | None = None,
     limit: int = Query(default=20, le=100),
     offset: int = Query(default=0, ge=0),
+    response: Response = None,
     db: AsyncSession = Depends(get_db),
 ):
+    if response is not None:
+        response.headers["Cache-Control"] = "public, max-age=600"
     cache_key = (q or "", cycle, limit, offset)
     if cache_key in _leaderboard_cache:
         return _leaderboard_cache[cache_key]
@@ -232,7 +235,9 @@ async def money_flow(cmte_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{cmte_id}")
-async def donor_detail(cmte_id: str, cycle: int | None = None, db: AsyncSession = Depends(get_db)):
+async def donor_detail(cmte_id: str, cycle: int | None = None, response: Response = None, db: AsyncSession = Depends(get_db)):
+    if response is not None:
+        response.headers["Cache-Control"] = "public, max-age=600"
     result = await pac_detail(db, cmte_id, cycle=cycle)
     if not result:
         raise HTTPException(status_code=404, detail="Committee not found")
