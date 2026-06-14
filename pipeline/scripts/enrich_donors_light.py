@@ -20,12 +20,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from config import FEC_CYCLES, DATA_PROCESSED_FEC
+from config import FEC_CYCLES
 from shared.db import get_conn, log_run_start, log_run_end, reset_conn, upsert
 from shared.freshness import record_freshness
 from shared.metrics import record_step_metrics
 from shared.observability import configure_logging, configure_sentry
 from shared.parquet import read_parquet_batched, duckdb_connect
+
+# FEC bulk parquet lives under data/fec/<cycle>/, matching the producer
+# (ingest.fec.download_and_convert_all) and the other enrichment scripts.
+DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 SCRIPT = "enrich_donors_light"
 MODEL_VERSION = "exact-match-v1"
@@ -143,19 +147,21 @@ def get_tracked_cmte_ids() -> set[str]:
 
     log.info("tracked_fec_cand_ids", count=len(cand_ids))
 
-    # Load committee-candidate linkage via DuckDB from the processed committees CSV
-    committees_csv = DATA_PROCESSED_FEC / "committees.csv"
-    if not committees_csv.exists():
-        log.warning("committees_csv_missing", path=str(committees_csv))
+    # Load committee-candidate linkage via DuckDB from the committee-master parquet
+    cm_parquets = [DATA_DIR / "fec" / str(c) / "cm.parquet" for c in FEC_CYCLES]
+    cm_parquets = [p for p in cm_parquets if p.exists()]
+    if not cm_parquets:
+        log.warning("cm_parquet_missing", searched=str(DATA_DIR / "fec" / "*" / "cm.parquet"))
         return set()
 
-    # Build a SQL IN list safely from trusted internal cand_ids
+    # Build SQL IN / file lists safely from trusted internal values
     cand_id_list = ", ".join(f"'{c}'" for c in cand_ids)
+    files_sql = ", ".join(f"'{p}'" for p in cm_parquets)
 
     with duckdb_connect() as duck:
         rows = duck.execute(f"""
             SELECT DISTINCT cmte_id
-            FROM read_csv('{committees_csv}', header=true, all_varchar=true, ignore_errors=true)
+            FROM read_parquet([{files_sql}])
             WHERE cand_id IN ({cand_id_list})
               AND cmte_id IS NOT NULL
               AND cmte_id != ''
@@ -192,7 +198,7 @@ def main() -> None:
 
         all_donors: list[dict] = []
         for cycle in cycles:
-            parquet_path = DATA_PROCESSED_FEC / str(cycle) / "indiv.parquet"
+            parquet_path = DATA_DIR / "fec" / str(cycle) / "indiv.parquet"
             if not parquet_path.exists():
                 log.warning("indiv_parquet_missing", cycle=cycle, path=str(parquet_path))
                 continue
