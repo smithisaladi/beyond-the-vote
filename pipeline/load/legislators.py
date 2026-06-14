@@ -118,6 +118,51 @@ def transform_committee_membership(
     return rows
 
 
+_CHAMBER_TYPE_MAP = {"house": "House", "senate": "Senate", "joint": "Joint"}
+
+
+def transform_committees(raw: list[dict]) -> list[dict]:
+    """Transform committees-current.yaml entries into congress.committees rows.
+
+    Each top-level entry becomes one row; each subcommittee becomes a row with
+    thomas_id = parent_thomas_id + subcommittee_thomas_id (e.g. SSAF + 13 → SSAF13).
+    """
+    rows = []
+    for entry in raw:
+        parent_id = entry.get("thomas_id", "").strip()
+        if not parent_id:
+            continue
+        chamber = _CHAMBER_TYPE_MAP.get(entry.get("type", ""), entry.get("type", ""))
+        rows.append({
+            "thomas_id": parent_id,
+            "name": entry.get("name", "").strip(),
+            "chamber": chamber,
+            "committee_type": "committee",
+            "parent_id": None,
+            "url": entry.get("url"),
+        })
+        for sub in entry.get("subcommittees", []):
+            sub_suffix = str(sub.get("thomas_id", "")).strip()
+            if not sub_suffix:
+                continue
+            rows.append({
+                "thomas_id": parent_id + sub_suffix,
+                "name": sub.get("name", "").strip(),
+                "chamber": chamber,
+                "committee_type": "subcommittee",
+                "parent_id": parent_id,
+                "url": None,
+            })
+    return rows
+
+
+def load_committees(raw: list[dict]) -> int:
+    """Transform and upload committee metadata to congress.committees."""
+    rows = transform_committees(raw)
+    log.info("committees_transformed", total=len(rows))
+    return upsert("committees", rows, on_conflict="thomas_id", schema="congress")
+
+
 def load_legislators(current: list[dict], historical: list[dict]) -> int:
     """Transform and upload all legislators to congress.legislators."""
     rows = []

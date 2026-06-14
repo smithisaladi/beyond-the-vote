@@ -291,15 +291,19 @@ async def _get_cached_summary(db: AsyncSession, cmte_id: str) -> str | None:
 
 
 async def _store_summary(db: AsyncSession, cmte_id: str, summary: str):
-    await db.execute(
-        text("""
-            INSERT INTO derived.pac_ai_summaries (cmte_id, summary)
-            VALUES (:id, :summary)
-            ON CONFLICT (cmte_id) DO UPDATE SET summary = :summary, created_at = now()
-        """),
-        {"id": cmte_id, "summary": summary},
-    )
-    await db.commit()
+    try:
+        await db.execute(
+            text("""
+                INSERT INTO derived.pac_ai_summaries (cmte_id, summary)
+                VALUES (:id, :summary)
+                ON CONFLICT (cmte_id) DO UPDATE SET summary = :summary, created_at = now()
+            """),
+            {"id": cmte_id, "summary": summary},
+        )
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
     _summary_cache[cmte_id] = summary
 
 

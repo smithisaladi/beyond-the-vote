@@ -45,57 +45,6 @@ class LegislatorFundingSummary(Base):
     computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
-class LegislatorTopPac(Base):
-    __tablename__ = "legislator_top_pacs"
-    __table_args__ = {"schema": "derived"}
-
-    bioguide_id: Mapped[str] = mapped_column(
-        Text,
-        ForeignKey("congress.legislators.bioguide_id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    cycle: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
-    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
-    cmte_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    industry: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    direct_contribution: Mapped[Optional[float]] = mapped_column(
-        Numeric(12, 2), nullable=True, server_default="0"
-    )
-    ie_for: Mapped[Optional[float]] = mapped_column(
-        Numeric(12, 2), nullable=True, server_default="0"
-    )
-    ie_against: Mapped[Optional[float]] = mapped_column(
-        Numeric(12, 2), nullable=True, server_default="0"
-    )
-    total_support: Mapped[Optional[float]] = mapped_column(
-        Numeric(12, 2), nullable=True, server_default="0"
-    )
-    rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-
-
-class LegislatorTopContributor(Base):
-    __tablename__ = "legislator_top_contributors"
-    __table_args__ = {"schema": "derived"}
-
-    bioguide_id: Mapped[str] = mapped_column(
-        Text,
-        ForeignKey("congress.legislators.bioguide_id", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    cycle: Mapped[int] = mapped_column(SmallInteger, primary_key=True)
-    org_name: Mapped[str] = mapped_column(Text, primary_key=True)
-    individual_total: Mapped[Optional[float]] = mapped_column(
-        Numeric(12, 2), nullable=True, server_default="0"
-    )
-    pac_total: Mapped[Optional[float]] = mapped_column(
-        Numeric(12, 2), nullable=True, server_default="0"
-    )
-    grand_total: Mapped[Optional[float]] = mapped_column(
-        Numeric(12, 2), nullable=True, server_default="0"
-    )
-    rank: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-
-
 class PacTopFunders(Base):
     __tablename__ = "pac_top_funders"
     __table_args__ = {"schema": "derived"}

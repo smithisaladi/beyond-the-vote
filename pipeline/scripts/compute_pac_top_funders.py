@@ -11,9 +11,10 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+import pandas as pd
 import structlog
 
-from shared.db import get_conn, log_run_start, log_run_end, reset_conn
+from shared.db import get_conn, log_run_start, log_run_end, reset_conn, upsert
 from shared.observability import configure_logging, configure_sentry
 from shared.parquet import duckdb_connect
 
@@ -60,60 +61,59 @@ def compute_for_cycle(cycle: int, top_n: int = 10) -> int:
 
     reset_conn()
 
-    # Load contributions with DuckDB, aggregate per (name_lower, employer_lower, zip5, cmte_id)
+    # Build canonical lookup DataFrame from already-loaded canonical_info.
+    # Join with contributions in DuckDB to avoid a Python iterrows() loop
+    # over potentially millions of contribution groups.
+    canonical_df = pd.DataFrame(
+        [
+            {
+                "name_lower": (name or "").lower(),
+                "employer_lower": (emp or "").lower(),
+                "canonical_id": cid,
+            }
+            for cid, (name, emp, _state, _conf) in canonical_info.items()
+        ]
+    )
+
+    log.info("canonical_lookup_built", entries=len(canonical_df))
+
     with duckdb_connect() as duck:
-        df = duck.execute(f"""
-            SELECT LOWER(name) as name_lower,
-                   LOWER(COALESCE(employer, '')) as employer_lower,
-                   SUBSTRING(zip_code, 1, 5) as zip5,
-                   cmte_id,
-                   SUM(CAST(transaction_amt AS DOUBLE)) as total_amt,
-                   COUNT(*) as cnt
-            FROM read_parquet('{indiv_parquet}')
-            WHERE (entity_tp = 'IND' OR entity_tp = '' OR entity_tp IS NULL)
-              AND CAST(transaction_amt AS DOUBLE) > 0
-            GROUP BY name_lower, employer_lower, zip5, cmte_id
+        duck.register("canonical_lookup", canonical_df)
+        joined = duck.execute(f"""
+            SELECT cl.canonical_id,
+                   c.cmte_id,
+                   SUM(c.total_amt) AS total_amt,
+                   SUM(c.cnt)       AS cnt
+            FROM (
+                SELECT LOWER(name)                          AS name_lower,
+                       LOWER(COALESCE(employer, ''))        AS employer_lower,
+                       cmte_id,
+                       SUM(CAST(transaction_amt AS DOUBLE)) AS total_amt,
+                       COUNT(*)                             AS cnt
+                FROM read_parquet('{indiv_parquet}')
+                WHERE (entity_tp = 'IND' OR entity_tp = '' OR entity_tp IS NULL)
+                  AND CAST(transaction_amt AS DOUBLE) > 0
+                GROUP BY name_lower, employer_lower, cmte_id
+            ) c
+            JOIN canonical_lookup cl
+              ON c.name_lower     = cl.name_lower
+             AND c.employer_lower = cl.employer_lower
+            GROUP BY cl.canonical_id, c.cmte_id
+            HAVING SUM(c.total_amt) >= 200
         """).fetchdf()
 
-    log.info("contribution_groups_loaded", rows=len(df))
+    log.info("contributions_matched", matched=len(joined))
 
-    # Build a lookup from canonical donors: (name_lower, employer_lower) -> canonical_id
-    # This mirrors the fast-path in donor_resolution: same name+employer = same person
-    name_emp_to_canonical: dict[str, str] = {}
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT canonical_id, display_name, employer FROM enrichment.donor_canonical")
-    for cid, name, emp in cur.fetchall():
-        key = f"{(name or '').lower()}|{(emp or '').lower()}"
-        name_emp_to_canonical[key] = cid
-
-    log.info("name_employer_index_built", entries=len(name_emp_to_canonical))
-    reset_conn()
-
-    # Aggregate per (canonical_id, cmte_id)
-    pac_donor_amounts: dict[tuple[str, str], float] = defaultdict(float)
-    pac_donor_counts: dict[tuple[str, str], int] = defaultdict(int)
-    matched = 0
-
-    for _, row in df.iterrows():
-        key = f"{row['name_lower']}|{row['employer_lower']}"
-        canonical_id = name_emp_to_canonical.get(key)
-        if not canonical_id:
-            continue
-        matched += 1
-        cmte_id = str(row["cmte_id"])
-        pac_donor_amounts[(cmte_id, canonical_id)] += float(row["total_amt"])
-        pac_donor_counts[(cmte_id, canonical_id)] += int(row["cnt"])
-
-    log.info("contributions_matched", matched=matched, total_groups=len(df))
-
-    # Rank top N per PAC
-    from collections import defaultdict as dd
-    pac_donors: dict[str, list[tuple[str, float, int]]] = dd(list)
-    for (cmte_id, canonical_id), amount in pac_donor_amounts.items():
-        if amount >= 200:
-            count = pac_donor_counts[(cmte_id, canonical_id)]
-            pac_donors[cmte_id].append((canonical_id, amount, count))
+    # Rank top N per PAC. `joined` is already aggregated per (canonical_id, cmte_id)
+    # so this groupby operates over a small result set bounded by num_pacs × donors_per_pac.
+    pac_donors: dict[str, list[tuple[str, float, int]]] = defaultdict(list)
+    for cmte_id_val, group in joined.groupby("cmte_id"):
+        for _, row in group.iterrows():
+            pac_donors[str(cmte_id_val)].append((
+                str(row["canonical_id"]),
+                float(row["total_amt"]),
+                int(row["cnt"]),
+            ))
 
     rows = []
     for cmte_id, donors in pac_donors.items():
@@ -139,12 +139,19 @@ def compute_for_cycle(cycle: int, top_n: int = 10) -> int:
     log.info("top_funders_computed", rows=len(rows), pacs=len(pac_donors))
 
     conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM derived.pac_top_funders WHERE cycle = %s", (cycle,))
-
-    if rows:
-        from shared.db import upsert
-        upsert("pac_top_funders", rows, on_conflict="cmte_id, cycle, canonical_donor_id", schema="derived")
+    conn.autocommit = False
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM derived.pac_top_funders WHERE cycle = %s", (cycle,))
+        cur.close()
+        if rows:
+            upsert("pac_top_funders", rows, on_conflict="cmte_id, cycle, canonical_donor_id", schema="derived")
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.autocommit = True
 
     log.info("pac_top_funders_loaded", cycle=cycle, rows=len(rows))
     return len(rows)

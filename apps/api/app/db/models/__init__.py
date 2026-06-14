@@ -13,8 +13,6 @@ from app.db.models.app_schema import FollowedPolitician, Profile, TopicPreferenc
 from app.db.models.derived import (
     ContributorLeaderboardCache,
     LegislatorFundingSummary,
-    LegislatorTopContributor,
-    LegislatorTopPac,
     PacTopFunders,
 )
 from app.db.models.enrichment import BillEmbedding

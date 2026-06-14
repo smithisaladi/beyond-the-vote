@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
 from datetime import date
 
+from app.main import app
 from tests.conftest import make_mock_result
 
 
@@ -186,8 +187,8 @@ async def test_politician_detail_found(client, mock_db):
         make_mock_result([CONTRIBUTOR_ROW]),  # top_contributors
     ]
 
-    with patch("app.routers.politicians._get_session_factory", return_value=_mock_factory(mock_db)):
-        resp = await client.get("/api/politicians/P000197")
+    app.state.session_factory = _mock_factory(mock_db)
+    resp = await client.get("/api/politicians/P000197")
     assert resp.status_code == 200
     body = resp.json()
     pol = body["politician"]
@@ -231,8 +232,8 @@ async def test_politician_detail_no_ideology(client, mock_db):
         make_mock_result([]),                # top_contributors
     ]
 
-    with patch("app.routers.politicians._get_session_factory", return_value=_mock_factory(mock_db)):
-        resp = await client.get("/api/politicians/P000197")
+    app.state.session_factory = _mock_factory(mock_db)
+    resp = await client.get("/api/politicians/P000197")
     assert resp.status_code == 200
     stats = resp.json()["politician"]["stats"]
     assert stats["ideologyScore"] is None
@@ -252,8 +253,8 @@ async def test_politician_detail_funding_breakdown(client, mock_db):
         make_mock_result([]),
     ]
 
-    with patch("app.routers.politicians._get_session_factory", return_value=_mock_factory(mock_db)):
-        resp = await client.get("/api/politicians/P000197")
+    app.state.session_factory = _mock_factory(mock_db)
+    resp = await client.get("/api/politicians/P000197")
     funding = resp.json()["politician"]["fundingBreakdown"]
     assert funding["pac"] == 500000
     assert funding["total"] == 1000000  # 500k + 300k + 200k

@@ -253,7 +253,10 @@ def run_donor_resolution(parquet_paths: Path | list[Path], threshold: float = 0.
 
     model = get_model()
 
-    # Extract donors from all cycles into a single list
+    # Accumulates all donors in memory before resolution.
+    # Expected footprint for 2 FEC cycles: ~500k–1.5M records ≈ 300–800 MB.
+    # Acceptable for the current batch job context (not a hot path).
+    # If cycles expand significantly, restructure to process one cycle at a time.
     donors: list[dict] = []
     for path in parquet_paths:
         log.info("extracting_donors", path=str(path))

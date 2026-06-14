@@ -5,6 +5,7 @@ Requires DATABASE_URL environment variable.
 """
 import json
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 
@@ -18,6 +19,15 @@ load_dotenv()
 log = structlog.get_logger()
 
 _conn = None
+
+# Allowlist regex for SQL identifiers interpolated into f-string queries.
+# Permits letters, digits, underscores, and dots (for schema.table notation).
+_IDENT_RE = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_.]*$')
+
+
+def _require_safe_ident(name: str) -> None:
+    if not _IDENT_RE.fullmatch(name):
+        raise ValueError(f"Unsafe SQL identifier: {name!r}")
 
 
 def get_conn():
@@ -69,10 +79,15 @@ def upsert(
     if not rows:
         return 0
 
+    _require_safe_ident(schema)
+    _require_safe_ident(table)
+    cols = list(rows[0].keys())
+    for col in cols:
+        _require_safe_ident(col)
+
     conn = get_conn()
     cur = conn.cursor()
     fq_table = f"{schema}.{table}"
-    cols = list(rows[0].keys())
     cols_str = ", ".join(cols)
     vals_template = ", ".join([f"%({c})s" for c in cols])
 
@@ -120,6 +135,14 @@ def delete_then_insert(
     if not rows:
         return 0
 
+    _require_safe_ident(schema)
+    _require_safe_ident(table)
+    cols = list(rows[0].keys())
+    for col in cols:
+        _require_safe_ident(col)
+    for col in match_cols:
+        _require_safe_ident(col)
+
     conn = get_conn()
     cur = conn.cursor()
     fq_table = f"{schema}.{table}"
@@ -130,7 +153,6 @@ def delete_then_insert(
     cur.execute(f"DELETE FROM {fq_table} WHERE {' AND '.join(where_parts)}", where_vals)
 
     # Insert
-    cols = list(rows[0].keys())
     cols_str = ", ".join(cols)
     vals_template = ", ".join([f"%({c})s" for c in cols])
     sql = f"INSERT INTO {fq_table} ({cols_str}) VALUES ({vals_template})"

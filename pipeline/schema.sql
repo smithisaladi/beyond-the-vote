@@ -336,31 +336,6 @@ CREATE TABLE derived.legislator_funding_summary (
     PRIMARY KEY (bioguide_id, cycle)
 );
 
-CREATE TABLE derived.legislator_top_pacs (
-    bioguide_id     text NOT NULL REFERENCES congress.legislators(bioguide_id) ON DELETE CASCADE,
-    cycle           smallint NOT NULL,
-    cmte_id         text NOT NULL,
-    cmte_name       text,
-    industry        text,
-    direct_contribution numeric(12,2) DEFAULT 0,
-    ie_for          numeric(12,2) DEFAULT 0,
-    ie_against      numeric(12,2) DEFAULT 0,
-    total_support   numeric(12,2) DEFAULT 0,
-    rank            integer,
-    PRIMARY KEY (bioguide_id, cycle, cmte_id)
-);
-
-CREATE TABLE derived.legislator_top_contributors (
-    bioguide_id     text NOT NULL REFERENCES congress.legislators(bioguide_id) ON DELETE CASCADE,
-    cycle           smallint NOT NULL,
-    org_name        text NOT NULL,
-    individual_total numeric(12,2) DEFAULT 0,
-    pac_total       numeric(12,2) DEFAULT 0,
-    grand_total     numeric(12,2) DEFAULT 0,
-    rank            integer,
-    PRIMARY KEY (bioguide_id, cycle, org_name)
-);
-
 CREATE TABLE derived.contributor_leaderboard_cache (
     cmte_id         text PRIMARY KEY,
     cmte_name       text NOT NULL,

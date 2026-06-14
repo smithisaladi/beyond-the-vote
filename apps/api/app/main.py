@@ -10,6 +10,7 @@ from slowapi.util import get_remote_address
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
+from app.db.session import get_engine, async_session_factory
 from app.logging import configure_logging
 from app.middleware.request_id import RequestIDMiddleware
 
@@ -38,11 +39,15 @@ def _load_models_sync() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     log.info("app_starting", environment=settings.environment)
+    engine = get_engine(settings.async_database_url)
+    app.state.db_engine = engine
+    app.state.session_factory = async_session_factory(engine)
     import threading
     thread = threading.Thread(target=_load_models_sync, daemon=True)
     thread.start()
     yield
     log.info("app_shutting_down")
+    await engine.dispose()
 
 
 app = FastAPI(

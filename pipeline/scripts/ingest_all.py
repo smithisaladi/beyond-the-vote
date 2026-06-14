@@ -12,7 +12,7 @@ from shared.observability import configure_logging, configure_sentry
 from shared.db import log_run_start, log_run_end
 from ingest import congress, legislators, fec, voteview
 from load.bills import load_bills
-from load.legislators import load_legislators, load_committee_memberships
+from load.legislators import load_legislators, load_committees, load_committee_memberships
 from load.votes import load_votes
 from load.fec import load_pac_contributions, load_ie_contributions, load_committee_names
 from load.scores import load_scores
@@ -48,6 +48,9 @@ def main() -> None:
         current = legislators.load_current(repo_dir)
         historical = legislators.load_historical(repo_dir)
         total_rows += load_legislators(current, historical)
+
+        committees_raw = legislators.load_committees(repo_dir)
+        load_committees(committees_raw)
 
         memberships = legislators.load_committee_memberships(repo_dir)
         load_committee_memberships(memberships)

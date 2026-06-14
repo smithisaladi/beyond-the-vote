@@ -54,13 +54,12 @@ def _find_signing_key(jwks: dict, token: str) -> Any:
     """Find the correct signing key from JWKS for the given token."""
     unverified_header = jwt.get_unverified_header(token)
     kid = unverified_header.get("kid")
-    alg = unverified_header.get("alg")
 
     for key_data in jwks.get("keys", []):
         if kid and key_data.get("kid") != kid:
             continue
         jwk = PyJWK(key_data)
-        return jwk.key, key_data.get("alg", alg)
+        return jwk.key
 
     raise ValueError(f"No matching key found for kid={kid}")
 
@@ -75,11 +74,11 @@ async def validate_token(token: str) -> dict:
         raise ValueError("Auth not configured or JWKS unavailable")
 
     try:
-        key, alg = _find_signing_key(jwks, token)
+        key = _find_signing_key(jwks, token)
         payload = jwt.decode(
             token,
             key,
-            algorithms=[alg, "EdDSA", "RS256", "ES256"],
+            algorithms=["EdDSA"],
             options={"verify_aud": False},
         )
         return payload

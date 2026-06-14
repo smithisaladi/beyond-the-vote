@@ -11,6 +11,7 @@ REPO_URL = "https://github.com/unitedstates/congress-legislators.git"
 CURRENT_FILE = "legislators-current.yaml"
 HISTORICAL_FILE = "legislators-historical.yaml"
 COMMITTEES_FILE = "committee-membership-current.yaml"
+COMMITTEES_CURRENT_FILE = "committees-current.yaml"
 
 
 def sync(data_dir: Path) -> Path:
@@ -38,6 +39,14 @@ def load_historical(repo_dir: Path) -> list[dict]:
     with open(path) as f:
         data = yaml.safe_load(f)
     log.info("loaded_historical_legislators", count=len(data))
+    return data
+
+
+def load_committees(repo_dir: Path) -> list[dict]:
+    path = repo_dir / COMMITTEES_CURRENT_FILE
+    with open(path) as f:
+        data = yaml.safe_load(f)
+    log.info("loaded_committees", count=len(data))
     return data
 
 

@@ -2,64 +2,93 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+_PAC_LEADERBOARD_SQL = text("""
+WITH pac_totals AS (
+    SELECT cmte_id, SUM(transaction_amt) as direct_total
+    FROM fec.pac_to_candidate
+    WHERE (:cycle IS NULL OR cycle = :cycle)
+    GROUP BY cmte_id
+),
+ie_totals AS (
+    SELECT cmte_id,
+           SUM(CASE WHEN sup_opp = 'S' THEN transaction_amt ELSE 0 END) as ie_for_total,
+           SUM(CASE WHEN sup_opp = 'O' THEN transaction_amt ELSE 0 END) as ie_against_total
+    FROM fec.independent_expenditures
+    WHERE (:cycle IS NULL OR cycle = :cycle)
+    GROUP BY cmte_id
+),
+combined AS (
+    SELECT COALESCE(p.cmte_id, ie.cmte_id) as cmte_id,
+           COALESCE(p.direct_total, 0) as direct_total,
+           COALESCE(ie.ie_for_total, 0) as ie_for_total,
+           COALESCE(ie.ie_against_total, 0) as ie_against_total,
+           COALESCE(p.direct_total, 0) + COALESCE(ie.ie_for_total, 0) + COALESCE(ie.ie_against_total, 0) as total_contributions
+    FROM pac_totals p
+    FULL OUTER JOIN ie_totals ie ON p.cmte_id = ie.cmte_id
+),
+ranked AS (
+    SELECT c.cmte_id, cn.cmte_name,
+           c.direct_total, c.ie_for_total, c.ie_against_total, c.total_contributions,
+           ROW_NUMBER() OVER (ORDER BY c.total_contributions DESC) AS global_rank
+    FROM combined c
+    LEFT JOIN fec.cmte_names cn ON cn.cmte_id = c.cmte_id
+    WHERE cn.cmte_name IS NOT NULL
+)
+SELECT cmte_id, cmte_name, direct_total, ie_for_total, ie_against_total,
+       total_contributions, global_rank,
+       COUNT(*) OVER() AS total_count
+FROM ranked
+WHERE (:pattern IS NULL OR cmte_name ILIKE :pattern)
+ORDER BY total_contributions DESC
+LIMIT :limit OFFSET :offset
+""")
+
+_PAC_DETAIL_SQL = text("""
+WITH direct AS (
+    SELECT cand_id, SUM(transaction_amt) AS direct_total FROM fec.pac_to_candidate
+    WHERE cmte_id = :cmte_id AND (:cycle IS NULL OR cycle = :cycle)
+    GROUP BY cand_id
+),
+ie AS (
+    SELECT cand_id, sup_opp, SUM(transaction_amt) AS ie_total FROM fec.independent_expenditures
+    WHERE cmte_id = :cmte_id AND (:cycle IS NULL OR cycle = :cycle)
+    GROUP BY cand_id, sup_opp
+),
+per_candidate AS (
+    SELECT COALESCE(d.cand_id, ie_for.cand_id, ie_against.cand_id) AS cand_id,
+           COALESCE(d.direct_total, 0) AS direct,
+           COALESCE(ie_for.ie_total, 0) AS ie_for,
+           COALESCE(ie_against.ie_total, 0) AS ie_against
+    FROM direct d
+    FULL OUTER JOIN (SELECT * FROM ie WHERE sup_opp = 'S') ie_for ON d.cand_id = ie_for.cand_id
+    FULL OUTER JOIN (SELECT * FROM ie WHERE sup_opp = 'O') ie_against ON COALESCE(d.cand_id, ie_for.cand_id) = ie_against.cand_id
+)
+SELECT
+    (SELECT cmte_name FROM fec.cmte_names WHERE cmte_id = :cmte_id) AS cmte_name,
+    (SELECT connected_org FROM fec.cmte_names WHERE cmte_id = :cmte_id) AS connected_org,
+    pc.cand_id, pc.direct, pc.ie_for, pc.ie_against,
+    pc.direct + pc.ie_for AS total_support,
+    l.bioguide_id, COALESCE(l.full_name, fc.cand_name) as full_name,
+    COALESCE(l.party, fc.cand_party) as party,
+    COALESCE(l.state, fc.cand_state) as state,
+    l.chamber
+FROM per_candidate pc
+LEFT JOIN congress.legislators l ON pc.cand_id = ANY(l.fec_ids)
+LEFT JOIN fec.candidates fc ON fc.cand_id = pc.cand_id
+WHERE pc.direct + pc.ie_for + pc.ie_against > 0
+ORDER BY total_support DESC
+""")
+
 
 async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle: int | None = None, limit: int = 20, offset: int = 0) -> tuple[list[dict], int]:
     """Live leaderboard from fec.pac_to_candidate + fec.independent_expenditures."""
-    params: dict = {"limit": limit, "offset": offset}
-
-    name_filter = ""
-    if q:
-        name_filter = "AND cmte_name ILIKE :pattern"
-        params["pattern"] = f"%{q}%"
-
-    cycle_filter_pac = ""
-    cycle_filter_ie = ""
-    if cycle:
-        cycle_filter_pac = "WHERE cycle = :cycle"
-        cycle_filter_ie = "WHERE cycle = :cycle"
-        params["cycle"] = cycle
-
-    sql = f"""
-    WITH pac_totals AS (
-        SELECT cmte_id, SUM(transaction_amt) as direct_total
-        FROM fec.pac_to_candidate
-        {cycle_filter_pac}
-        GROUP BY cmte_id
-    ),
-    ie_totals AS (
-        SELECT cmte_id,
-               SUM(CASE WHEN sup_opp = 'S' THEN transaction_amt ELSE 0 END) as ie_for_total,
-               SUM(CASE WHEN sup_opp = 'O' THEN transaction_amt ELSE 0 END) as ie_against_total
-        FROM fec.independent_expenditures
-        {cycle_filter_ie}
-        GROUP BY cmte_id
-    ),
-    combined AS (
-        SELECT COALESCE(p.cmte_id, ie.cmte_id) as cmte_id,
-               COALESCE(p.direct_total, 0) as direct_total,
-               COALESCE(ie.ie_for_total, 0) as ie_for_total,
-               COALESCE(ie.ie_against_total, 0) as ie_against_total,
-               COALESCE(p.direct_total, 0) + COALESCE(ie.ie_for_total, 0) + COALESCE(ie.ie_against_total, 0) as total_contributions
-        FROM pac_totals p
-        FULL OUTER JOIN ie_totals ie ON p.cmte_id = ie.cmte_id
-    ),
-    ranked AS (
-        SELECT c.cmte_id, cn.cmte_name,
-               c.direct_total, c.ie_for_total, c.ie_against_total, c.total_contributions,
-               ROW_NUMBER() OVER (ORDER BY c.total_contributions DESC) AS global_rank
-        FROM combined c
-        LEFT JOIN fec.cmte_names cn ON cn.cmte_id = c.cmte_id
-        WHERE cn.cmte_name IS NOT NULL
-    )
-    SELECT cmte_id, cmte_name, direct_total, ie_for_total, ie_against_total,
-           total_contributions, global_rank,
-           COUNT(*) OVER() AS total_count
-    FROM ranked
-    WHERE 1=1 {name_filter}
-    ORDER BY total_contributions DESC
-    LIMIT :limit OFFSET :offset
-    """
-    result = await session.execute(text(sql), params)
+    params: dict = {
+        "limit": limit,
+        "offset": offset,
+        "cycle": cycle,
+        "pattern": f"%{q}%" if q else None,
+    }
+    result = await session.execute(_PAC_LEADERBOARD_SQL, params)
     rows = result.mappings().all()
     total = rows[0]["total_count"] if rows else 0
     return [dict(r) for r in rows], total
@@ -67,53 +96,8 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle:
 
 async def pac_detail(session: AsyncSession, cmte_id: str, cycle: int | None = None) -> dict | None:
     """Get PAC detail with aggregated contributions and top recipients (all candidates)."""
-    params: dict = {"cmte_id": cmte_id}
-
-    cycle_filter_pac = ""
-    cycle_filter_ie = ""
-    if cycle:
-        cycle_filter_pac = "AND cycle = :cycle"
-        cycle_filter_ie = "AND cycle = :cycle"
-        params["cycle"] = cycle
-
-    sql = f"""
-    WITH cmte_info AS (
-        SELECT cmte_id, cmte_name, connected_org FROM fec.cmte_names WHERE cmte_id = :cmte_id
-    ),
-    direct AS (
-        SELECT cand_id, SUM(transaction_amt) AS direct_total FROM fec.pac_to_candidate
-        WHERE cmte_id = :cmte_id {cycle_filter_pac}
-        GROUP BY cand_id
-    ),
-    ie AS (
-        SELECT cand_id, sup_opp, SUM(transaction_amt) AS ie_total FROM fec.independent_expenditures
-        WHERE cmte_id = :cmte_id {cycle_filter_ie}
-        GROUP BY cand_id, sup_opp
-    ),
-    per_candidate AS (
-        SELECT COALESCE(d.cand_id, ie_for.cand_id, ie_against.cand_id) AS cand_id,
-               COALESCE(d.direct_total, 0) AS direct,
-               COALESCE(ie_for.ie_total, 0) AS ie_for,
-               COALESCE(ie_against.ie_total, 0) AS ie_against
-        FROM direct d
-        FULL OUTER JOIN (SELECT * FROM ie WHERE sup_opp = 'S') ie_for ON d.cand_id = ie_for.cand_id
-        FULL OUTER JOIN (SELECT * FROM ie WHERE sup_opp = 'O') ie_against ON COALESCE(d.cand_id, ie_for.cand_id) = ie_against.cand_id
-    )
-    SELECT ci.cmte_name, ci.connected_org,
-           pc.cand_id, pc.direct, pc.ie_for, pc.ie_against,
-           pc.direct + pc.ie_for AS total_support,
-           l.bioguide_id, COALESCE(l.full_name, fc.cand_name) as full_name,
-           COALESCE(l.party, fc.cand_party) as party,
-           COALESCE(l.state, fc.cand_state) as state,
-           l.chamber
-    FROM cmte_info ci
-    CROSS JOIN per_candidate pc
-    LEFT JOIN congress.legislators l ON pc.cand_id = ANY(l.fec_ids)
-    LEFT JOIN fec.candidates fc ON fc.cand_id = pc.cand_id
-    WHERE pc.direct + pc.ie_for + pc.ie_against > 0
-    ORDER BY total_support DESC
-    """
-    result = await session.execute(text(sql), params)
+    params: dict = {"cmte_id": cmte_id, "cycle": cycle}
+    result = await session.execute(_PAC_DETAIL_SQL, params)
     rows = result.mappings().all()
     if not rows:
         return None

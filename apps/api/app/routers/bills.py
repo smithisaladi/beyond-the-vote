@@ -17,6 +17,7 @@ async def list_bills(
     status: str | None = None,
     topics: str | None = None,
     sort: Literal["newest", "oldest"] = "newest",
+    congress: int | None = None,
     limit: int = Query(default=20, le=250),
     offset: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_db),
@@ -27,33 +28,39 @@ async def list_bills(
         query_embedding = await embed_query(q) if is_model_loaded() else None
         results, total = await hybrid_bill_search(
             db, q, query_embedding=query_embedding,
-            status=status_list, topics=topic_list, limit=limit, offset=offset,
+            status=status_list, topics=topic_list, congress=congress, limit=limit, offset=offset,
         )
         bills = [_format_bill_summary(r) for r in results]
         return {"bills": bills, "pagination": {"total": total, "limit": limit, "offset": offset}}
 
-    _ORDER_MAP = {
-        "newest": "introduced_date DESC NULLS LAST",
-        "oldest": "introduced_date ASC NULLS LAST",
+    _BILLS_SQL = {
+        "newest": text("""
+            SELECT *, COUNT(*) OVER() AS total_count
+            FROM congress.bills
+            WHERE (:statuses IS NULL OR status = ANY(:statuses))
+              AND (:topics IS NULL OR topics && :topics)
+              AND (:congress IS NULL OR congress = :congress)
+            ORDER BY introduced_date DESC NULLS LAST
+            LIMIT :limit OFFSET :offset
+        """),
+        "oldest": text("""
+            SELECT *, COUNT(*) OVER() AS total_count
+            FROM congress.bills
+            WHERE (:statuses IS NULL OR status = ANY(:statuses))
+              AND (:topics IS NULL OR topics && :topics)
+              AND (:congress IS NULL OR congress = :congress)
+            ORDER BY introduced_date ASC NULLS LAST
+            LIMIT :limit OFFSET :offset
+        """),
     }
-    params: dict = {"limit": limit, "offset": offset}
-    where_parts = []
-    if status:
-        where_parts.append("status = ANY(:statuses)")
-        params["statuses"] = status.split(",")
-    if topics:
-        where_parts.append("topics && :topics")
-        params["topics"] = topics.split(",")
-
-    where = " AND ".join(where_parts) if where_parts else "TRUE"
-    order = _ORDER_MAP[sort]
-
-    sql = f"""
-    SELECT *, COUNT(*) OVER() AS total_count
-    FROM congress.bills WHERE {where}
-    ORDER BY {order} LIMIT :limit OFFSET :offset
-    """
-    result = await db.execute(text(sql), params)
+    params: dict = {
+        "limit": limit,
+        "offset": offset,
+        "statuses": status.split(",") if status else None,
+        "topics": topics.split(",") if topics else None,
+        "congress": congress,
+    }
+    result = await db.execute(_BILLS_SQL[sort], params)
     rows = result.mappings().all()
     total = rows[0]["total_count"] if rows else 0
     bills = [_format_bill_summary(dict(r)) for r in rows]

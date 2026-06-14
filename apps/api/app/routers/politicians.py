@@ -3,12 +3,12 @@
 import asyncio
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from cachetools import TTLCache
 
-from app.deps import get_db, _get_session_factory
+from app.deps import get_db
 
 log = structlog.get_logger()
 
@@ -17,6 +17,10 @@ router = APIRouter(prefix="/api/politicians", tags=["politicians"])
 # Cache top contributors for 24 hours (keyed by bioguide_id)
 _contributors_cache: TTLCache = TTLCache(maxsize=500, ttl=60 * 60 * 24)
 _top_pacs_cache: TTLCache = TTLCache(maxsize=500, ttl=60 * 60 * 24)
+
+# Per-key locks to prevent concurrent cache misses from issuing duplicate DB queries
+_top_pacs_locks: dict = {}
+_contributors_locks: dict = {}
 
 _IDEOLOGY_LIBERAL_THRESHOLD = -0.3
 _IDEOLOGY_CONSERVATIVE_THRESHOLD = 0.3
@@ -65,12 +69,12 @@ async def search_politicians(
 
 
 @router.get("/{bioguide_id}")
-async def politician_detail(bioguide_id: str, db: AsyncSession = Depends(get_db)):
+async def politician_detail(bioguide_id: str, request: Request, db: AsyncSession = Depends(get_db)):
     profile = await _get_profile(db, bioguide_id)
     if not profile:
         raise HTTPException(status_code=404, detail="Politician not found")
 
-    factory = _get_session_factory()
+    factory = request.app.state.session_factory
 
     async def _safe(name: str, coro, default=None):
         """Run a subquery in its own session; return default on failure."""
@@ -243,98 +247,108 @@ async def _get_top_pacs(db: AsyncSession, bioguide_id: str) -> list[dict]:
     """Compute top PACs live from FEC tables."""
     if bioguide_id in _top_pacs_cache:
         return _top_pacs_cache[bioguide_id]
-    result = await db.execute(
-        text("""
-        WITH fec_ids AS (
-            SELECT unnest(fec_ids) as cand_id FROM congress.legislators WHERE bioguide_id = :id
-        ),
-        pac_direct AS (
-            SELECT cmte_id, SUM(transaction_amt) as direct
-            FROM fec.pac_to_candidate
-            WHERE cand_id IN (SELECT cand_id FROM fec_ids)
-            GROUP BY cmte_id
-        ),
-        ie_support AS (
-            SELECT cmte_id, SUM(transaction_amt) as ie_for
-            FROM fec.independent_expenditures
-            WHERE cand_id IN (SELECT cand_id FROM fec_ids) AND sup_opp = 'S'
-            GROUP BY cmte_id
-        ),
-        combined AS (
-            SELECT COALESCE(p.cmte_id, ie.cmte_id) as cmte_id,
-                   COALESCE(p.direct, 0) as direct_contribution,
-                   COALESCE(ie.ie_for, 0) as ie_for,
-                   COALESCE(p.direct, 0) + COALESCE(ie.ie_for, 0) as total_support
-            FROM pac_direct p
-            FULL OUTER JOIN ie_support ie ON p.cmte_id = ie.cmte_id
-        )
-        SELECT c.cmte_id, cn.cmte_name, c.direct_contribution, c.ie_for, c.total_support
-        FROM combined c
-        LEFT JOIN fec.cmte_names cn ON cn.cmte_id = c.cmte_id
-        ORDER BY c.total_support DESC
-        LIMIT 20"""),
-        {"id": bioguide_id})
-    rows = [{"cmteId": r["cmte_id"], "cmteName": r.get("cmte_name"),
-             "directContribution": float(r.get("direct_contribution") or 0),
-             "ieFor": float(r.get("ie_for") or 0), "totalSupport": float(r.get("total_support") or 0)}
-            for r in result.mappings().all()]
-    _top_pacs_cache[bioguide_id] = rows
-    return rows
+    if bioguide_id not in _top_pacs_locks:
+        _top_pacs_locks[bioguide_id] = asyncio.Lock()
+    async with _top_pacs_locks[bioguide_id]:
+        if bioguide_id in _top_pacs_cache:
+            return _top_pacs_cache[bioguide_id]
+        result = await db.execute(
+            text("""
+            WITH fec_ids AS (
+                SELECT unnest(fec_ids) as cand_id FROM congress.legislators WHERE bioguide_id = :id
+            ),
+            pac_direct AS (
+                SELECT cmte_id, SUM(transaction_amt) as direct
+                FROM fec.pac_to_candidate
+                WHERE cand_id IN (SELECT cand_id FROM fec_ids)
+                GROUP BY cmte_id
+            ),
+            ie_support AS (
+                SELECT cmte_id, SUM(transaction_amt) as ie_for
+                FROM fec.independent_expenditures
+                WHERE cand_id IN (SELECT cand_id FROM fec_ids) AND sup_opp = 'S'
+                GROUP BY cmte_id
+            ),
+            combined AS (
+                SELECT COALESCE(p.cmte_id, ie.cmte_id) as cmte_id,
+                       COALESCE(p.direct, 0) as direct_contribution,
+                       COALESCE(ie.ie_for, 0) as ie_for,
+                       COALESCE(p.direct, 0) + COALESCE(ie.ie_for, 0) as total_support
+                FROM pac_direct p
+                FULL OUTER JOIN ie_support ie ON p.cmte_id = ie.cmte_id
+            )
+            SELECT c.cmte_id, cn.cmte_name, c.direct_contribution, c.ie_for, c.total_support
+            FROM combined c
+            LEFT JOIN fec.cmte_names cn ON cn.cmte_id = c.cmte_id
+            ORDER BY c.total_support DESC
+            LIMIT 20"""),
+            {"id": bioguide_id})
+        rows = [{"cmteId": r["cmte_id"], "cmteName": r.get("cmte_name"),
+                 "directContribution": float(r.get("direct_contribution") or 0),
+                 "ieFor": float(r.get("ie_for") or 0), "totalSupport": float(r.get("total_support") or 0)}
+                for r in result.mappings().all()]
+        _top_pacs_cache[bioguide_id] = rows
+        return rows
 
 
 async def _get_top_contributors(db: AsyncSession, bioguide_id: str) -> list[dict]:
     """Top employers/orgs: group PAC contributions + IE support by connected_org."""
     if bioguide_id in _contributors_cache:
         return _contributors_cache[bioguide_id]
-    result = await db.execute(
-        text("""
-        WITH fec_ids AS (
-            SELECT unnest(fec_ids) as cand_id FROM congress.legislators WHERE bioguide_id = :id
-        ),
-        pac_direct AS (
-            SELECT cmte_id, SUM(transaction_amt) as direct, 0::numeric as ie_for
-            FROM fec.pac_to_candidate
-            WHERE cand_id IN (SELECT cand_id FROM fec_ids)
-            GROUP BY cmte_id
-        ),
-        ie_support AS (
-            SELECT cmte_id, 0::numeric as direct, SUM(transaction_amt) as ie_for
-            FROM fec.independent_expenditures
-            WHERE cand_id IN (SELECT cand_id FROM fec_ids) AND sup_opp = 'S'
-            GROUP BY cmte_id
-        ),
-        all_contributions AS (
-            SELECT * FROM pac_direct
-            UNION ALL
-            SELECT * FROM ie_support
-        ),
-        by_cmte AS (
-            SELECT cmte_id, SUM(direct) as direct, SUM(ie_for) as ie_for,
-                   SUM(direct) + SUM(ie_for) as total
-            FROM all_contributions
-            GROUP BY cmte_id
-        ),
-        by_org AS (
-            SELECT COALESCE(NULLIF(cn.connected_org, ''), cn.cmte_name) as org_name,
-                   bc.cmte_id, bc.direct, bc.ie_for, bc.total
-            FROM by_cmte bc
-            JOIN fec.cmte_names cn ON cn.cmte_id = bc.cmte_id
-        )
-        SELECT org_name, cmte_id, direct, ie_for, total,
-               ROW_NUMBER() OVER (ORDER BY total DESC) as rank
-        FROM by_org
-        WHERE org_name IS NOT NULL
-        ORDER BY total DESC
-        LIMIT 10"""),
-        {"id": bioguide_id})
-    rows = [{"rank": int(r["rank"]), "orgName": r["org_name"],
-             "total": f"${float(r['total']):,.0f}",
-             "direct": float(r.get("direct") or 0),
-             "ieFor": float(r.get("ie_for") or 0),
-             "cmteId": r.get("cmte_id")}
-             for r in result.mappings().all()]
-    _contributors_cache[bioguide_id] = rows
-    return rows
+    if bioguide_id not in _contributors_locks:
+        _contributors_locks[bioguide_id] = asyncio.Lock()
+    async with _contributors_locks[bioguide_id]:
+        if bioguide_id in _contributors_cache:
+            return _contributors_cache[bioguide_id]
+        result = await db.execute(
+            text("""
+            WITH fec_ids AS (
+                SELECT unnest(fec_ids) as cand_id FROM congress.legislators WHERE bioguide_id = :id
+            ),
+            pac_direct AS (
+                SELECT cmte_id, SUM(transaction_amt) as direct, 0::numeric as ie_for
+                FROM fec.pac_to_candidate
+                WHERE cand_id IN (SELECT cand_id FROM fec_ids)
+                GROUP BY cmte_id
+            ),
+            ie_support AS (
+                SELECT cmte_id, 0::numeric as direct, SUM(transaction_amt) as ie_for
+                FROM fec.independent_expenditures
+                WHERE cand_id IN (SELECT cand_id FROM fec_ids) AND sup_opp = 'S'
+                GROUP BY cmte_id
+            ),
+            all_contributions AS (
+                SELECT * FROM pac_direct
+                UNION ALL
+                SELECT * FROM ie_support
+            ),
+            by_cmte AS (
+                SELECT cmte_id, SUM(direct) as direct, SUM(ie_for) as ie_for,
+                       SUM(direct) + SUM(ie_for) as total
+                FROM all_contributions
+                GROUP BY cmte_id
+            ),
+            by_org AS (
+                SELECT COALESCE(NULLIF(cn.connected_org, ''), cn.cmte_name) as org_name,
+                       bc.cmte_id, bc.direct, bc.ie_for, bc.total
+                FROM by_cmte bc
+                JOIN fec.cmte_names cn ON cn.cmte_id = bc.cmte_id
+            )
+            SELECT org_name, cmte_id, direct, ie_for, total,
+                   ROW_NUMBER() OVER (ORDER BY total DESC) as rank
+            FROM by_org
+            WHERE org_name IS NOT NULL
+            ORDER BY total DESC
+            LIMIT 10"""),
+            {"id": bioguide_id})
+        rows = [{"rank": int(r["rank"]), "orgName": r["org_name"],
+                 "total": f"${float(r['total']):,.0f}",
+                 "direct": float(r.get("direct") or 0),
+                 "ieFor": float(r.get("ie_for") or 0),
+                 "cmteId": r.get("cmte_id")}
+                 for r in result.mappings().all()]
+        _contributors_cache[bioguide_id] = rows
+        return rows
 
 
 def _ideology_label(score: float) -> str:

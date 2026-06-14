@@ -44,23 +44,16 @@ class TestComputeForCycle:
         parquet_file = data_dir / "indiv.parquet"
         parquet_file.touch()
 
-        # First cursor.fetchall: canonical donor info
-        # Second cursor.fetchall: canonical name-employer index
         canonical_info = [
             ("d_100", "SMITH, JOHN", "GOLDMAN SACHS", "NY", 0.85),
             ("d_200", "DOE, JANE", "GOOGLE", "CA", 0.90),
         ]
-        name_emp_index = [
-            ("d_100", "SMITH, JOHN", "GOLDMAN SACHS"),
-            ("d_200", "DOE, JANE", "GOOGLE"),
-        ]
-        mock_db["cursor"].fetchall.side_effect = [canonical_info, name_emp_index]
+        mock_db["cursor"].fetchall.return_value = canonical_info
 
-        # DuckDB returns contribution aggregates
+        # DuckDB returns already-joined result: (canonical_id, cmte_id, total_amt, cnt)
+        # $200 HAVING filter is applied inside DuckDB
         contrib_df = pd.DataFrame({
-            "name_lower": ["smith, john", "doe, jane", "smith, john"],
-            "employer_lower": ["goldman sachs", "google", "goldman sachs"],
-            "zip5": ["10001", "94105", "10001"],
+            "canonical_id": ["d_100", "d_200", "d_100"],
             "cmte_id": ["C001", "C001", "C002"],
             "total_amt": [5000.0, 3000.0, 1000.0],
             "cnt": [2, 1, 1],
@@ -84,18 +77,10 @@ class TestComputeForCycle:
         (data_dir / "indiv.parquet").touch()
 
         canonical_info = [("d_100", "SMITH, JOHN", "ACME", "NY", 0.85)]
-        name_emp_index = [("d_100", "SMITH, JOHN", "ACME")]
-        mock_db["cursor"].fetchall.side_effect = [canonical_info, name_emp_index]
+        mock_db["cursor"].fetchall.return_value = canonical_info
 
-        # Only $150 contribution -- below $200 threshold
-        contrib_df = pd.DataFrame({
-            "name_lower": ["smith, john"],
-            "employer_lower": ["acme"],
-            "zip5": ["10001"],
-            "cmte_id": ["C001"],
-            "total_amt": [150.0],
-            "cnt": [1],
-        })
+        # DuckDB HAVING clause filters contributions below $200 — returns empty result
+        contrib_df = pd.DataFrame(columns=["canonical_id", "cmte_id", "total_amt", "cnt"])
         mock_duckdb.execute.return_value.fetchdf.return_value = contrib_df
 
         with patch("scripts.compute_pac_top_funders.DATA_DIR", tmp_path / "data"), \
@@ -118,17 +103,11 @@ class TestComputeForCycle:
             (f"d_{i}", f"DONOR{i}, NAME", f"EMPLOYER{i}", "NY", 0.85)
             for i in range(5)
         ]
-        name_emp_index = [
-            (f"d_{i}", f"DONOR{i}, NAME", f"EMPLOYER{i}")
-            for i in range(5)
-        ]
-        mock_db["cursor"].fetchall.side_effect = [canonical_info, name_emp_index]
+        mock_db["cursor"].fetchall.return_value = canonical_info
 
-        # All 5 donors give to PAC C001 with amounts 5000, 4000, 3000, 2000, 1000
+        # DuckDB returns already-joined result per (canonical_id, cmte_id)
         contrib_df = pd.DataFrame({
-            "name_lower": [f"donor{i}, name" for i in range(5)],
-            "employer_lower": [f"employer{i}" for i in range(5)],
-            "zip5": ["10001"] * 5,
+            "canonical_id": [f"d_{i}" for i in range(5)],
             "cmte_id": ["C001"] * 5,
             "total_amt": [5000.0, 4000.0, 3000.0, 2000.0, 1000.0],
             "cnt": [1] * 5,
