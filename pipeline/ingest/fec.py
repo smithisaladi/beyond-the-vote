@@ -62,3 +62,14 @@ def download_and_convert_cycle(cycle: int, data_dir: Path) -> dict[str, Path]:
         convert_to_parquet(txt_path, parquet_path, cols)
         results[file_type] = parquet_path
     return results
+
+
+def download_and_convert_all(data_dir: Path | None = None) -> dict[int, dict[str, Path]]:
+    """Download + convert every cycle in FEC_CYCLES to <data_dir>/fec/<cycle>/*.parquet.
+
+    Defaults to the pipeline data dir, matching where the enrichment scripts
+    (enrich_donors, compute_pac_top_funders, enrich_money_flow) read parquet.
+    """
+    if data_dir is None:
+        data_dir = Path(__file__).resolve().parent.parent / "data"
+    return {cycle: download_and_convert_cycle(cycle, data_dir) for cycle in FEC_CYCLES}
