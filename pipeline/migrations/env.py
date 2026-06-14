@@ -35,7 +35,15 @@ def get_sync_url() -> str:
     return url
 
 
+# Object types Alembic should ignore during autogenerate/check. Indexes and
+# constraints are managed by the DDL scripts and hand-written migrations, not
+# the ORM models, so excluding them keeps autogenerate from proposing drops.
+SKIP_TYPES = {"index", "foreign_key_constraint", "unique_constraint"}
+
+
 def include_object(object, name, type_, reflected, compare_to):
+    if type_ in SKIP_TYPES:
+        return False
     if type_ == "table" and hasattr(object, "schema"):
         return object.schema in SCHEMA_INCLUDE
     return True
