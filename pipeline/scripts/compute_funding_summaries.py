@@ -17,6 +17,8 @@ load_dotenv()
 
 from shared.observability import configure_logging
 from shared.db import get_conn, log_run_start, log_run_end
+from shared.freshness import record_freshness
+from shared.metrics import record_step_metrics
 
 import structlog
 configure_logging(service="pipeline", debug=True)
@@ -27,6 +29,7 @@ from config import DATA_PROCESSED_FEC, FEC_CYCLES, CCL_COLS, INDIV_CSV_COLS, CAN
 
 def main():
     run_id = log_run_start("compute_funding_summaries")
+    start_time = time.monotonic()
     try:
         import duckdb
 
@@ -193,6 +196,13 @@ def main():
         log.info("funding_summaries_upserted", count=count)
 
         conn.close()
+        record_freshness("derived", "legislator_funding_summary", rows_affected=count, run_id=run_id)
+        duration = time.monotonic() - start_time
+        record_step_metrics(
+            run_id=run_id, script_name="compute_funding_summaries",
+            rows_ingested=count, rows_upserted=count,
+            rows_dead_lettered=0, duration_seconds=round(duration, 1),
+        )
         log_run_end(run_id, "success", rows_processed=count)
         log.info("compute_funding_summaries_complete", legislators=count)
 
