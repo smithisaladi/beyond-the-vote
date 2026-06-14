@@ -48,7 +48,8 @@ Python data pipeline: FEC campaign finance, Congress.gov legislation, VoteView i
 ```
 data/raw/           — downloaded source files (never modified)
 data/processed/     — cleaned outputs from transform/
-data/processed/fec/ — pipe-delimited (|) CSVs with headers, queried by DuckDB
+data/fec/<cycle>/   — FEC bulk converted to Parquet (cm/cn/indiv/pas2.parquet),
+                      queried by DuckDB; raw .txt is deleted after conversion
 data/congress-scraper/ — cloned unitedstates/congress repo
 data/legislators/   — cloned congress-legislators YAML repo
 ```
@@ -108,11 +109,12 @@ Loaded via `python-dotenv` from `.env` in pipeline root.
 
 ## FEC Gotchas
 
-- FEC bulk files have **no header row** — column positions defined in `config.py` (CN_COLS, CM_COLS, etc.)
-- Files are **pipe-delimited** (`|`), not comma-delimited
+- Raw FEC bulk `.txt` have **no header row** — column positions defined in `config.py` (CN_COLS, CM_COLS, etc.)
+- Raw files are **pipe-delimited** (`|`), not comma-delimited
 - Individual contribution files are **~4GB per cycle** — MUST stream line-by-line, never load into memory
 - FEC date format is `MMDDYYYY` — use `normalize_fec_date()` from utils
-- DuckDB reads CSVs with `read_csv('path', delim='|', header=true, ignore_errors=true)`
+- `ingest.fec.download_and_convert_all()` downloads the bulk `.txt`, converts to **Parquet** under `data/fec/<cycle>/`, then deletes the `.txt`. Enrichment scripts read that Parquet via DuckDB `read_parquet(...)` — they do **not** read CSVs.
+- The Parquet is shared between the donor-resolution (producer) and weekly (restore-only consumer) workflows via the GitHub Actions cache keyed `fec-parquet-*`. A cold cache → enrichment scripts no-op cleanly.
 - Target cycles: 2024, 2026 (defined in `config.py` as `FEC_CYCLES`)
 - Transaction type codes: `24K`/`24Z` → PAC direct, `24E` → IE for, `24A` → IE against
 
