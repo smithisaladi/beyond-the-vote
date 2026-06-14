@@ -20,6 +20,11 @@ from app.db.models.derived import (
     PacTopFunders,
 )
 from app.db.models.ops import DataFreshness, DeadLetter, PipelineMetric
-from app.db.models.enrichment import BillEmbedding
+from app.db.models.enrichment import (
+    BillEmbedding,
+    DonorCanonical,
+    EmployerCanonical,
+    EmployerIndustry,
+)
 
 __all__ = ["Base"]
