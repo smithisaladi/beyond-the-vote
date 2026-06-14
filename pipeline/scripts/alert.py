@@ -110,7 +110,7 @@ def main() -> None:
     parser.add_argument(
         "--status",
         default="success",
-        choices=["success", "failed"],
+        choices=["success", "failed", "failure", "cancelled"],
         help="Overall pipeline status",
     )
     parser.add_argument(
@@ -124,6 +124,10 @@ def main() -> None:
         help="Pipeline run ID to look up metrics for",
     )
     args = parser.parse_args()
+
+    # Normalize GitHub Actions status values to our internal ones
+    if args.status in ("failure", "cancelled"):
+        args.status = "failed"
 
     from shared.freshness import check_staleness
     from shared.dead_letter import get_unresolved_count

@@ -65,10 +65,10 @@ def record_step_metrics(
 
 
 def get_previous_metric(script_name: str, metric_name: str) -> float | None:
-    """Return the most recent recorded value for a given script + metric.
+    """Return the second-most-recent recorded value for a given script + metric.
 
-    Returns None if no prior run exists. Useful for anomaly detection
-    (e.g. compare current rows_ingested against previous run).
+    Skips the current run (OFFSET 1) so anomaly detection compares against
+    the prior run, not itself. Returns None if no prior run exists.
     """
     conn = get_conn()
     cur = conn.cursor()
@@ -78,7 +78,7 @@ def get_previous_metric(script_name: str, metric_name: str) -> float | None:
         FROM ops.pipeline_metrics
         WHERE script_name = %s AND metric_name = %s
         ORDER BY recorded_at DESC
-        LIMIT 1
+        LIMIT 1 OFFSET 1
         """,
         (script_name, metric_name),
     )

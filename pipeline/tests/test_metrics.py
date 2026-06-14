@@ -136,5 +136,5 @@ class TestGetPreviousMetric:
 
         sql, params = mock_cur.execute.call_args[0]
         assert "ORDER BY recorded_at DESC" in sql
-        assert "LIMIT 1" in sql
+        assert "LIMIT 1 OFFSET 1" in sql
         assert params == ("sync_daily", "duration_seconds")

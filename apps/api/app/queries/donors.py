@@ -80,35 +80,8 @@ ORDER BY total_support DESC
 """)
 
 
-def _format_live_pac_detail(cmte_id: str, rows) -> dict | None:
-    """Format response from live _PAC_DETAIL_SQL rows."""
-    if not rows:
-        return None
-    first = rows[0]
-    recipients = []
-    total_direct = total_ie_for = total_ie_against = 0.0
-    for r in rows:
-        direct = float(r.get("direct") or 0)
-        ie_for = float(r.get("ie_for") or 0)
-        ie_against = float(r.get("ie_against") or 0)
-        total_direct += direct
-        total_ie_for += ie_for
-        total_ie_against += ie_against
-        recipients.append({
-            "bioguideId": r.get("bioguide_id"), "name": r.get("full_name"),
-            "party": r.get("party"), "state": r.get("state"), "chamber": r.get("chamber"),
-            "direct": direct, "ieFor": ie_for, "ieAgainst": ie_against, "amount": direct + ie_for,
-        })
-    return {
-        "cmteId": cmte_id, "name": first["cmte_name"], "connectedOrg": first.get("connected_org"),
-        "directTotal": total_direct, "ieForTotal": total_ie_for, "ieAgainstTotal": total_ie_against,
-        "totalContributions": total_direct + total_ie_for + total_ie_against,
-        "recipientCount": len(recipients), "recipients": recipients,
-    }
-
-
-def _format_derived_pac_detail(cmte_id: str, rows) -> dict | None:
-    """Format response from derived.pac_detail_cache rows."""
+def _format_pac_detail(cmte_id: str, rows) -> dict | None:
+    """Format PAC detail response from either live or derived table rows."""
     if not rows:
         return None
     first = rows[0]
@@ -194,7 +167,7 @@ async def pac_detail(session: AsyncSession, cmte_id: str, cycle: int | None = No
                     {"cmte_id": cmte_id},
                 )
                 rows = derived_result.mappings().all()
-                result = _format_derived_pac_detail(cmte_id, rows)
+                result = _format_pac_detail(cmte_id, rows)
                 if result:
                     return result
         except Exception:
@@ -203,4 +176,4 @@ async def pac_detail(session: AsyncSession, cmte_id: str, cycle: int | None = No
     params: dict = {"cmte_id": cmte_id, "cycle": cycle}
     result = await session.execute(_PAC_DETAIL_SQL, params)
     rows = result.mappings().all()
-    return _format_live_pac_detail(cmte_id, rows)
+    return _format_pac_detail(cmte_id, rows)

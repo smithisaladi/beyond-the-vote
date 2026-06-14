@@ -2,7 +2,7 @@
 from __future__ import annotations
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import Boolean, DateTime, Integer, Numeric, Text
+from sqlalchemy import Boolean, DateTime, Integer, Interval, Numeric, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.models.congress import Base
@@ -16,7 +16,7 @@ class DataFreshness(Base):
     last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     rows_affected: Mapped[int] = mapped_column(Integer, server_default="0")
     run_id: Mapped[Optional[object]] = mapped_column(UUID(as_uuid=True), nullable=True)
-    max_staleness: Mapped[str] = mapped_column(Text)
+    max_staleness: Mapped[object] = mapped_column(Interval)
 
 
 class DeadLetter(Base):

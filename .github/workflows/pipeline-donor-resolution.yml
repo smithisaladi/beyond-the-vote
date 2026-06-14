@@ -51,11 +51,11 @@ jobs:
       - name: Compute funding summaries
         run: uv run python -m scripts.compute_funding_summaries
       - name: Compute PAC detail cache
-        run: uv run python -m scripts.pac_detail_cache
+        run: uv run python -m scripts.compute_pac_detail_cache
       - name: Compute PAC leaderboard
-        run: uv run python -m scripts.pac_leaderboard
+        run: uv run python -m scripts.compute_pac_leaderboard
       - name: Compute legislator top contributors
-        run: uv run python -m scripts.legislator_top_contributors
+        run: uv run python -m scripts.compute_legislator_top_contributors
 
   alert:
     needs: resolve
@@ -86,6 +86,6 @@ jobs:
             echo "result=success" >> "$GITHUB_OUTPUT"
           fi
       - name: Send alert
-        run: uv run python -m scripts.alert
+        run: uv run python -m scripts.alert --status "$PIPELINE_STATUS"
         env:
           PIPELINE_STATUS: ${{ steps.status.outputs.result }}

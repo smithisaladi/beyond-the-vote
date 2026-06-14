@@ -3,6 +3,7 @@ import time
 import structlog
 from cachetools import TTLCache
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_db
@@ -40,14 +41,18 @@ async def healthz(db: AsyncSession = Depends(get_db)):
 
     latency = round((time.monotonic() - start) * 1000, 1)
     status = "healthy" if db_ok and freshness_status != "critical" else "unhealthy"
+    http_status = 503 if not db_ok else 200
 
-    return {
-        "status": status,
-        "db": db_ok,
-        "embedding_model": is_model_loaded(),
-        "data_freshness": freshness_status,
-        "latency_ms": latency,
-    }
+    return JSONResponse(
+        status_code=http_status,
+        content={
+            "status": status,
+            "db": db_ok,
+            "embedding_model": is_model_loaded(),
+            "data_freshness": freshness_status,
+            "latency_ms": latency,
+        },
+    )
 
 
 @router.get("/api/health/freshness")

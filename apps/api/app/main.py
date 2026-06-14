@@ -26,13 +26,19 @@ if settings.sentry_dsn:
     )
 
 def _rate_limit_key(request: Request) -> str:
+    """Per-user rate limiting: authenticated users get their own bucket (120/min),
+    unauthenticated users share IP-based buckets (30/min via default_limits)."""
     auth = request.headers.get("authorization", "")
     if auth.startswith("Bearer ") and len(auth) > 7:
         import hashlib
         return f"user:{hashlib.sha256(auth[7:].encode()).hexdigest()[:16]}"
     return get_remote_address(request)
 
-limiter = Limiter(key_func=_rate_limit_key, default_limits=["120/minute"])
+limiter = Limiter(
+    key_func=_rate_limit_key,
+    default_limits=["30/minute"],
+    application_limits=["120/minute"],
+)
 
 
 def _load_models_sync() -> None:
