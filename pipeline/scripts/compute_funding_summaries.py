@@ -48,6 +48,25 @@ def main():
 
         # Load committee master to get cmte_id -> cand_id linkage (principal committees)
         committees_path = DATA_PROCESSED_FEC / "committees.csv"
+        # The FEC bulk CSVs only exist when the donor-resolution workflow's parquet
+        # cache is present. In the weekly pipeline the funding summary is already
+        # refreshed via the OpenFEC API (sync_weekly), so when the bulk files are
+        # absent this script is a no-op — skip cleanly rather than overwrite the
+        # API-populated table with zeros. Matches the .exists() guards in the
+        # sibling bulk scripts (e.g. enrich_donors_light).
+        if not committees_path.exists():
+            log.warning("committees_csv_missing", path=str(committees_path))
+            db.close()
+            conn.close()
+            duration = time.monotonic() - start_time
+            record_step_metrics(
+                run_id=run_id, script_name="compute_funding_summaries",
+                rows_ingested=0, rows_upserted=0,
+                rows_dead_lettered=0, duration_seconds=round(duration, 1),
+            )
+            log_run_end(run_id, "success", rows_processed=0)
+            log.info("compute_funding_summaries_skipped", reason="no_bulk_files")
+            return
         db.execute(f"""
             CREATE TABLE committees AS
             SELECT cmte_id, cand_id
