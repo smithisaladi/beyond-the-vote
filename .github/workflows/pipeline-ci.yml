@@ -23,3 +23,8 @@ jobs:
         run: cd pipeline && uv sync
       - name: Run unit tests
         run: cd pipeline && uv run pytest tests/ -v --ignore=tests/test_integration.py
+      - name: Check migration drift
+        if: github.event_name == 'push'
+        run: cd pipeline && uv run alembic -c migrations/alembic.ini check
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
