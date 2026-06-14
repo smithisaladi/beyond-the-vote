@@ -5,7 +5,6 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, SmallInteger, Text
-from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.models.congress import Base
@@ -59,21 +58,4 @@ class PacTopFunders(Base):
     contribution_count: Mapped[int] = mapped_column(Integer)
     confidence: Mapped[float] = mapped_column(Numeric(5, 3))
     rank: Mapped[int] = mapped_column(Integer)
-    computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-
-
-class ContributorLeaderboardCache(Base):
-    __tablename__ = "contributor_leaderboard_cache"
-    __table_args__ = {"schema": "derived"}
-
-    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
-    cmte_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    direct_total: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
-    ie_for_total: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
-    ie_against_total: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
-    total_contributions: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
-    recipient_count: Mapped[Optional[int]] = mapped_column(
-        Integer, nullable=True, server_default="0"
-    )
-    top_recipients: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
     computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

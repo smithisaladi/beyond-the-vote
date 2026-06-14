@@ -336,21 +336,6 @@ CREATE TABLE derived.legislator_funding_summary (
     PRIMARY KEY (bioguide_id, cycle)
 );
 
-CREATE TABLE derived.contributor_leaderboard_cache (
-    cmte_id         text PRIMARY KEY,
-    cmte_name       text NOT NULL,
-    direct_total    numeric(12,2) DEFAULT 0,
-    ie_for_total    numeric(12,2) DEFAULT 0,
-    ie_against_total numeric(12,2) DEFAULT 0,
-    total_contributions numeric(12,2) DEFAULT 0,
-    recipient_count integer DEFAULT 0,
-    top_recipients  jsonb,
-    computed_at     timestamptz DEFAULT now()
-);
-
-CREATE INDEX ON derived.contributor_leaderboard_cache (total_contributions DESC);
-CREATE INDEX ON derived.contributor_leaderboard_cache USING gin(cmte_name gin_trgm_ops);
-
 CREATE TABLE derived.pac_top_funders (
     cmte_id             text NOT NULL,
     canonical_donor_id  text NOT NULL,
@@ -387,53 +372,6 @@ CREATE TABLE ops.pipeline_runs (
 );
 
 CREATE INDEX ON ops.pipeline_runs (script_name, started_at DESC);
-
-CREATE TABLE ops.bulk_import_checkpoints (
-    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    script          text NOT NULL,
-    source_file     text NOT NULL,
-    chunk_index     integer NOT NULL,
-    status          text DEFAULT 'completed',
-    created_at      timestamptz DEFAULT now(),
-    UNIQUE (script, source_file, chunk_index)
-);
-
-CREATE TABLE ops.donor_overrides (
-    id              bigserial PRIMARY KEY,
-    canonical_id_from text NOT NULL,
-    canonical_id_to   text NOT NULL,
-    reason          text,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE TABLE ops.employer_overrides (
-    id              bigserial PRIMARY KEY,
-    raw_string      text NOT NULL,
-    correct_canonical_employer_id text NOT NULL,
-    reason          text,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE TABLE ops.industry_overrides (
-    id              bigserial PRIMARY KEY,
-    canonical_employer_id text NOT NULL,
-    correct_industry text NOT NULL,
-    reason          text,
-    created_at      timestamptz DEFAULT now()
-);
-
-CREATE TABLE ops.ml_models (
-    id              bigserial PRIMARY KEY,
-    model_name      text NOT NULL,
-    congress        integer,
-    model_bytes     bytea NOT NULL,
-    accuracy        real,
-    feature_names   text[],
-    trained_at      timestamptz DEFAULT now(),
-    model_version   text NOT NULL
-);
-
-CREATE UNIQUE INDEX ON ops.ml_models (model_name, congress);
 
 -- ============================================================
 -- Triggers
