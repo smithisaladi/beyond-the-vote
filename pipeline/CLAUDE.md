@@ -39,7 +39,7 @@ Python data pipeline: FEC campaign finance, Congress.gov legislation, VoteView i
 - **Ops tables**: `ops.pipeline_runs` (run tracking + watermarks), `ops.data_freshness` (per-table staleness thresholds), `ops.dead_letter` (failed row capture for retry), `ops.pipeline_metrics` (per-step ingestion/duration metrics)
 - **Derived tables**: `derived.pac_detail_cache`, `derived.pac_leaderboard`, `derived.legislator_top_contributors` (pre-computed API queries)
 - **Shared helpers**: `shared/freshness.py` (staleness tracking), `shared/dead_letter.py` (failed row recording), `shared/metrics.py` (step metrics)
-- **Alembic migrations**: `migrations/` is the **single source of truth** (the API has no separate Alembic setup). Run via `alembic -c migrations/alembic.ini upgrade head`. The version table is `ops.alembic_version` (env.py sets `version_table_schema="ops"`); `env.py` imports the API models from `apps/api` for metadata. **Write migrations by hand** — do NOT use `--autogenerate`: the ORM models (`apps/api/app/db/models`) describe only the subset of tables the API reads, so autogenerate would propose dropping the many pipeline-created tables (`analytics.*`, `anomalies.*`, `ops.pipeline_runs`, `enrichment.donor_canonical`, etc.). Schema is otherwise created by `create_schema.py` / `create_ops_tables.py` / `create_derived_tables.py`.
+- **Alembic migrations**: `migrations/` is the **single source of truth** (the API has no separate Alembic setup). Run via `alembic -c migrations/alembic.ini upgrade head`. The version table is `ops.alembic_version` (env.py sets `version_table_schema="ops"`); `env.py` imports the API models from `apps/api` for metadata. The ORM models (`apps/api/app/db/models`) now describe the live schema exactly, so `--autogenerate` and `alembic check` are safe — `alembic check` is the drift oracle; run it before committing model/schema changes (a clean run prints `No new upgrade operations detected.`). Caveats: (1) indexes, FK constraints, and unique constraints are **excluded** from comparison (`env.py` `SKIP_TYPES`), so changes to those stay hand-written; (2) any new table in an app-owned schema (`SCHEMA_INCLUDE` in `env.py`) must get a matching ORM model, or autogenerate will propose dropping it. Initial schema is bootstrapped by `create_schema.py` / `create_ops_tables.py` / `create_derived_tables.py`; ongoing changes go through migrations.
 - **`bioguide_id`** is the universal legislator key — everything FKs to it
 - **`fec_ids`** is an array on legislators — use `ANY()` for joins (GIN index exists)
 
@@ -104,7 +104,7 @@ Loaded via `python-dotenv` from `.env` in pipeline root.
 | `sync-daily.yml` | 06:00 UTC weekdays | Bills + votes + embeddings |
 | `pipeline-weekly.yml` | 07:00 UTC Sundays | Full DAG: ingest → enrich → derived tables → alert |
 | `pipeline-donor-resolution.yml` | 10:00 UTC Sundays | Full donor resolution on large runner (8-core) |
-| `pipeline-ci.yml` | On push/PR | Tests + Alembic migration drift check |
+| `test.yml` | On push/PR | Frontend + API + pipeline tests, TypeScript type check |
 
 ## FEC Gotchas
 

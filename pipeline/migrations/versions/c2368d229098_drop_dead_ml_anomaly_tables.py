@@ -28,6 +28,9 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    # Best-effort restore: these were dead, empty scaffolding tables, so the
+    # downgrade recreates columns/types/NOT NULL only — primary keys, defaults,
+    # indexes, and foreign keys are intentionally NOT reconstructed.
     op.execute("CREATE SCHEMA IF NOT EXISTS anomalies")
     op.execute("""CREATE TABLE analytics.bundling_events (id bigint NOT NULL, committee_id text NOT NULL, event_date date NOT NULL, donor_count integer NOT NULL, total_amount numeric, signals jsonb NOT NULL, confidence real NOT NULL, model_version text NOT NULL, created_at timestamptz);""")
     op.execute("""CREATE TABLE analytics.donor_cluster (id bigint NOT NULL, canonical_donor_id text NOT NULL, cluster_id integer NOT NULL, cluster_label text, distance_to_centroid real, model_version text NOT NULL, created_at timestamptz);""")
