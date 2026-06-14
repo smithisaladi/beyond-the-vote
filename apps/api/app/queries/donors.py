@@ -6,7 +6,7 @@ _PAC_LEADERBOARD_SQL = text("""
 WITH pac_totals AS (
     SELECT cmte_id, SUM(transaction_amt) as direct_total
     FROM fec.pac_to_candidate
-    WHERE (:cycle IS NULL OR cycle = :cycle)
+    WHERE (CAST(:cycle AS int) IS NULL OR cycle = CAST(:cycle AS int))
     GROUP BY cmte_id
 ),
 ie_totals AS (
@@ -14,7 +14,7 @@ ie_totals AS (
            SUM(CASE WHEN sup_opp = 'S' THEN transaction_amt ELSE 0 END) as ie_for_total,
            SUM(CASE WHEN sup_opp = 'O' THEN transaction_amt ELSE 0 END) as ie_against_total
     FROM fec.independent_expenditures
-    WHERE (:cycle IS NULL OR cycle = :cycle)
+    WHERE (CAST(:cycle AS int) IS NULL OR cycle = CAST(:cycle AS int))
     GROUP BY cmte_id
 ),
 combined AS (
@@ -38,7 +38,7 @@ SELECT cmte_id, cmte_name, direct_total, ie_for_total, ie_against_total,
        total_contributions, global_rank,
        COUNT(*) OVER() AS total_count
 FROM ranked
-WHERE (:pattern IS NULL OR cmte_name ILIKE :pattern)
+WHERE (CAST(:pattern AS text) IS NULL OR cmte_name ILIKE CAST(:pattern AS text))
 ORDER BY total_contributions DESC
 LIMIT :limit OFFSET :offset
 """)
@@ -46,12 +46,12 @@ LIMIT :limit OFFSET :offset
 _PAC_DETAIL_SQL = text("""
 WITH direct AS (
     SELECT cand_id, SUM(transaction_amt) AS direct_total FROM fec.pac_to_candidate
-    WHERE cmte_id = :cmte_id AND (:cycle IS NULL OR cycle = :cycle)
+    WHERE cmte_id = :cmte_id AND (CAST(:cycle AS int) IS NULL OR cycle = CAST(:cycle AS int))
     GROUP BY cand_id
 ),
 ie AS (
     SELECT cand_id, sup_opp, SUM(transaction_amt) AS ie_total FROM fec.independent_expenditures
-    WHERE cmte_id = :cmte_id AND (:cycle IS NULL OR cycle = :cycle)
+    WHERE cmte_id = :cmte_id AND (CAST(:cycle AS int) IS NULL OR cycle = CAST(:cycle AS int))
     GROUP BY cand_id, sup_opp
 ),
 per_candidate AS (
@@ -122,7 +122,7 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle:
                                total_contributions, global_rank,
                                COUNT(*) OVER() AS total_count
                         FROM derived.pac_leaderboard
-                        WHERE (:pattern IS NULL OR cmte_name ILIKE :pattern)
+                        WHERE (CAST(:pattern AS text) IS NULL OR cmte_name ILIKE CAST(:pattern AS text))
                         ORDER BY total_contributions DESC
                         LIMIT :limit OFFSET :offset
                     """),

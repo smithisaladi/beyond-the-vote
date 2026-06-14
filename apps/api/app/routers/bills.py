@@ -40,18 +40,18 @@ async def list_bills(
         "newest": text("""
             SELECT *, COUNT(*) OVER() AS total_count
             FROM congress.bills
-            WHERE (:statuses IS NULL OR status = ANY(:statuses))
-              AND (:topics IS NULL OR topics && :topics)
-              AND (:congress IS NULL OR congress = :congress)
+            WHERE (CAST(:statuses AS text[]) IS NULL OR status = ANY(CAST(:statuses AS text[])))
+              AND (CAST(:topics AS text[]) IS NULL OR topics && CAST(:topics AS text[]))
+              AND (CAST(:congress AS int) IS NULL OR congress = CAST(:congress AS int))
             ORDER BY introduced_date DESC NULLS LAST
             LIMIT :limit OFFSET :offset
         """),
         "oldest": text("""
             SELECT *, COUNT(*) OVER() AS total_count
             FROM congress.bills
-            WHERE (:statuses IS NULL OR status = ANY(:statuses))
-              AND (:topics IS NULL OR topics && :topics)
-              AND (:congress IS NULL OR congress = :congress)
+            WHERE (CAST(:statuses AS text[]) IS NULL OR status = ANY(CAST(:statuses AS text[])))
+              AND (CAST(:topics AS text[]) IS NULL OR topics && CAST(:topics AS text[]))
+              AND (CAST(:congress AS int) IS NULL OR congress = CAST(:congress AS int))
             ORDER BY introduced_date ASC NULLS LAST
             LIMIT :limit OFFSET :offset
         """),
