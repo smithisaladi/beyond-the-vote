@@ -74,7 +74,8 @@ FROM combined c
 LEFT JOIN fec.cmte_names cn ON cn.cmte_id = c.cmte_id
 LEFT JOIN congress.legislators l ON c.cand_id = ANY(l.fec_ids)
 LEFT JOIN fec.candidates fc ON fc.cand_id = c.cand_id
-WHERE c.direct + c.ie_for + c.ie_against > 0
+WHERE c.cand_id IS NOT NULL
+  AND c.direct + c.ie_for + c.ie_against > 0
 """
 
 
