@@ -1,6 +1,8 @@
 from app.db.models.congress import (
     Base,
     Bill,
+    BillAction,
+    BillCosponsor,
     BillVotePosition,
     BillVoteSummary,
     Committee,

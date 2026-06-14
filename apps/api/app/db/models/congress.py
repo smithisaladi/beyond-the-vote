@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import List, Optional
 
-from sqlalchemy import ARRAY, Boolean, Date, DateTime, ForeignKey, Integer, SmallInteger, Text
+from sqlalchemy import ARRAY, BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, SmallInteger, Text
 from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -228,3 +228,28 @@ class MemberScore(Base):
     synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     legislator: Mapped["Legislator"] = relationship("Legislator", back_populates="scores")
+
+
+class BillCosponsor(Base):
+    __tablename__ = "bill_cosponsors"
+    __table_args__ = {"schema": "congress"}
+
+    bill_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    bioguide_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    sponsored_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    withdrawn_at: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    original_cosponsor: Mapped[Optional[bool]] = mapped_column(
+        Boolean, nullable=True, server_default="false"
+    )
+
+
+class BillAction(Base):
+    __tablename__ = "bill_actions"
+    __table_args__ = {"schema": "congress"}
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    bill_id: Mapped[str] = mapped_column(Text, nullable=False)
+    acted_at: Mapped[str] = mapped_column(Text, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    action_code: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    action_type: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
