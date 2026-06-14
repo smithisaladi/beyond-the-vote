@@ -59,3 +59,50 @@ class PacTopFunders(Base):
     confidence: Mapped[float] = mapped_column(Numeric(5, 3))
     rank: Mapped[int] = mapped_column(Integer)
     computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class PacDetailCache(Base):
+    __tablename__ = "pac_detail_cache"
+    __table_args__ = {"schema": "derived"}
+    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    cand_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    cycle: Mapped[Optional[int]] = mapped_column(SmallInteger, nullable=True)
+    cmte_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    connected_org: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    bioguide_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    full_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    party: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    state: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    chamber: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    direct: Mapped[float] = mapped_column(Numeric(12, 2), server_default="0")
+    ie_for: Mapped[float] = mapped_column(Numeric(12, 2), server_default="0")
+    ie_against: Mapped[float] = mapped_column(Numeric(12, 2), server_default="0")
+    total_support: Mapped[float] = mapped_column(Numeric(12, 2), server_default="0")
+
+
+class PacLeaderboard(Base):
+    __tablename__ = "pac_leaderboard"
+    __table_args__ = {"schema": "derived"}
+    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    cmte_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    direct_total: Mapped[float] = mapped_column(Numeric(14, 2), server_default="0")
+    ie_for_total: Mapped[float] = mapped_column(Numeric(14, 2), server_default="0")
+    ie_against_total: Mapped[float] = mapped_column(Numeric(14, 2), server_default="0")
+    total_contributions: Mapped[float] = mapped_column(Numeric(14, 2), server_default="0")
+    global_rank: Mapped[int] = mapped_column(Integer)
+    cycle: Mapped[Optional[int]] = mapped_column(SmallInteger, nullable=True)
+    computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class LegislatorTopContributors(Base):
+    __tablename__ = "legislator_top_contributors"
+    __table_args__ = {"schema": "derived"}
+    bioguide_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    cmte_id: Mapped[str] = mapped_column(Text, primary_key=True)
+    org_name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    direct: Mapped[float] = mapped_column(Numeric(12, 2), server_default="0")
+    ie_for: Mapped[float] = mapped_column(Numeric(12, 2), server_default="0")
+    total: Mapped[float] = mapped_column(Numeric(12, 2), server_default="0")
+    rank: Mapped[int] = mapped_column(Integer)
+    cycle: Mapped[Optional[int]] = mapped_column(SmallInteger, nullable=True)
+    computed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
