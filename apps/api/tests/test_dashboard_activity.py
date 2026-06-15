@@ -37,10 +37,10 @@ async def test_fetch_activity_merges_sorts_trims(mock_db):
     votes = [{
         "vote_id": "h118-50", "bioguide_id": "A0001", "full_name": "Rep. Alpha",
         "position": "Yea", "vote_date": datetime(2024, 3, 10, tzinfo=timezone.utc),
-        "question": "On Passage", "bill_id": "hr-1-118", "bill_title": "Test Act",
+        "question": "On Passage", "bill_id": "118-hr-1", "bill_title": "Test Act",
     }]
     actions = [{
-        "action_id": 7, "bill_id": "hr-2-118", "acted_at": "2024-03-15",
+        "action_id": 7, "bill_id": "118-hr-2", "acted_at": "2024-03-15",
         "action_text": "Passed House", "bill_number": "H.R. 2",
         "bill_title": "Other Act", "status": "Passed",
     }]
@@ -54,7 +54,7 @@ async def test_fetch_activity_merges_sorts_trims(mock_db):
     assert items[0]["politician"] is None
     assert items[0]["action"] == "Passed House"
     assert items[0]["isAlert"] is True
-    assert items[0]["href"] == "/bills/hr-2-118"
+    assert items[0]["href"] == "/bills/118-hr-2"
     assert items[1]["politician"] == "Rep. Alpha"
     assert items[1]["action"] == "voted Yea"
     assert items[1]["subject"] == "Test Act"
@@ -80,10 +80,10 @@ async def test_get_activity_endpoint(authed_client, mock_db):
     votes = [{
         "vote_id": "h118-50", "bioguide_id": "A0001", "full_name": "Rep. Alpha",
         "position": "Yea", "vote_date": datetime(2024, 3, 10, tzinfo=timezone.utc),
-        "question": "On Passage", "bill_id": "hr-1-118", "bill_title": "Test Act",
+        "question": "On Passage", "bill_id": "118-hr-1", "bill_title": "Test Act",
     }]
     actions = [{
-        "action_id": 7, "bill_id": "hr-2-118", "acted_at": "2024-03-15",
+        "action_id": 7, "bill_id": "118-hr-2", "acted_at": "2024-03-15",
         "action_text": "Passed House", "bill_number": "H.R. 2",
         "bill_title": "Other Act", "status": "Passed",
     }]
