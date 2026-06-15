@@ -63,7 +63,8 @@ describe("BillsPage search", () => {
     );
     renderWithProviders(<BillsPage />);
     await waitFor(() => {
-      expect(screen.queryByText("Clean Water Restoration Act")).not.toBeInTheDocument();
+      expect(screen.getByText(/no bills match/i)).toBeInTheDocument();
     });
+    expect(screen.queryByText("Clean Water Restoration Act")).not.toBeInTheDocument();
   });
 });

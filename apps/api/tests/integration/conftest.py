@@ -83,13 +83,23 @@ async def _truncate(engine):
 
 
 @pytest.fixture(autouse=True)
+def _clear_politician_caches():
+    from app.routers import politicians
+    politicians._top_pacs_cache.clear()
+    politicians._contributors_cache.clear()
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _wire_app(session_factory):
     """Point the app at the test DB and disable rate limiting for determinism.
     get_db reads request.app.state.session_factory, and politician_detail opens
     its own sessions from the same factory — so this one wiring covers both."""
+    prior_factory = getattr(app.state, "session_factory", None)
     app.state.session_factory = session_factory
     app.state.limiter.enabled = False
     yield
+    app.state.session_factory = prior_factory
     app.state.limiter.enabled = True
 
 
