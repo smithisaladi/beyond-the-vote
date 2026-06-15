@@ -103,9 +103,13 @@ Loaded via `python-dotenv` from `.env` in pipeline root.
 | Workflow | Schedule | What |
 |----------|----------|------|
 | `sync-daily.yml` | 06:00 UTC weekdays | Bills + votes + embeddings |
-| `pipeline-weekly.yml` | 07:00 UTC Sundays | Full DAG: ingest → enrich → derived tables → alert |
-| `pipeline-donor-resolution.yml` | 10:00 UTC Sundays | Full donor resolution on large runner (8-core) |
+| `pipeline-weekly.yml` | 07:00 UTC Sundays | Full DAG: ingest → enrich → derived tables → alert (uses `enrich_donors_light`) |
 | `test.yml` | On push/PR | Frontend + API + pipeline tests, TypeScript type check |
+
+Full donor resolution (`scripts.enrich_donors`) has no workflow: it OOMs on the
+standard GitHub runner (`AgglomerativeClustering` builds an O(n²) matrix per
+block) and needs a large runner. The weekly pipeline runs `enrich_donors_light`
+(exact-match dedup) instead. Run the full version manually on a large runner.
 
 ## FEC Gotchas
 
