@@ -42,7 +42,7 @@ export function useMoneyFlow(cmteId: string) {
   });
 }
 
-export function useGeneratePacSummary(cmteId: string) {
+export function useGeneratePacSummary(cmteId: string, cycle?: number | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
@@ -53,7 +53,9 @@ export function useGeneratePacSummary(cmteId: string) {
       return resp.json();
     },
     onSuccess: (data) => {
-      queryClient.setQueryData(["pac", cmteId], (old: Record<string, unknown> | undefined) =>
+      // Must match usePacDetail's ["pac", cmteId, cycle] key exactly — a
+      // shorter key writes to a phantom entry the detail query never reads.
+      queryClient.setQueryData(["pac", cmteId, cycle], (old: Record<string, unknown> | undefined) =>
         old ? { ...old, summary: data.summary } : old
       );
     },
