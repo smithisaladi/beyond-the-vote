@@ -1,4 +1,5 @@
 export type { Party } from './types/party'
+export type { ActivityItem } from './types/dashboard'
 export type {
   BillStatus,
   BillSummary,
