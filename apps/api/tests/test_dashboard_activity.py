@@ -126,3 +126,21 @@ async def test_get_activity_null_last_seen(authed_client, mock_db):
 async def test_get_activity_requires_auth(client):
     resp = await client.get("/api/dashboard/activity")
     assert resp.status_code == 401
+
+
+async def test_mark_activity_seen(authed_client, mock_db):
+    resp = await authed_client.post("/api/dashboard/activity/seen")
+
+    assert resp.status_code == 200
+    assert resp.json() == {"ok": True}
+    # An upsert against app.profiles was issued and committed.
+    assert mock_db.execute.await_count == 1
+    sql_arg = str(mock_db.execute.await_args.args[0])
+    assert "app.profiles" in sql_arg
+    assert "activity_last_seen_at" in sql_arg
+    mock_db.commit.assert_awaited_once()
+
+
+async def test_mark_activity_seen_requires_auth(client):
+    resp = await client.post("/api/dashboard/activity/seen")
+    assert resp.status_code == 401

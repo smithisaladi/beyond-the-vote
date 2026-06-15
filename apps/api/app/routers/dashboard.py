@@ -89,6 +89,24 @@ async def get_activity(
     }
 
 
+@router.post("/activity/seen")
+async def mark_activity_seen(
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    user_id = str(user["user_id"])
+    await db.execute(
+        text("""
+            INSERT INTO app.profiles (id, activity_last_seen_at)
+            VALUES (:uid, now())
+            ON CONFLICT (id) DO UPDATE SET activity_last_seen_at = now()
+        """),
+        {"uid": user_id},
+    )
+    await db.commit()
+    return {"ok": True}
+
+
 @router.post("/follow/{politician_id}")
 async def follow_politician(
     politician_id: str,
