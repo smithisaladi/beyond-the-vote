@@ -1,7 +1,8 @@
 """Tests for the dashboard activity feed query module + endpoints."""
 from datetime import datetime, timezone
 
-from app.queries.activity import classify_alert
+from app.queries.activity import classify_alert, fetch_activity
+from tests.conftest import MockResult, make_mock_result
 
 
 def test_classify_alert_passage_vote():
@@ -30,10 +31,6 @@ def test_classify_alert_routine_action():
 
 def test_classify_alert_unknown_kind():
     assert classify_alert(kind="other") is False
-
-
-from tests.conftest import make_mock_result
-from app.queries.activity import fetch_activity
 
 
 async def test_fetch_activity_merges_sorts_trims(mock_db):
@@ -77,9 +74,6 @@ async def test_fetch_activity_trims_to_limit(mock_db):
     assert len(items) == 2
     assert items[0]["timestamp"] >= items[1]["timestamp"]
     assert items[0]["href"] is None  # null bill_id → no link
-
-
-from tests.conftest import MockResult
 
 
 async def test_get_activity_endpoint(authed_client, mock_db):
