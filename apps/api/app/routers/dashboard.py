@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Response
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_db, get_current_user
+from app.queries.activity import fetch_activity
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -64,6 +65,29 @@ async def get_followed(
         politicians.append(entry)
 
     return {"politicians": politicians}
+
+
+@router.get("/activity")
+async def get_activity(
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    response.headers["Cache-Control"] = "private, no-cache"
+    user_id = str(user["user_id"])
+
+    items = await fetch_activity(db, user_id)
+
+    seen_res = await db.execute(
+        text("SELECT activity_last_seen_at FROM app.profiles WHERE id = :uid"),
+        {"uid": user_id},
+    )
+    last_seen = seen_res.scalar_one_or_none()
+    return {
+        "items": items,
+        "lastSeenAt": last_seen.isoformat() if last_seen else None,
+    }
+
 
 @router.post("/follow/{politician_id}")
 async def follow_politician(
