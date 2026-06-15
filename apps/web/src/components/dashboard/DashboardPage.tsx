@@ -1,12 +1,13 @@
 
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { LogOut, UserMinus } from 'lucide-react'
 
 import { PARTY_STYLES, STATUS_STYLES, DANGER_HOVER_CLASS } from '@/lib/ui'
 import { useAuth } from '@/components/auth/AuthContext'
-import { useFollowedPoliticians, useFollowPolitician, useTrackedBills } from "@/hooks/queries/useDashboard"
+import { useFollowedPoliticians, useFollowPolitician, useTrackedBills, useActivityFeed, useMarkActivitySeen } from "@/hooks/queries/useDashboard"
+import { makeIsNew } from '@/lib/activity'
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -50,8 +51,19 @@ export default function DashboardPage() {
   const { data: trackedData, isLoading: loadingTracked } = useTrackedBills()
   const politicians = followedData?.politicians || []
   const trackedBills = trackedData?.bills || []
-  const activityFeed: { id: string; politician: string | null; action: string; subject: string; date: string; timestamp: number; href: string | null; isAlert: boolean }[] = []
+  const { data: activityData, isLoading: loadingActivity } = useActivityFeed()
+  const activityFeed = activityData?.items ?? []
+  const isNew = makeIsNew(activityData?.lastSeenAt ?? null)
   const loading = loadingFollowed || loadingTracked
+
+  const markSeen = useMarkActivitySeen()
+  const seenMarked = useRef(false)
+  useEffect(() => {
+    if (!loadingActivity && activityData && !seenMarked.current) {
+      seenMarked.current = true
+      markSeen.mutate()
+    }
+  }, [loadingActivity, activityData])
 
   const [photoErrors, setPhotoErrors] = useState<Set<string>>(new Set())
   const unfollowMutation = useFollowPolitician()
@@ -91,8 +103,8 @@ export default function DashboardPage() {
                 {/* Activity feed — primary */}
                 <ActivityFeed
                   activityFeed={activityFeed}
-                  loading={loading}
-                  isNew={() => false}
+                  loading={loadingActivity}
+                  isNew={isNew}
                 />
 
                 {/* Right column: Following + Tracked Bills */}

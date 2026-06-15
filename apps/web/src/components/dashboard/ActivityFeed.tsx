@@ -2,17 +2,9 @@
 
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-interface ActivityItem {
-  id: string
-  politician: string | null
-  action: string
-  subject: string
-  date: string
-  timestamp: number
-  href: string | null
-  isAlert: boolean
-}
 import { STATUS_STYLES } from '@/lib/ui'
+import type { ActivityItem } from '@/lib/types'
+import { filterActivityByTab, type ActivityTab } from '@/lib/activity'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { StaggerGrid, StaggerItem } from '@/components/ui/motion'
@@ -24,13 +16,9 @@ interface ActivityFeedProps {
 }
 
 export function ActivityFeed({ activityFeed, loading, isNew }: ActivityFeedProps) {
-  const [activityTab, setActivityTab] = useState<'all' | 'bills' | 'votes'>('all')
+  const [activityTab, setActivityTab] = useState<ActivityTab>('all')
 
-  const filteredActivity = activityFeed.filter(item => {
-    if (activityTab === 'votes') return item.politician !== null
-    if (activityTab === 'bills') return item.politician === null
-    return true
-  })
+  const filteredActivity = filterActivityByTab(activityFeed, activityTab)
 
   return (
     <section>
