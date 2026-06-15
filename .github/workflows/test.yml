@@ -44,6 +44,38 @@ jobs:
       - run: uv sync --extra dev
       - run: uv run pytest tests/ -v
 
+  api-integration:
+    name: API Integration (pytest + Postgres)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: apps/api
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: uv sync --extra dev
+      - run: uv run pytest tests/integration -v -m integration
+
   pipeline:
     name: Pipeline Tests (pytest)
     runs-on: ubuntu-latest
