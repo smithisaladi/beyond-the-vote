@@ -57,8 +57,8 @@ async def hybrid_bill_search(
         ctes += f"""
     semantic AS (
         SELECT be.bill_id,
-               1 - (be.embedding <=> :embedding::vector) AS sem_score,
-               ROW_NUMBER() OVER (ORDER BY be.embedding <=> :embedding::vector) AS sem_rank
+               1 - (be.embedding <=> CAST(:embedding AS vector)) AS sem_score,
+               ROW_NUMBER() OVER (ORDER BY be.embedding <=> CAST(:embedding AS vector)) AS sem_rank
         FROM enrichment.bill_embeddings be
         JOIN congress.bills b ON b.bill_id = be.bill_id
         WHERE {where_clause}
