@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 import { useAuth } from "@/components/auth/AuthContext";
+import type { ActivityItem } from "@/lib/types";
 
 async function authFetch(url: string) {
   const resp = await apiFetch(url);
@@ -54,6 +55,31 @@ export function useTrackBill() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard", "tracked-bills"] });
+    },
+  });
+}
+
+export interface ActivityFeedResponse {
+  items: ActivityItem[];
+  lastSeenAt: string | null;
+}
+
+export function useActivityFeed() {
+  const { user } = useAuth();
+  return useQuery<ActivityFeedResponse>({
+    queryKey: ["dashboard", "activity"],
+    queryFn: () => authFetch("/api/dashboard/activity"),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useMarkActivitySeen() {
+  return useMutation({
+    mutationFn: async () => {
+      const resp = await apiFetch("/api/dashboard/activity/seen", { method: "POST" });
+      if (!resp.ok) throw new Error("Failed to mark activity seen");
+      return resp.json();
     },
   });
 }
