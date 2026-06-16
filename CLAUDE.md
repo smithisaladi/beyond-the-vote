@@ -18,7 +18,9 @@ Political transparency app — track legislators, bills, votes, and campaign fin
 | Command | Purpose |
 |---------|---------|
 | `uv run uvicorn app.main:app --reload` | FastAPI dev server (localhost:8000) |
-| `uv run pytest` | Run API tests |
+| `uv run pytest` | Run API tests (integration tests skip without `TEST_DATABASE_URL`) |
+| `docker compose -f docker-compose.test.yml up -d` | Start the local Postgres+pgvector test DB (host port 5433) |
+| `TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/postgres uv run pytest -m integration` | Run real-DB integration tests |
 
 ### Type check
 
@@ -222,8 +224,9 @@ All animations are gated by `prefers-reduced-motion` via CSS. Library: `motion` 
 
 ## Testing
 
-- **Unit/component tests**: colocated as `*.test.ts(x)` in `apps/web/`, run with `npm run test`
-- **API tests**: `apps/api/tests/`, run with `uv run pytest`
+- **Unit/component tests**: colocated as `*.test.ts(x)` in `apps/web/`, run with `npm run test`. Frontend integration tests use MSW (`apps/web/src/test/` harness) to drive real query→render→network paths in jsdom — no backend needed.
+- **API unit tests**: `apps/api/tests/*.py`, run with `uv run pytest`. These mock the DB session (`tests/conftest.py`).
+- **API integration tests**: `apps/api/tests/integration/`, marked `@pytest.mark.integration`. They run endpoints against a **real Postgres** (pgvector + pg_trgm) bootstrapped from `pipeline/schema.sql`, with commit+truncate isolation. Requires Docker — start the DB with `docker compose -f apps/api/docker-compose.test.yml up -d`, then run with `TEST_DATABASE_URL` set (see Commands). Without that env var the suite skips. CI runs them in the `api-integration` job (Postgres service container). Integration test modules must set `pytestmark = [pytest.mark.integration, pytest.mark.asyncio(loop_scope="session")]`.
 
 ## Gotchas
 
