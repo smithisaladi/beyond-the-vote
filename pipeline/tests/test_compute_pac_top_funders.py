@@ -145,3 +145,45 @@ class TestComputeForCycle:
             result = compute_for_cycle(2024)
 
         assert result == 0
+
+
+class TestBuildCanonicalLookup:
+    """donor_canonical can hold rows from multiple resolution passes (full `d_*`
+    + light `exact-*`) for the same person. The contribution join keys on
+    (name, employer) only, so the lookup must collapse to ONE canonical donor per
+    (name, employer) or every overlapping row produces a duplicate funder."""
+
+    def _lookup(self, canonical_info):
+        from scripts.compute_pac_top_funders import _build_canonical_lookup
+        df = _build_canonical_lookup(canonical_info)
+        # name_lower/employer_lower -> canonical_id
+        return {(r["name_lower"], r["employer_lower"]): r["canonical_id"] for _, r in df.iterrows()}, len(df)
+
+    def test_collapses_duplicate_name_employer_to_one_row(self):
+        """Same (name, employer) under two resolution schemes -> single row."""
+        canonical_info = {
+            "d_100": ("BUFFETT, WILLIAM", "NOT EMPLOYED", "MA", 0.85),
+            "exact-200": ("BUFFETT, WILLIAM", "NOT EMPLOYED", None, 0.70),
+        }
+        mapping, n = self._lookup(canonical_info)
+        assert n == 1
+        # Higher-confidence (full resolution) wins
+        assert mapping[("buffett, william", "not employed")] == "d_100"
+
+    def test_keeps_distinct_name_employer_pairs(self):
+        canonical_info = {
+            "exact-1": ("SMITH, JOHN", "GOLDMAN SACHS", "NY", 0.70),
+            "exact-2": ("DOE, JANE", "GOOGLE", "CA", 0.70),
+        }
+        _, n = self._lookup(canonical_info)
+        assert n == 2
+
+    def test_confidence_tie_prefers_full_resolution(self):
+        """On equal confidence, the full-resolution `d_` id is chosen deterministically."""
+        canonical_info = {
+            "exact-9": ("ROE, RICHARD", "ACME", None, 0.70),
+            "d_9": ("ROE, RICHARD", "ACME", "TX", 0.70),
+        }
+        mapping, n = self._lookup(canonical_info)
+        assert n == 1
+        assert mapping[("roe, richard", "acme")] == "d_9"

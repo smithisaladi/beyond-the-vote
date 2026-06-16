@@ -26,6 +26,36 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 log = structlog.get_logger()
 
 
+def _build_canonical_lookup(
+    canonical_info: dict[str, tuple[str, str | None, str | None, float]],
+) -> pd.DataFrame:
+    """Build a (name_lower, employer_lower) -> canonical_id lookup with one row per pair.
+
+    enrichment.donor_canonical can hold rows from multiple resolution passes at once
+    — full resolution (``d_*`` ids) deletes only its own model_version, while light
+    dedup (``exact-*`` ids) adds its own — so the same person frequently appears under
+    several canonical ids. Contributions are matched on (name, employer) alone, so
+    without collapsing, every overlapping canonical row yields a duplicate funder.
+
+    Amounts are recomputed from the contributions downstream, so collapsing only
+    selects which identity to display: prefer the highest-confidence resolution,
+    breaking ties toward full resolution (``d_``) for determinism.
+    """
+    best: dict[tuple[str, str], tuple[tuple[float, bool, str], str]] = {}
+    for cid, (name, emp, _state, conf) in canonical_info.items():
+        key = ((name or "").lower(), (emp or "").lower())
+        rank = (float(conf), cid.startswith("d_"), cid)
+        if key not in best or rank > best[key][0]:
+            best[key] = (rank, cid)
+
+    return pd.DataFrame(
+        [
+            {"name_lower": name_lower, "employer_lower": employer_lower, "canonical_id": cid}
+            for (name_lower, employer_lower), (_rank, cid) in best.items()
+        ]
+    )
+
+
 def compute_for_cycle(cycle: int, top_n: int = 10) -> int:
     indiv_parquet = DATA_DIR / "fec" / str(cycle) / "indiv.parquet"
     if not indiv_parquet.exists():
@@ -65,18 +95,11 @@ def compute_for_cycle(cycle: int, top_n: int = 10) -> int:
     reset_conn()
 
     # Build canonical lookup DataFrame from already-loaded canonical_info.
-    # Join with contributions in DuckDB to avoid a Python iterrows() loop
-    # over potentially millions of contribution groups.
-    canonical_df = pd.DataFrame(
-        [
-            {
-                "name_lower": (name or "").lower(),
-                "employer_lower": (emp or "").lower(),
-                "canonical_id": cid,
-            }
-            for cid, (name, emp, _state, _conf) in canonical_info.items()
-        ]
-    )
+    # Collapsed to one canonical_id per (name, employer) so overlapping resolution
+    # passes don't multiply funder rows (see _build_canonical_lookup). Joined with
+    # contributions in DuckDB to avoid a Python iterrows() loop over potentially
+    # millions of contribution groups.
+    canonical_df = _build_canonical_lookup(canonical_info)
 
     log.info("canonical_lookup_built", entries=len(canonical_df))
 
