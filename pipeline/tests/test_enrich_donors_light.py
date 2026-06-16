@@ -127,14 +127,28 @@ class TestExactMatchDedup:
         assert len(result) == 1
         assert result[0]["canonical_id"] == "exact-100"
 
-    def test_sets_confidence_and_resolution_method(self):
-        """confidence is 0.7, resolution_method is 'exact', model_version is 'exact-match-v1'."""
+    def test_sets_confidence_and_model_version(self):
+        """confidence is 0.7 and model_version is 'exact-match-v1' (which encodes the
+        exact-match resolution method — no separate resolution_method column exists)."""
         donors = [_make_donor("WHITE, TOM", "OIL CO", "77002", 500.0, sub_id=1)]
         result = exact_match_dedup(donors)
         assert len(result) == 1
         assert result[0]["confidence"] == 0.7
-        assert result[0]["resolution_method"] == "exact"
         assert result[0]["model_version"] == "exact-match-v1"
+
+    def test_emits_only_donor_canonical_columns(self):
+        """Guards the upsert: every emitted key must be a real donor_canonical column.
+
+        A stray key (e.g. resolution_method) makes upsert() build an INSERT against a
+        nonexistent column and the run fails at write time."""
+        donors = [_make_donor("WHITE, TOM", "OIL CO", "77002", 500.0, sub_id=1)]
+        result = exact_match_dedup(donors)
+        donor_canonical_columns = {
+            "canonical_id", "display_name", "employer", "city", "state", "zip5",
+            "total_amount", "contribution_count", "cmte_ids", "confidence",
+            "model_version", "created_at",
+        }
+        assert set(result[0]) <= donor_canonical_columns
 
     def test_empty_input(self):
         """Returns empty list for empty input."""

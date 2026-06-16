@@ -81,7 +81,6 @@ def exact_match_dedup(donors: list[dict]) -> list[dict]:
             "contribution_count": contribution_count,
             "cmte_ids": cmte_ids,
             "confidence": 0.7,
-            "resolution_method": "exact",
             "model_version": MODEL_VERSION,
         })
 
