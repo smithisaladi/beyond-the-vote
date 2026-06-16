@@ -83,13 +83,19 @@ async def money_flow(cmte_id: str, db: AsyncSession = Depends(get_db)):
     if not cmte_name:
         raise HTTPException(status_code=404, detail="Committee not found")
 
+    # Aggregate a donor's giving across all cycles (the recipients side below is
+    # likewise all-cycles). pac_top_funders.rank is per-(cmte_id, cycle), so ordering
+    # by rank across cycles interleaves them — never order by it here.
     funder_rows = await db.execute(
         text("""
             SELECT canonical_donor_id, display_name, employer, state,
-                   total_amount, contribution_count, confidence, rank
+                   SUM(total_amount) AS total_amount,
+                   SUM(contribution_count) AS contribution_count,
+                   MAX(confidence) AS confidence
             FROM derived.pac_top_funders
             WHERE cmte_id = :id
-            ORDER BY rank
+            GROUP BY canonical_donor_id, display_name, employer, state
+            ORDER BY SUM(total_amount) DESC
             LIMIT 10
         """),
         {"id": cmte_id},

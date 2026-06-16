@@ -111,6 +111,20 @@ async def add_money_flow(db: AsyncSession, *, destination_committee_id, origin_e
     await db.commit()
 
 
+async def add_pac_top_funder(db: AsyncSession, *, cmte_id, canonical_donor_id, display_name,
+                             employer=None, state=None, total_amount=1000, contribution_count=1,
+                             confidence=0.7, rank=1, cycle=2024):
+    await db.execute(text("""
+        INSERT INTO derived.pac_top_funders
+          (cmte_id, canonical_donor_id, display_name, employer, state, total_amount,
+           contribution_count, confidence, rank, cycle)
+        VALUES (:cid, :did, :name, :emp, :st, :amt, :cnt, :conf, :rank, :cycle)
+    """), {"cid": cmte_id, "did": canonical_donor_id, "name": display_name, "emp": employer,
+           "st": state, "amt": total_amount, "cnt": contribution_count, "conf": confidence,
+           "rank": rank, "cycle": cycle})
+    await db.commit()
+
+
 async def add_funding_summary(db: AsyncSession, *, bioguide_id, cycle=2024, pac_direct_total=100000,
                               large_donor_total=50000, small_donor_total=25000,
                               superpac_ie_for=200000, superpac_ie_against=10000,
