@@ -56,6 +56,36 @@ describe("BillsPage search", () => {
     expect(requestedQ).toBe("water");
   });
 
+  it("sends a since date when the Last Action filter is applied", async () => {
+    const sinceParams: (string | null)[] = [];
+    server.use(
+      http.get("*/api/bills", ({ request }) => {
+        sinceParams.push(new URL(request.url).searchParams.get("since"));
+        return HttpResponse.json(billsResponse);
+      }),
+      http.get("*/api/dashboard/tracked-bills", () => HttpResponse.json({ bills: [] })),
+    );
+
+    renderWithProviders(<BillsPage />);
+    await screen.findByText("Clean Water Restoration Act");
+    expect(sinceParams.at(-1)).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: /last action/i }));
+    await userEvent.click(screen.getByText("Past month"));
+
+    // Local calendar date 30 days ago — not the UTC date.
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    const expected = [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0"),
+    ].join("-");
+    await waitFor(() => {
+      expect(sinceParams.at(-1)).toBe(expected);
+    });
+  });
+
   it("shows an empty state when no bills match", async () => {
     server.use(
       http.get("*/api/bills", () => HttpResponse.json(emptyBillsResponse)),
@@ -66,5 +96,24 @@ describe("BillsPage search", () => {
       expect(screen.getByText(/no bills match/i)).toBeInTheDocument();
     });
     expect(screen.queryByText("Clean Water Restoration Act")).not.toBeInTheDocument();
+  });
+
+  it("optimistically fills the bookmark before the track request resolves", async () => {
+    // POST never resolves — so the only way the UI can flip to "tracked" is an
+    // optimistic cache update, not a server round-trip + refetch.
+    server.use(
+      http.get("*/api/bills", () => HttpResponse.json(billsResponse)),
+      http.get("*/api/dashboard/tracked-bills", () => HttpResponse.json({ bills: [] })),
+      http.post("*/api/dashboard/track/:id", () => new Promise(() => {})),
+    );
+
+    renderWithProviders(<BillsPage />);
+    const trackBtn = await screen.findByRole("button", { name: "Track bill" });
+
+    await userEvent.click(trackBtn);
+
+    expect(
+      await screen.findByRole("button", { name: "Untrack bill" }),
+    ).toBeInTheDocument();
   });
 });

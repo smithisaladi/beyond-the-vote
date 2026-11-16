@@ -174,7 +174,7 @@ async def _get_recent_votes(db: AsyncSession, bioguide_id: str) -> list[dict]:
                 LEFT JOIN congress.bills b ON b.bill_id = vs.bill_id
                 WHERE vp.bioguide_id = :id
                 ORDER BY vs.date DESC LIMIT 50"""), {"id": bioguide_id})
-    return [{"date": str(r["date"]), "chamber": r["chamber"], "question": r.get("question"),
+    return [{"id": r["id"], "date": str(r["date"]), "chamber": r["chamber"], "question": r.get("question"),
              "result": r["result"], "position": r["position"], "billId": r.get("bill_id"),
              "billTitle": r.get("bill_title")} for r in result.mappings().all()]
 

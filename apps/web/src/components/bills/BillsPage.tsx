@@ -1,12 +1,13 @@
 
 
-import { Suspense, useState, useRef, useCallback, useEffect } from 'react'
+import { Suspense, useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useBills } from '@/hooks/queries/useBills'
-import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
+import { useTrackedBillIds, useTrackBill } from '@/hooks/queries/useDashboard'
 import { topicToSlug } from '@/lib/topics'
+import { localDateDaysAgo } from '@/lib/format'
 import { PageTransition } from '@/components/ui/motion'
 import { BillSearchBar } from '@/components/bills/BillSearchBar'
 import { BillFilters as BillFiltersComponent } from '@/components/bills/BillFilters'
@@ -73,12 +74,17 @@ function BillsContent() {
     dropdownRef,
   }
 
-  const { data: trackedData } = useTrackedBills()
+  const trackedBills = useTrackedBillIds()
   const trackMutation = useTrackBill()
-  const trackedBills = new Set<string>((trackedData?.bills ?? []).map((b: { id: string }) => b.id))
 
   const statusParam = selectedStatuses.size > 0 ? [...selectedStatuses].join(',') : undefined
   const topicsParam = selectedTopics.size > 0 ? [...selectedTopics].map(t => topicToSlug(t as any)).join(',') : undefined
+  // Fixed per filter choice (not per render), so crossing midnight doesn't
+  // change the param and reset already-loaded pages.
+  const sinceParam = useMemo(() => {
+    const days = dateFilter === 'month' ? 30 : dateFilter === 'year' ? 365 : null
+    return days ? localDateDaysAgo(days) : undefined
+  }, [dateFilter])
 
   const [allBills, setAllBills] = useState<{ id: string; number: string | null; title: string; sponsor: string | null; party: string | null; status: string | null; topics: string[]; lastAction: string | null; summary: string | null }[]>([])
   const [offset, setOffset] = useState(0)
@@ -89,12 +95,13 @@ function BillsContent() {
     setOffset(0)
     setAllBills([])
     setTotal(0)
-  }, [debouncedQuery, statusParam, topicsParam, sort])
+  }, [debouncedQuery, statusParam, topicsParam, sinceParam, sort])
 
   const { data, isLoading: billsLoading, isFetching, error: _billsError, refetch } = useBills({
     q: debouncedQuery || undefined,
     status: statusParam,
     topics: topicsParam,
+    since: sinceParam,
     sort: debouncedQuery ? undefined : sort,
     limit,
     offset,

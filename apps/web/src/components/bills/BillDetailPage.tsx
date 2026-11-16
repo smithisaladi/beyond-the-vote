@@ -7,7 +7,7 @@ import { ArrowLeft, Bookmark, ExternalLink } from 'lucide-react'
 import { motion } from 'motion/react'
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useAuth } from '@/components/auth/AuthContext'
-import { useTrackedBills, useTrackBill } from '@/hooks/queries/useDashboard'
+import { useTrackedBillIds, useTrackBill } from '@/hooks/queries/useDashboard'
 import { useBillDetail } from '@/hooks/queries/useBills'
 import { TAP_SPRING, PageTransition } from '@/components/ui/motion'
 import type { BillDetail } from '@/lib/types/bills'
@@ -65,10 +65,8 @@ export default function BillDetailPage({ id, initialBill }: { id: string; initia
   const { user } = useAuth()
   const { data: bill, isLoading: loading, error: _billError } = useBillDetail(id)
   const error = _billError ? String(_billError) : null
-  const { data: trackedData } = useTrackedBills()
   const trackMutation = useTrackBill()
-  const trackedBillIds = new Set((trackedData?.bills ?? []).map((b: { id: string }) => b.id))
-  const tracked = trackedBillIds.has(id)
+  const tracked = useTrackedBillIds().has(id)
 
   const handleTrack = () => {
     if (!user) { openSignIn(); return }

@@ -1,6 +1,17 @@
 """Bill search and lookup queries using raw SQL."""
+from datetime import date
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.queries.pagination import paged_total
+
+# Columns read by the bill-summary formatter, for queries aliasing
+# congress.bills as `b`. Avoids shipping combined_text / search_vector.
+BILL_SUMMARY_COLUMNS = (
+    "b.bill_id, b.bill_number, b.title, b.sponsor_name, b.sponsor_party, "
+    "b.status, b.topics, b.last_action_date, b.summary, b.last_action_text"
+)
 
 
 async def hybrid_bill_search(
@@ -11,6 +22,7 @@ async def hybrid_bill_search(
     status: list[str] | None = None,
     topics: list[str] | None = None,
     congress: int | None = None,
+    since: date | None = None,
     limit: int = 20,
     offset: int = 0,
 ) -> tuple[list[dict], int]:
@@ -27,6 +39,9 @@ async def hybrid_bill_search(
     if congress:
         filters.append("b.congress = :congress")
         params["congress"] = congress
+    if since:
+        filters.append("b.last_action_date >= :since")
+        params["since"] = since
 
     where_clause = " AND ".join(filters) if filters else "TRUE"
 
@@ -85,18 +100,18 @@ async def hybrid_bill_search(
     )
     """
 
-    sql = ctes + """
-    SELECT b.*, fused.rrf_score,
+    stmt = text(ctes + f"""
+    SELECT {BILL_SUMMARY_COLUMNS}, fused.rrf_score,
            COUNT(*) OVER() AS total_count
     FROM fused
     JOIN congress.bills b ON b.bill_id = fused.bill_id
     ORDER BY fused.rrf_score DESC
     LIMIT :limit OFFSET :offset
-    """
+    """)
 
-    result = await session.execute(text(sql), params)
+    result = await session.execute(stmt, params)
     rows = result.mappings().all()
-    total = rows[0]["total_count"] if rows else 0
+    total = await paged_total(session, stmt, params, rows)
     return [dict(r) for r in rows], total
 
 
@@ -135,14 +150,16 @@ async def get_bills_by_topic(
 async def get_bill_votes(session: AsyncSession, bill_id: str) -> list[dict]:
     sql = """
     SELECT vs.*,
-           json_agg(json_build_object(
+           -- FILTER drops the all-NULL row the LEFT JOIN yields for a vote
+           -- with no recorded positions.
+           COALESCE(json_agg(json_build_object(
                'bioguide_id', vp.bioguide_id,
                'position', vp.position,
                'name', l.full_name,
                'party', l.party,
                'state', l.state,
                'photo_url', l.photo_url
-           )) AS member_positions
+           )) FILTER (WHERE vp.bioguide_id IS NOT NULL), '[]'::json) AS member_positions
     FROM congress.bill_vote_summaries vs
     LEFT JOIN congress.bill_vote_positions vp ON vp.vote_id = vs.id
     LEFT JOIN congress.legislators l ON l.bioguide_id = vp.bioguide_id

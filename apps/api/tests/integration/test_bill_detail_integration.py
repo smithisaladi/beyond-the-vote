@@ -20,7 +20,7 @@ async def test_bill_detail_includes_votes_and_actions(client, db):
     assert len(bill["votes"]) == 1
     assert bill["votes"][0]["result"] == "Passed"
     member = bill["votes"][0]["memberPositions"][0]
-    assert member["bioguide_id"] == "L000001"
+    assert member["bioguideId"] == "L000001"
     assert member["position"] == "Yea"
     assert any(a["text"] == "Passed House" for a in bill["actions"])
 

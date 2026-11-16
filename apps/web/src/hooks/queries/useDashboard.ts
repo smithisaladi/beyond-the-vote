@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useMutationState, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 import { useAuth } from "@/components/auth/AuthContext";
 import type { ActivityItem } from "@/lib/types";
@@ -34,10 +34,18 @@ export function useFollowPolitician() {
   });
 }
 
+const TRACKED_BILLS_KEY = ["dashboard", "tracked-bills"];
+const TRACK_BILL_MUTATION_KEY = ["track-bill"];
+
+interface TrackBillVars {
+  billId: string;
+  track: boolean;
+}
+
 export function useTrackedBills() {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ["dashboard", "tracked-bills"],
+    queryKey: TRACKED_BILLS_KEY,
     queryFn: () => authFetch("/api/dashboard/tracked-bills"),
     enabled: !!user,
   });
@@ -46,17 +54,38 @@ export function useTrackedBills() {
 export function useTrackBill() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ billId, track }: { billId: string; track: boolean }) => {
+    mutationKey: TRACK_BILL_MUTATION_KEY,
+    mutationFn: async ({ billId, track }: TrackBillVars) => {
       const resp = await apiFetch(`/api/dashboard/track/${billId}`, {
         method: track ? "POST" : "DELETE",
       });
       if (!resp.ok) throw new Error("Failed to update track status");
       return resp.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "tracked-bills"] });
-    },
+    // Returning the refetch keeps the mutation pending until fresh server data
+    // lands, so useTrackedBillIds never falls back to a stale list in between.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: TRACKED_BILLS_KEY }),
   });
+}
+
+/**
+ * Tracked bill IDs with in-flight track/untrack toggles applied on top, so the
+ * bookmark flips immediately. Pending toggles live in mutation state rather
+ * than being written into the shared tracked-bills cache, so the Dashboard
+ * never renders partial rows and a failed toggle reverts on its own.
+ */
+export function useTrackedBillIds(): Set<string> {
+  const { data } = useTrackedBills();
+  const pending = useMutationState({
+    filters: { mutationKey: TRACK_BILL_MUTATION_KEY, status: "pending" },
+    select: (mutation) => mutation.state.variables as TrackBillVars,
+  });
+  const ids = new Set<string>((data?.bills ?? []).map((b: { id: string }) => b.id));
+  for (const { billId, track } of pending) {
+    if (track) ids.add(billId);
+    else ids.delete(billId);
+  }
+  return ids;
 }
 
 export interface ActivityFeedResponse {

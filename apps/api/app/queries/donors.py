@@ -2,6 +2,8 @@
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.queries.pagination import paged_total
+
 _PAC_LEADERBOARD_SQL = text("""
 WITH pac_totals AS (
     SELECT cmte_id, SUM(transaction_amt) as direct_total
@@ -95,6 +97,7 @@ def _format_pac_detail(cmte_id: str, rows) -> dict | None:
         total_ie_for += ie_for
         total_ie_against += ie_against
         recipients.append({
+            "candId": r.get("cand_id"),
             "bioguideId": r.get("bioguide_id"), "name": r.get("full_name"),
             "party": r.get("party"), "state": r.get("state"), "chamber": r.get("chamber"),
             "direct": direct, "ieFor": ie_for, "ieAgainst": ie_against, "amount": direct + ie_for,
@@ -107,6 +110,17 @@ def _format_pac_detail(cmte_id: str, rows) -> dict | None:
     }
 
 
+_DERIVED_PAC_LEADERBOARD_SQL = text("""
+    SELECT cmte_id, cmte_name, direct_total, ie_for_total, ie_against_total,
+           total_contributions, global_rank,
+           COUNT(*) OVER() AS total_count
+    FROM derived.pac_leaderboard
+    WHERE (CAST(:pattern AS text) IS NULL OR cmte_name ILIKE CAST(:pattern AS text))
+    ORDER BY total_contributions DESC
+    LIMIT :limit OFFSET :offset
+""")
+
+
 async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle: int | None = None, limit: int = 20, offset: int = 0) -> tuple[list[dict], int]:
     """Leaderboard: derived table when no cycle filter, otherwise live query."""
     if cycle is None:
@@ -116,23 +130,15 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle:
             )
             has_data = exists_result.scalar_one_or_none()
             if has_data:
-                derived_result = await session.execute(
-                    text("""
-                        SELECT cmte_id, cmte_name, direct_total, ie_for_total, ie_against_total,
-                               total_contributions, global_rank,
-                               COUNT(*) OVER() AS total_count
-                        FROM derived.pac_leaderboard
-                        WHERE (CAST(:pattern AS text) IS NULL OR cmte_name ILIKE CAST(:pattern AS text))
-                        ORDER BY total_contributions DESC
-                        LIMIT :limit OFFSET :offset
-                    """),
-                    {"pattern": f"%{q}%" if q else None, "limit": limit, "offset": offset},
-                )
+                params = {"pattern": f"%{q}%" if q else None, "limit": limit, "offset": offset}
+                derived_result = await session.execute(_DERIVED_PAC_LEADERBOARD_SQL, params)
                 rows = derived_result.mappings().all()
-                total = rows[0]["total_count"] if rows else 0
+                total = await paged_total(session, _DERIVED_PAC_LEADERBOARD_SQL, params, rows)
                 return [dict(r) for r in rows], total
         except Exception:
-            pass
+            # A failed statement aborts the Postgres transaction; roll back so
+            # the live fallback below can run on this session.
+            await session.rollback()
 
     params: dict = {
         "limit": limit,
@@ -142,7 +148,7 @@ async def pac_leaderboard(session: AsyncSession, *, q: str | None = None, cycle:
     }
     result = await session.execute(_PAC_LEADERBOARD_SQL, params)
     rows = result.mappings().all()
-    total = rows[0]["total_count"] if rows else 0
+    total = await paged_total(session, _PAC_LEADERBOARD_SQL, params, rows)
     return [dict(r) for r in rows], total
 
 
@@ -171,7 +177,7 @@ async def pac_detail(session: AsyncSession, cmte_id: str, cycle: int | None = No
                 if result:
                     return result
         except Exception:
-            pass
+            await session.rollback()
 
     params: dict = {"cmte_id": cmte_id, "cycle": cycle}
     result = await session.execute(_PAC_DETAIL_SQL, params)

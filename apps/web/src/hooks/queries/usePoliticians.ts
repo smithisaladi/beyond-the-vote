@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/fetch";
 
+/** Matches the API's `min_length` on /api/politicians/search. */
+export const NAME_SEARCH_MIN_LENGTH = 2;
+
 export function useSearchPoliticians(query: string) {
   return useQuery({
     queryKey: ["politicians-search", query],
@@ -10,7 +13,7 @@ export function useSearchPoliticians(query: string) {
       const data = await resp.json();
       return data.politicians || [];
     },
-    enabled: query.length >= 2,
+    enabled: query.length >= NAME_SEARCH_MIN_LENGTH,
   });
 }
 

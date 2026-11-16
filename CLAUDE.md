@@ -75,7 +75,7 @@ Political transparency app — track legislators, bills, votes, and campaign fin
 
 - **Prioritize high-level design** — think through architecture, data flow, and component boundaries before writing code. Propose the approach first when the task involves structural decisions.
 - **Avoid code smells** — no dead code, no unused imports, no copy-paste duplication, no `any` unless truly unavoidable. Extract shared logic into hooks or utilities when a pattern repeats. Keep components focused on one responsibility.
-- **No product decisions without asking** — if a feature gap is found (e.g. missing data, empty states), present the problem and options instead of inventing workarounds or fallback behaviors.
+- **Use judgment on product decisions** — when a feature gap is found (e.g. missing data, empty states), make a reasonable codebase-informed call and explain the decision; surface genuinely large scope changes before acting.
 
 ## Auth Flow
 

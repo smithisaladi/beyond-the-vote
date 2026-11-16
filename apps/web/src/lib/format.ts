@@ -94,6 +94,14 @@ export function parseLocalDate(dateStr: string): Date {
   return new Date(dateStr)
 }
 
+/** Local calendar date `days` before today, as YYYY-MM-DD (not UTC). */
+export function localDateDaysAgo(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - days)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 /** Format a date string as "January 15, 2024". */
 export function formatDate(dateStr: string): string {
   try {

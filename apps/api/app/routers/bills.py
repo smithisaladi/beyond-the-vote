@@ -1,4 +1,5 @@
 """Bill endpoints: list, search, detail, by-topic."""
+from datetime import date
 from typing import Literal
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -7,10 +8,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_db
 from app.ml.embeddings import embed_query, embeddings_enabled
-from app.queries.bills import hybrid_bill_search, lookup_bill, get_bills_by_topic, get_bill_votes
+from app.queries.bills import (
+    BILL_SUMMARY_COLUMNS, hybrid_bill_search, lookup_bill, get_bills_by_topic, get_bill_votes,
+)
+from app.queries.pagination import paged_total
 
 log = structlog.get_logger()
 router = APIRouter(prefix="/api/bills", tags=["bills"])
+
+_BILLS_SQL_TEMPLATE = f"""
+    SELECT {BILL_SUMMARY_COLUMNS}, COUNT(*) OVER() AS total_count
+    FROM congress.bills b
+    WHERE (CAST(:statuses AS text[]) IS NULL OR status = ANY(CAST(:statuses AS text[])))
+      AND (CAST(:topics AS text[]) IS NULL OR topics && CAST(:topics AS text[]))
+      AND (CAST(:congress AS int) IS NULL OR congress = CAST(:congress AS int))
+      AND (CAST(:since AS date) IS NULL OR last_action_date >= CAST(:since AS date))
+    ORDER BY introduced_date {{direction}} NULLS LAST
+    LIMIT :limit OFFSET :offset
+"""
+_BILLS_SQL = {
+    sort: text(_BILLS_SQL_TEMPLATE.format(direction=direction))
+    for sort, direction in (("newest", "DESC"), ("oldest", "ASC"))
+}
 
 
 @router.get("")
@@ -20,6 +39,7 @@ async def list_bills(
     topics: str | None = None,
     sort: Literal["newest", "oldest"] = "newest",
     congress: int | None = None,
+    since: date | None = None,
     limit: int = Query(default=20, le=250),
     offset: int = Query(default=0, ge=0),
     response: Response = None,
@@ -40,41 +60,23 @@ async def list_bills(
                 log.warning("query_embedding_failed", error=str(exc))
         results, total = await hybrid_bill_search(
             db, q, query_embedding=query_embedding,
-            status=status_list, topics=topic_list, congress=congress, limit=limit, offset=offset,
+            status=status_list, topics=topic_list, congress=congress, since=since,
+            limit=limit, offset=offset,
         )
         bills = [_format_bill_summary(r) for r in results]
         return {"bills": bills, "pagination": {"total": total, "limit": limit, "offset": offset}}
 
-    _BILLS_SQL = {
-        "newest": text("""
-            SELECT *, COUNT(*) OVER() AS total_count
-            FROM congress.bills
-            WHERE (CAST(:statuses AS text[]) IS NULL OR status = ANY(CAST(:statuses AS text[])))
-              AND (CAST(:topics AS text[]) IS NULL OR topics && CAST(:topics AS text[]))
-              AND (CAST(:congress AS int) IS NULL OR congress = CAST(:congress AS int))
-            ORDER BY introduced_date DESC NULLS LAST
-            LIMIT :limit OFFSET :offset
-        """),
-        "oldest": text("""
-            SELECT *, COUNT(*) OVER() AS total_count
-            FROM congress.bills
-            WHERE (CAST(:statuses AS text[]) IS NULL OR status = ANY(CAST(:statuses AS text[])))
-              AND (CAST(:topics AS text[]) IS NULL OR topics && CAST(:topics AS text[]))
-              AND (CAST(:congress AS int) IS NULL OR congress = CAST(:congress AS int))
-            ORDER BY introduced_date ASC NULLS LAST
-            LIMIT :limit OFFSET :offset
-        """),
-    }
     params: dict = {
         "limit": limit,
         "offset": offset,
         "statuses": status.split(",") if status else None,
         "topics": topics.split(",") if topics else None,
         "congress": congress,
+        "since": since,
     }
     result = await db.execute(_BILLS_SQL[sort], params)
     rows = result.mappings().all()
-    total = rows[0]["total_count"] if rows else 0
+    total = await paged_total(db, _BILLS_SQL[sort], params, rows)
     bills = [_format_bill_summary(dict(r)) for r in rows]
     return {"bills": bills, "pagination": {"total": total, "limit": limit, "offset": offset}}
 
@@ -194,6 +196,17 @@ def _format_vote(row: dict) -> dict:
             "republican": {"yea": row.get("yea_republican", 0) or 0, "nay": row.get("nay_republican", 0) or 0},
             "independent": {"yea": row.get("yea_independent", 0) or 0, "nay": row.get("nay_independent", 0) or 0},
         },
-        "memberPositions": row.get("member_positions", []),
+        "memberPositions": [_format_member_position(m) for m in row.get("member_positions") or []],
         "sourceUrl": row.get("source_url"),
+    }
+
+
+def _format_member_position(m: dict) -> dict:
+    return {
+        "bioguideId": m.get("bioguide_id"),
+        "name": m.get("name"),
+        "party": m.get("party"),
+        "state": m.get("state"),
+        "photoUrl": m.get("photo_url"),
+        "position": m.get("position"),
     }

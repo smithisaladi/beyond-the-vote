@@ -7,7 +7,7 @@ import { RepresentativeCard } from '@/components/representatives/RepresentativeC
 import { useAuthModal } from '@/components/auth/AuthModalContext'
 import { useMapboxAutocomplete } from '@/hooks/useMapboxAutocomplete'
 import { useRepresentatives } from '@/hooks/queries/useRepresentatives'
-import { useSearchPoliticians } from '@/hooks/queries/usePoliticians'
+import { NAME_SEARCH_MIN_LENGTH, useSearchPoliticians } from '@/hooks/queries/usePoliticians'
 import { useAuth } from '@/components/auth/AuthContext'
 import { Card } from '@/components/ui/Card'
 import { Skeleton } from '@/components/ui/Skeleton'
@@ -66,7 +66,7 @@ function RepresentativesContent() {
   const displayRepresentatives = searchMode === 'name' ? nameResults : representatives
   const displayLoading = searchMode === 'name' ? nameLoading : loading
   const displayError = searchMode === 'name' ? '' : error
-  const displayHasResults = searchMode === 'name' ? nameResults.length > 0 || nameLoading || nameQuery.length >= 3 : hasResults
+  const displayHasResults = searchMode === 'name' ? nameResults.length > 0 || nameLoading || nameQuery.length >= NAME_SEARCH_MIN_LENGTH : hasResults
 
   return (
     <PageTransition>
@@ -165,8 +165,8 @@ function RepresentativesContent() {
                       autoComplete="off"
                       autoFocus
                     />
-                    {nameQuery.length > 0 && nameQuery.length < 3 && (
-                      <span className="text-xs text-fg/32 flex-shrink-0">3 characters min</span>
+                    {nameQuery.length > 0 && nameQuery.length < NAME_SEARCH_MIN_LENGTH && (
+                      <span className="text-xs text-fg/32 flex-shrink-0">{NAME_SEARCH_MIN_LENGTH} characters min</span>
                     )}
                   </div>
                 </div>
@@ -208,7 +208,7 @@ function RepresentativesContent() {
                 </Card>
               )}
 
-              {!displayLoading && !displayError && displayRepresentatives.length === 0 && searchMode === 'name' && nameQuery.length >= 3 && (
+              {!displayLoading && !displayError && displayRepresentatives.length === 0 && searchMode === 'name' && nameQuery.length >= NAME_SEARCH_MIN_LENGTH && (
                 <p className="text-center text-[13px] text-fg/50 py-8">No politicians found matching &ldquo;{nameQuery}&rdquo;</p>
               )}
 

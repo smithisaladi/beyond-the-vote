@@ -90,14 +90,14 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
 
   const filtered = useMemo(() => {
     let list = vote.memberPositions ?? []
-    if (filter !== 'All') list = list.filter((m: any) => m.position === filter)
-    if (partyFilter !== 'All') list = list.filter((m: any) => m.party === partyFilter)
+    if (filter !== 'All') list = list.filter(m => m.position === filter)
+    if (partyFilter !== 'All') list = list.filter(m => m.party === partyFilter)
     return list
   }, [filter, partyFilter, vote.memberPositions])
 
   const counts = useMemo(() => {
     const c = { Yea: 0, Nay: 0, 'Not Voting': 0, Present: 0 }
-    for (const m of (vote.memberPositions ?? []) as any[]) {
+    for (const m of vote.memberPositions ?? []) {
       if (m.position in c) c[m.position as keyof typeof c]++
     }
     return c
@@ -263,7 +263,7 @@ function VoteContent({ vote, billId, billNumber, billTitle, fromParam }: { vote:
 
             <div className="max-h-[36rem] overflow-y-auto">
               {filtered.length > 0 ? (
-                filtered.map((m: any) => <MemberRow key={m.bioguideId} m={m} />)
+                filtered.map(m => <MemberRow key={m.bioguideId} m={m} />)
               ) : (
                 <p className="text-[13px] text-fg/30 italic py-5 text-center">No members match these filters.</p>
               )}

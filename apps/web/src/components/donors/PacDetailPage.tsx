@@ -6,7 +6,8 @@ import { ArrowLeft, ExternalLink, ChevronRight, ArrowUpDown } from 'lucide-react
 import { usePacDetail, useGeneratePacSummary } from '@/hooks/queries/useDonors'
 import { MoneyFlowSection } from '@/components/donors/MoneyFlowSection'
 interface PacDetailRecipient {
-  bioguideId: string
+  candId: string
+  bioguideId: string | null
   name: string
   party: string
   state: string
@@ -75,13 +76,10 @@ function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
   const party = toParty(recipient.party)
   const ps = PARTY_STYLES[party] || { bg: PARTY_STYLES.Independent.bg, text: PARTY_STYLES.Independent.text }
   const breakdown = breakdownText(recipient)
+  const linkable = !!recipient.bioguideId
 
-  return (
-    <Link
-      to="/representatives/$id"
-      params={{ id: recipient.bioguideId }}
-      className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2.5 hover:bg-raised transition-colors group"
-    >
+  const details = (
+    <>
       <div className="min-w-0">
         <div className="flex items-center gap-2.5 flex-wrap">
           <span className="text-[13px] text-fg/75 truncate group-hover:text-accent transition-colors">
@@ -101,11 +99,30 @@ function RecipientRow({ recipient }: { recipient: PacDetailRecipient }) {
       <span className={`text-[13px] font-mono tabular-nums flex-shrink-0 min-w-[64px] text-right ${STAT_MONEY_CLASS}`}>
         {formatTotal(recipient.amount)}
       </span>
+      {/* Invisible on non-linkable rows so the amount column stays aligned. */}
       <ChevronRight
         size={14}
         strokeWidth={1.8}
-        className="text-fg/20 group-hover:text-accent transition-colors flex-shrink-0"
+        className={`text-fg/20 group-hover:text-accent transition-colors flex-shrink-0 ${linkable ? '' : 'invisible'}`}
       />
+    </>
+  )
+
+  const rowClass = 'grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-2.5 transition-colors'
+
+  // Non-congressional recipients (e.g. presidential candidates) have no
+  // bioguideId, so there's no representative page to link to.
+  if (!linkable) {
+    return <div className={rowClass}>{details}</div>
+  }
+
+  return (
+    <Link
+      to="/representatives/$id"
+      params={{ id: recipient.bioguideId! }}
+      className={`${rowClass} group hover:bg-raised`}
+    >
+      {details}
     </Link>
   )
 }
@@ -388,7 +405,7 @@ export default function PacDetailPage({ cmteId }: { cmteId: string }) {
                       ) : (
                         <div className="divide-y divide-edge-soft">
                           {visibleRecipients.map((r) => (
-                            <RecipientRow key={r.bioguideId} recipient={r} />
+                            <RecipientRow key={r.candId} recipient={r} />
                           ))}
                         </div>
                       )}

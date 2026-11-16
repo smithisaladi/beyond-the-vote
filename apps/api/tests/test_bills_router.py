@@ -31,7 +31,7 @@ BILL_ROW = {
 }
 
 VOTE_ROW = {
-    "id": 1,
+    "id": "1",
     "date": "2023-04-01",
     "chamber": "House",
     "question": "On Passage",
@@ -46,7 +46,16 @@ VOTE_ROW = {
     "nay_republican": 0,
     "yea_independent": 0,
     "nay_independent": 0,
-    "member_positions": [],
+    "member_positions": [
+        {
+            "bioguide_id": "A000055",
+            "name": "Robert B. Aderholt",
+            "party": "Republican",
+            "state": "AL",
+            "photo_url": "https://example.com/a.jpg",
+            "position": "Nay",
+        }
+    ],
     "source_url": None,
 }
 
@@ -87,6 +96,21 @@ async def test_list_bills_returns_paginated(client, mock_db):
     assert body["bills"][0]["id"] == "hr1-118"
 
 
+async def test_list_bills_since_param_binds_date(client, mock_db):
+    """`since` must reach the SQL params as a bound date (Last Action filter)."""
+    mock_db.execute.return_value = make_mock_result([BILL_ROW])
+
+    resp = await client.get("/api/bills", params={"since": "2026-06-02"})
+    assert resp.status_code == 200
+    params = mock_db.execute.call_args.args[1]
+    assert str(params["since"]) == "2026-06-02"
+
+
+async def test_list_bills_since_invalid_rejected(client, mock_db):
+    resp = await client.get("/api/bills", params={"since": "not-a-date"})
+    assert resp.status_code == 422
+
+
 async def test_list_bills_respects_limit_and_offset(client, mock_db):
     mock_db.execute.return_value = make_mock_result([BILL_ROW])
 
@@ -105,6 +129,21 @@ async def test_list_bills_empty(client, mock_db):
     body = resp.json()
     assert body["bills"] == []
     assert body["pagination"]["total"] == 0
+
+
+async def test_list_bills_offset_past_end_reports_real_total(client, mock_db):
+    """COUNT(*) OVER() vanishes when the page is empty — the router must
+    re-probe at offset 0 so pagination.total isn't misreported as 0."""
+    mock_db.execute.side_effect = [
+        make_mock_result([]),          # requested page, past the end
+        make_mock_result([BILL_ROW]),  # offset-0 probe carrying total_count
+    ]
+
+    resp = await client.get("/api/bills", params={"limit": 20, "offset": 100})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["bills"] == []
+    assert body["pagination"]["total"] == BILL_ROW["total_count"]
 
 
 async def test_list_bills_sort_newest(client, mock_db):
@@ -170,6 +209,16 @@ async def test_bill_detail_found(mock_lookup, mock_votes, client, mock_db):
     assert len(bill["actions"]) == 1
     assert len(bill["votes"]) == 1
     assert bill["votes"][0]["yeas"] == 220
+    # Vote id must be serialized as a string — the FE type declares
+    # BillVote.id: string | null and VoteBreakdownPage matches it against
+    # the string route param with ===.
+    assert bill["votes"][0]["id"] == "1"
+    # Member positions must be camelCase to match the API contract / FE type,
+    # so member rows can link to /representatives/{bioguideId}.
+    member = bill["votes"][0]["memberPositions"][0]
+    assert member["bioguideId"] == "A000055"
+    assert member["photoUrl"] == "https://example.com/a.jpg"
+    assert "bioguide_id" not in member
 
 
 @patch("app.routers.bills.lookup_bill")
